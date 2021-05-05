@@ -11,16 +11,19 @@ contract Pool is IPool {
     uint256 public override startTime;
     uint256 public override maturityTime;
 
-    /// Constructs Pool with underlying token, start and maturity date 
+    /// Constructs Pool with underlying token, start and maturity date
     /// @param token underlying collateral token
     /// @param start start time of this pool
     /// @param maturity maturity time of this pool
-    constructor(address token, uint256 start, uint256 maturity) {
+    constructor(
+        address token,
+        uint256 start,
+        uint256 maturity
+    ) {
         underlyingToken = token;
         startTime = start;
         maturityTime = maturity;
     }
 
-    function deposit(uint256 tokenAmount) public override {
-    }
+    function deposit(uint256 tokenAmount) public override {}
 }
