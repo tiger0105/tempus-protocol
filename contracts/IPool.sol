@@ -5,7 +5,8 @@ pragma solidity 0.8.4;
 /// @title A simple interface that tempus pools will be implementing
 abstract contract IPool {
     /// @return  underlying collateral token
-    /// @dev this token will be used as a token that user can deposit to mint same amounts of principal and interest token
+    /// @dev this token will be used as a token that user can deposit to mint same amounts
+    /// of principal and interest token
     function underlyingToken() external virtual returns (address);
 
     /// @return start time of the pool
