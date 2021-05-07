@@ -19,7 +19,10 @@
   },
   "scripts": {
     "test": "npx hardhat test",
-    "solhint": "solhint -f table contracts/**/*.sol",
+    "solhint": "solhint \"contracts/**/*.sol\"",
     "lint": "prettier --check \"contracts/**/*.sol\""
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.1.0"
   }
 }
