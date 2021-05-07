@@ -20,6 +20,6 @@
   "scripts": {
     "test": "npx hardhat test",
     "solhint": "solhint -f table contracts/**/*.sol",
-    "lint": "prettier --check 'contracts/**/*.sol'"
+    "lint": "prettier --check \"contracts/**/*.sol\""
   }
 }
