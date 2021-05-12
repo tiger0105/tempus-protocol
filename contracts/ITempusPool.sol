@@ -3,7 +3,7 @@ pragma solidity 0.8.4;
 
 /// @author The tempus.finance team
 /// @title A simple interface that tempus pools will be implementing
-abstract contract IPool {
+abstract contract ITempusPool {
     /// @return  underlying collateral token
     /// @dev this token will be used as a token that user can deposit to mint same amounts
     /// of principal and interest token
