@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.4;
 
-import "./IPool.sol";
+import "./ITempusPool.sol";
 
 /// @author The tempus.finance team
 /// @title Implementation of Tempus Pool
-contract Pool is IPool {
+contract TempusPool is ITempusPool {
     address public override underlyingToken;
 
     uint256 public override startTime;
