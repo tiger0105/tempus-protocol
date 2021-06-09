@@ -8,6 +8,7 @@ import "./StETH.sol";
 // - entering the pool
 // - having a buffer for ether to be validated
 // - having a reward scheme
+// - implements withdrawal (to simulate future conditions)
 contract LidoMock is StETH {
     // The current balance on the beacon chain.
     uint256 internal beaconBalance = 0;
@@ -53,6 +54,27 @@ contract LidoMock is StETH {
 
         // Simplified.
         distributeRewards(_beaconBalance - (_beaconValidators * DEPOSIT_SIZE));
+    }
+
+    /// Withdraw holdings.
+    ///
+    /// @param _amount Amount of StETH to withdraw.
+    ///
+    /// @dev This is currently unimplemented in upstream, as it is not possible to withdraw
+    ///      before The Merge. However we anticipate that to be turned on before EOY 2022.
+    function withdraw(
+        uint256 _amount,
+        bytes32 /*_pubkeyHash*/
+    ) external {
+        uint256 redeemable = getPooledEthByShares(_amount);
+
+        // Simplification: only allow withdrawing buffered ether.
+        require(redeemable <= bufferedEther, "Can only withdraw up to the buffered ether.");
+
+        // This validates that enough shares are owned by the account.
+        _burnShares(msg.sender, _amount);
+
+        payable(msg.sender).transfer(redeemable);
     }
 
     // Distribute actual rewards in ether.
