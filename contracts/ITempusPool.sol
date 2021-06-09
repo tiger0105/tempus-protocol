@@ -7,7 +7,7 @@ abstract contract ITempusPool {
     /// @return  underlying collateral token
     /// @dev this token will be used as a token that user can deposit to mint same amounts
     /// of principal and interest token
-    function underlyingToken() external virtual returns (address);
+    function yieldBearingToken() external virtual returns (address);
 
     /// @return start time of the pool
     function startTime() external virtual returns (uint256);
