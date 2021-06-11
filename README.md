@@ -8,3 +8,7 @@ To run the tests `npm run test`
 
 ## Coding style
 Please follow suggested coding style from solidity language documentation. It can be found at https://docs.soliditylang.org/en/latest/style-guide.html
+
+
+## Testing
+For debug logging Solidity, you can use `import "hardhat/console.sol";`
