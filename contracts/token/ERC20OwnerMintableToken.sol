@@ -14,14 +14,14 @@ contract ERC20OwnerMintableToken is ERC20 {
     /// @param account Recipient address to mint tokens to
     /// @param amount Number of tokens to mint
     function mint(address account, uint256 amount) public {
-        require(msg.sender == manager);
+        require(msg.sender == manager, "mint: only manager can mint");
         _mint(account, amount);
     }
 
     /// @param account Source address to burn tokens from
     /// @param amount Number of tokens to burn
     function burn(address account, uint256 amount) public {
-        require(msg.sender == manager);
+        require(msg.sender == manager, "burn: only manager can burn");
         _burn(account, amount);
     }
 }
