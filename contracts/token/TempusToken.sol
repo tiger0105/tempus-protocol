@@ -9,4 +9,13 @@ contract TempusToken is ERC20("Tempus", "TEMP") {
     constructor(uint256 totalTokenSupply) {
         _mint(msg.sender, totalTokenSupply);
     }
+
+    /// Allow token holders to burn their own tokens.
+    /// @param account Token holder account
+    /// @param amount Number of tokens to burn
+    function burn(address account, uint256 amount) external {
+        require(msg.sender == account);
+        require(balanceOf(account) >= amount);
+        _burn(account, amount);
+    }
 }
