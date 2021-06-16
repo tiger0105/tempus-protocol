@@ -25,5 +25,6 @@ contract TempusPool is ITempusPool {
         maturityTime = maturity;
     }
 
+    // solhint-disable-next-line no-empty-blocks
     function deposit(uint256 tokenAmount) public override {}
 }
