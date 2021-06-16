@@ -1,6 +1,7 @@
 version: '2.1'
 orbs:
   node: circleci/node@4.3.0
+  coveralls: coveralls/coveralls@1.0.4
 jobs:
   solhint:
     executor:
@@ -13,8 +14,30 @@ jobs:
           command: |
             npm run solhint
             npm run lint-check
+  coverage:
+    executor:
+      name: node/default
+      tag: '15.11'
+    steps:
+      - checkout
+      - node/install-packages
+      - run:
+          command:
+            npm run coverage
+      - coveralls/upload
+      - store_artifacts:
+          path: coverage
+          prefix: coverage
+
 workflows:
   testsol_and_solhint:
     jobs:
       - node/test
       - solhint
+      - coverage:
+          context: 
+            - Coveralls
+
+notify:
+  webhooks:
+    - url: https://coveralls.io/webhook?repo_token=${COVERALLS_REPO_TOKEN}
