@@ -8,6 +8,8 @@ import "./ITempusPool.sol";
 import "./token/PrincipalShare.sol";
 import "./token/YieldShare.sol";
 
+import "./mocks/AAVE/ATokenMock.sol";
+
 /// @author The tempus.finance team
 /// @title Implementation of Tempus Pool
 contract TempusPool is ITempusPool {
@@ -59,6 +61,7 @@ contract TempusPool is ITempusPool {
 
     function currentExchangeRate() public view returns (uint256) {
         // TODO implement
-        return 1;
+        ATokenMock atoken = ATokenMock(yieldBearingToken);
+        return atoken.POOL().getReserveNormalizedIncome(atoken.UNDERLYING_ASSET_ADDRESS());
     }
 }
