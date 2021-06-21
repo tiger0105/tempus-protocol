@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { Contract, BigNumber } from "ethers";
+import { Signer, Contract, BigNumber } from "ethers";
 
 /** @return WEI BigNumber from an ETH decimal */
 export function toWei(eth:Number): BigNumber {
@@ -23,19 +23,67 @@ export function addressOf(signerOrAddress) {
  * Simple contract wrapper
  */
 export class ERC20 {
+
   contract: Contract;
-  constructor(contract: Contract) {
+  connected: any;
+
+  constructor(contract: Contract, connected = null) {
     this.contract = contract;
+    this.connected = connected;
   }
-  connect(signer): Contract {
-    return this.contract.connect(signer);
+
+  /** Connects a user to the contract, so that transactions can be sent by the user */
+  connect(signerOrProvider): ERC20 {
+    if (this.connected == signerOrProvider) {
+      return this; // already connected
+    }
+    return new ERC20(this.contract.connect(signerOrProvider), signerOrProvider);
   }
+
+  /** @return Address of the contract */
+  address(): string { return this.contract.address; }
+
+  /**
+   * @returns Total supply of this ERC20 token as a decimal, such as 10.0
+   */
   async totalSupply() {
     return toEth(await this.contract.totalSupply());
   }
+
+  /**
+   * @param signerOrAddress A Signer or any address string
+   * @returns 
+   */
   async balanceOf(signerOrAddress) {
     return toEth(await this.contract.balanceOf(addressOf(signerOrAddress)));
   }
+  
+  /**
+   * @param spender ERC20 approve's, spender's address
+   * @param etherAmount Amount of ether to send in decimals, eg 2.0
+   */
+  async approve(spender, etherAmount:Number) {
+    return await this.contract.approve(addressOf(spender), toWei(etherAmount));
+  }
+
+  /**
+   * @dev The SENDER should be connected via connect()
+   * @param recipient ERC20 transfer recipient's address
+   * @param etherAmount Amount of ether to send in decimals, eg 2.0
+   */
+  async transfer(recipient, etherAmount:Number) {
+    return await this.contract.transfer(addressOf(recipient), toWei(etherAmount));
+  }
+
+  /**
+   * @param sender ERC20 transferFrom sender's address
+   * @param recipient ERC20 transferFrom recipient's address
+   * @param etherAmount Amount of ether to send in decimals, eg 2.0
+   */
+  async transferFrom(sender, recipient, etherAmount:Number) {
+    return await this.contract.transferFrom(addressOf(sender), addressOf(recipient), toWei(etherAmount));
+  }
+
   /** Sends some ether directly to the contract,
    *  which is handled in the contract receive() function */
   async sendToContract(signer, etherAmount:Number) {
