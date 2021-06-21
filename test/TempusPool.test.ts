@@ -9,7 +9,7 @@ import { NumberOrString } from "./utils/Decimal";
 import { blockTimestamp, increaseTime } from "./utils/Utils";
 
 describe("Tempus Pool", async () => {
-  let owner:Signer, user:Signer;
+  let owner:Signer, user:Signer, user2:Signer;
   let aave:Aave;
   let lido:Lido;
   let compound:Comptroller;
@@ -24,7 +24,7 @@ describe("Tempus Pool", async () => {
   }
 
   beforeEach(async () => {
-    [owner, user] = await ethers.getSigners();
+    [owner, user, user2] = await ethers.getSigners();
   });
 
   async function setExchangeRate(exchangeRate:NumberOrString) {
@@ -41,8 +41,9 @@ describe("Tempus Pool", async () => {
 
     // generate some ATokens by owner depositing, and then transfer some to user
     if (depositToUser > 0) {
-      await aave.deposit(owner, depositToUser*2);
+      await aave.deposit(owner, depositToUser*4);
       await aave.yieldToken.transfer(owner, user, depositToUser);
+      await aave.yieldToken.transfer(owner, user2, depositToUser);
     }
 
     maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
@@ -177,6 +178,16 @@ describe("Tempus Pool", async () => {
       expect(await pool.currentExchangeRate()).to.equal(2.0);
     });
 
+    it("Should allow depositing with different recipient", async () =>
+    {
+      await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/500);
+      await expectUserState(pool, user2, 0, 0, /*yieldBearing:*/500);
+      await pool.deposit(user, 100, /*recipient:*/user2);
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/400);
+      await expectUserState(pool, user2, 100, 100, /*yieldBearing:*/500);
+    });
+
     it("Should give appropriate shares after ASSET Wrapper deposit", async () =>
     {
       await createAavePool();
@@ -193,6 +204,36 @@ describe("Tempus Pool", async () => {
       await increaseTime(60*60);
       await pool.finalize();
       await expectRevert(pool.deposit(user, 100, /*recipient:*/user), "Maturity reached.");
+    });
+
+    it("Should allow depositing from multiple users", async () =>
+    {
+      await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/500);
+      await expectUserState(pool, user2, 0, 0, /*yieldBearing:*/500);
+      await pool.deposit(user, 100, /*recipient:*/user);
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
+      await expectUserState(pool, user2, 0, 0, /*yieldBearing:*/500);
+      await pool.deposit(user2, 200, /*recipient:*/user2);
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
+      await expectUserState(pool, user2, 200, 200, /*yieldBearing:*/300);
+    });
+
+    it("Should allow depositing from multiple users with different rates", async () =>
+    {
+      await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
+      await pool.deposit(user, 100, /*recipient:*/user);
+      await pool.deposit(user2, 200, /*recipient:*/user2);
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
+      await expectUserState(pool, user2, 200, 200, /*yieldBearing:*/300);
+
+      await setExchangeRate(2.0);
+      await pool.deposit(user, 100, /*recipient:*/user);
+      await expectUserState(pool, user, 150, 150, /*yieldBearing:*/300);
+      await expectUserState(pool, user2, 200, 200, /*yieldBearing:*/300);
+
+      expect(await pool.initialExchangeRate()).to.equal(1.0);
+      expect(await pool.currentExchangeRate()).to.equal(2.0);
     });
   });
 
