@@ -26,11 +26,14 @@ describe("Tempus Pool", async () => {
     await aaveBackingAsset.connect(user).approve(aavePool.address, toWei(1000));
     await aavePool.connect(user).deposit(aaveBackingAsset.address, toWei(1000), user.address, 0);
 
+    let AavePriceOracle = await ethers.getContractFactory("AavePriceOracle");
+    let priceOracle = await AavePriceOracle.deploy();
+
     let TempusPool = await ethers.getContractFactory("TempusPool");
     // TODO: use block.timestamp
     let startTime = Date.now();
     let maturityTime = startTime + 60*60; // maturity is in 1hr
-    pool = await TempusPool.connect(owner).deploy(yieldToken.address(), startTime, maturityTime);
+    pool = await TempusPool.connect(owner).deploy(yieldToken.address(), priceOracle.address, startTime, maturityTime);
 
     principalShare = await ERC20.attach("PrincipalShare", await pool.principalShare());
 

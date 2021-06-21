@@ -4,17 +4,17 @@ pragma solidity 0.8.6;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import "./IPriceOracle.sol";
 import "./ITempusPool.sol";
 import "./token/PrincipalShare.sol";
 import "./token/YieldShare.sol";
-
-import "./mocks/AAVE/ATokenMock.sol";
 
 /// @author The tempus.finance team
 /// @title Implementation of Tempus Pool
 contract TempusPool is ITempusPool {
     using SafeERC20 for IERC20;
 
+    IPriceOracle public priceOracle;
     address public override yieldBearingToken;
 
     uint256 public override startTime;
@@ -26,14 +26,17 @@ contract TempusPool is ITempusPool {
 
     /// Constructs Pool with underlying token, start and maturity date
     /// @param token underlying collateral token
+    /// @param oracle the price oracle correspoding to the token
     /// @param start start time of this pool
     /// @param maturity maturity time of this pool
     constructor(
         address token,
+        IPriceOracle oracle,
         uint256 start,
         uint256 maturity
     ) {
         yieldBearingToken = token;
+        priceOracle = oracle;
         startTime = start;
         maturityTime = maturity;
         initialExchangeRate = currentExchangeRate();
@@ -60,8 +63,6 @@ contract TempusPool is ITempusPool {
     }
 
     function currentExchangeRate() public view returns (uint256) {
-        // TODO implement
-        ATokenMock atoken = ATokenMock(yieldBearingToken);
-        return atoken.POOL().getReserveNormalizedIncome(atoken.UNDERLYING_ASSET_ADDRESS());
+        return priceOracle.currentRate(yieldBearingToken);
     }
 }
