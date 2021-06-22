@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { BigNumber, Signer } from "ethers";
 import { expect } from "chai";
-import { Aave, deployAavePoolMock } from "../../utils/Aave"
+import { Aave } from "../../utils/Aave"
 
 describe("AAVE Mock", async () => {
   let owner, user;
@@ -12,7 +12,7 @@ describe("AAVE Mock", async () => {
 
   beforeEach(async () => {
     [owner, user] = await ethers.getSigners();
-    pool = await deployAavePoolMock(owner, user, 1000000, 10);
+    pool = await Aave.deploy(owner, user, 1000000, 10);
   });
 
   describe("Deposit", async () =>

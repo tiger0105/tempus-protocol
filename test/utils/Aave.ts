@@ -2,30 +2,6 @@ import { ethers } from "hardhat";
 import { Signer, Contract, BigNumber } from "ethers";
 import * as util from "../ERC20"
 
-/**
- * Sets up an AAVE Instance for Unit Testing, initializes liquidity for User
- * @param owner Owner of the pool who has some liquidity
- * @param user Second user which requires an initial liquidity
- * @param totalSupply Total DAI supply
- * @param userBalance How much to transfer to user
- * @return Deployed Aave instance
- */
-export async function deployAavePoolMock(owner:Signer, user:Signer, totalSupply:Number, userBalance:Number): Promise<Aave> {
-  let BackingToken = await ethers.getContractFactory("ERC20FixedSupply");
-  // using WEI, because DAI has 18 decimal places
-  let backingAsset = await BackingToken.deploy("DAI Stablecoin", "DAI", util.toWei(totalSupply));
-
-  let AavePoolMock = await ethers.getContractFactory("AavePoolMock");
-  let aavePool = await AavePoolMock.deploy(backingAsset.address);
-
-  let ATokenMock = await ethers.getContractFactory("ATokenMock");
-  let yieldToken = await ATokenMock.attach(await aavePool.yieldToken());
-
-  // Pre-fund the user with backing tokens
-  await backingAsset.connect(owner).transfer(util.addressOf(user), util.toWei(userBalance));
-  return new Aave(aavePool, new util.ERC20(backingAsset), new util.ERC20(yieldToken));
-}
-
 export class Aave {
   pool: Contract;
   asset: util.ERC20;
@@ -35,6 +11,30 @@ export class Aave {
     this.pool = pool;
     this.asset = asset;
     this.earn = earn;
+  }
+
+  /**
+   * Sets up an AAVE Instance for Unit Testing, initializes liquidity for User
+   * @param owner Owner of the pool who has some liquidity
+   * @param user Second user which requires an initial liquidity
+   * @param totalSupply Total DAI supply
+   * @param userBalance How much to transfer to user
+   * @return Deployed Aave instance
+   */
+  static async deploy(owner:Signer, user:Signer, totalSupply:Number, userBalance:Number): Promise<Aave> {
+    let BackingToken = await ethers.getContractFactory("ERC20FixedSupply");
+    // using WEI, because DAI has 18 decimal places
+    let backingAsset = await BackingToken.deploy("DAI Stablecoin", "DAI", util.toWei(totalSupply));
+
+    let AavePoolMock = await ethers.getContractFactory("AavePoolMock");
+    let aavePool = await AavePoolMock.deploy(backingAsset.address);
+
+    let ATokenMock = await ethers.getContractFactory("ATokenMock");
+    let yieldToken = await ATokenMock.attach(await aavePool.yieldToken());
+
+    // Pre-fund the user with backing tokens
+    await backingAsset.connect(owner).transfer(util.addressOf(user), util.toWei(userBalance));
+    return new Aave(aavePool, new util.ERC20(backingAsset), new util.ERC20(yieldToken));
   }
 
   /**
