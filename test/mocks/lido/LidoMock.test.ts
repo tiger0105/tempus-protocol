@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { BigNumber, utils } from "ethers";
+import { BigNumber, Signer } from "ethers";
 import { expect } from "chai";
 import * as util from "../../ERC20";
 
@@ -8,16 +8,16 @@ describe("Lido Mock", async () => {
   let lido:LidoMock;
 
   class LidoMock extends util.ERC20 {
-    async sharesOf(signerOrAddress) {
-      let address = util.addressOf(signerOrAddress);
+    async sharesOf(signer:Signer) {
+      const address = util.addressOf(signer);
       return util.toEth(await this.contract.sharesOf(address));
     }
     async getTotalShares() {
       return util.toEth(await this.contract.getTotalShares());
     }
-    async submit(signer, etherAmount:Number) {
-      let wei = util.toWei(etherAmount); // payable call, set msg.value in wei
-      return await this.connect(signer).contract.submit(signer.address, {value: wei})
+    async submit(signer:Signer, etherAmount:Number) {
+      const wei = util.toWei(etherAmount); // payable call, set msg.value in wei
+      return await this.connect(signer).contract.submit(util.addressOf(signer), {value: wei})
     }
     async depositBufferedEther() {
       // ethers.js does not resolve overloads, so need to call the function by string lookup
@@ -39,7 +39,7 @@ describe("Lido Mock", async () => {
     // pushes balance to achieve certain amount of `totalRewards`
     async pushBeaconRewards(validators:number, rewards:number) {
       // push X eth reward, rewards = balance - 32*validators
-      let balance = rewards + 32*validators;
+      const balance = rewards + 32*validators;
       return await this.pushBeacon(validators, balance);
     }
     async withdraw(signer, shareAmount:Number) {
@@ -100,26 +100,26 @@ describe("Lido Mock", async () => {
 
     it("Should increase account balances after rewards in fixed proportion", async () =>
     {
-      let initial = 50.0;
+      const initial = 50.0;
       await lido.submit(owner, initial*0.2);
       await lido.submit(user, initial*0.8);
       await lido.depositBufferedEther();
 
-      let rewards = 1.0;
-      let minted = 0.098231827111984282;
+      const rewards = 1.0;
+      const minted = 0.098231827111984282;
       await lido.pushBeaconRewards(1, rewards);
-      await lido.printState("after pushBeaconRewards (1 eth)");
+      //await lido.printState("after pushBeaconRewards (1 eth)");
 
       expect(await lido.totalSupply()).to.equal(initial + rewards);
       expect(await lido.getTotalShares()).to.equal(initial + minted);
 
-      let ownerBalance = await lido.balanceOf(owner);
-      let userBalance  = await lido.balanceOf(user);
+      const ownerBalance = await lido.balanceOf(owner);
+      const userBalance  = await lido.balanceOf(user);
       expect(ownerBalance).to.equal(10.18);
       expect(userBalance).to.equal(40.72);
 
       // TODO: Check if owner and user received accurate amount of new balance
-      let added = ownerBalance.valueOf() + userBalance.valueOf() - initial;
+      const added = ownerBalance.valueOf() + userBalance.valueOf() - initial;
       console.log("minted: ", minted);
       console.log("added balances: ", added);
       console.log("added + minted: ", added+minted);
