@@ -1,4 +1,5 @@
 import { task } from "hardhat/config";
+import "hardhat-gas-reporter";
 import "@nomiclabs/hardhat-waffle";
 
 require('solidity-coverage');
