@@ -73,8 +73,7 @@ export class Aave {
    * @param ethAmount # of ETH to deposit, eg: 1.0
    */
   async deposit(user: Signer, ethAmount: Number) {
-    let wei = util.toWei(ethAmount);
-    await this.asset.connect(user).approve(this.pool.address, wei);
-    await this.pool.connect(user).deposit(this.asset.contract.address, wei, util.addressOf(user), 0);
+    await this.asset.connect(user).approve(this.pool.address, ethAmount);
+    await this.pool.connect(user).deposit(this.asset.contract.address, util.toWei(ethAmount), util.addressOf(user), 0);
   }
 }

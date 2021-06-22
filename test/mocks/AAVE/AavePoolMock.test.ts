@@ -6,9 +6,9 @@ import { Aave } from "../../utils/Aave"
 describe("AAVE Mock", async () => {
   let owner, user;
   let pool: Aave;
-  const oneRay  = BigNumber.from("1000000000000000000000000000");
-  const twoRay  = BigNumber.from("2000000000000000000000000000");
-  const halfRay = BigNumber.from("500000000000000000000000000");
+  const oneRay  = ethers.utils.parseUnits("1.0", 27);
+  const twoRay  = ethers.utils.parseUnits("2.0", 27);
+  const halfRay = ethers.utils.parseUnits("0.5", 27);
 
   beforeEach(async () => {
     [owner, user] = await ethers.getSigners();
