@@ -17,7 +17,7 @@ describe("Lido Mock", async () => {
     }
     async submit(signer, etherAmount:Number) {
       let wei = util.toWei(etherAmount); // payable call, set msg.value in wei
-      return await this.connect(signer).submit(signer.address, {value: wei})
+      return await this.connect(signer).contract.submit(signer.address, {value: wei})
     }
     async depositBufferedEther() {
       // ethers.js does not resolve overloads, so need to call the function by string lookup
@@ -34,7 +34,7 @@ describe("Lido Mock", async () => {
      * @param balance Actual balance in the ETH2 oracle
      */
     async pushBeacon(validators:number, balance:number) {
-      return await this.connect(owner).pushBeacon(validators, util.toWei(balance));
+      return await this.connect(owner).contract.pushBeacon(validators, util.toWei(balance));
     }
     // pushes balance to achieve certain amount of `totalRewards`
     async pushBeaconRewards(validators:number, rewards:number) {
@@ -44,7 +44,8 @@ describe("Lido Mock", async () => {
     }
     async withdraw(signer, shareAmount:Number) {
       // We ignore the pubKeyHash.
-      return await this.connect(signer).withdraw(util.toWei(shareAmount), ethers.utils.formatBytes32String(""));
+      const hash =  ethers.utils.formatBytes32String("");
+      return await this.connect(signer).contract.withdraw(util.toWei(shareAmount), hash);
     }
     async printState(title) {
       console.log("State:", title);
