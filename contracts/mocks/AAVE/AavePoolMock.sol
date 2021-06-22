@@ -11,7 +11,7 @@ contract AavePoolMock {
 
     // AAVE supports multi-reserve lending, but in this Mock we only support 1 reserve
     IERC20 private assetToken; // DAI
-    ATokenMock private yieldToken; // aDAI
+    ATokenMock public yieldToken; // aDAI
     uint128 private liquidityIndex; // the liquidity index in Ray (init:1ray=1e27)
 
     /// @dev Initialize AAVE Mock with a single supported reserve.
