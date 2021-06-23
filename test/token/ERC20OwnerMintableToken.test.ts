@@ -1,45 +1,37 @@
 import { ethers } from "hardhat";
-import { Signer } from "ethers";
 import { expect } from "chai";
+import { ERC20, SignerOrAddress, toWei, addressOf, revert } from "../ERC20"
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 
 describe("Owner Mintable Token", async () => {
-  let owner, user;
-  let token;
+  let owner:SignerWithAddress, user:SignerWithAddress;
+  let token:ERC20OwnerMintable;
+
+  class ERC20OwnerMintable extends ERC20 {
+    constructor() {
+      super("ERC20OwnerMintableToken");
+    }
+    async mint(sender:SignerOrAddress, receiver:SignerOrAddress, etherAmount:Number) {
+      return await this.connect(sender).mint(addressOf(receiver), toWei(etherAmount));
+    }
+    async burn(sender:SignerOrAddress, receiver:SignerOrAddress, etherAmount:Number) {
+      return await this.connect(sender).burn(addressOf(receiver), toWei(etherAmount));
+    }
+    async manager() { return await this.contract.manager(); }
+  }
 
   beforeEach(async () => {
     [owner, user] = await ethers.getSigners();
-    let OwnerMintable = await ethers.getContractFactory("ERC20OwnerMintableToken");
-    token = await OwnerMintable.connect(owner).deploy("Owner Mintable Test Token", "OTEST");
+    token = await ERC20.deployClass(ERC20OwnerMintable, "Owner Mintable Test Token", "OTEST");
   });
-
-  function mint(sender, receiver, amount) {
-    return token.connect(sender).mint(receiver.address, amount);
-  }
-
-  function burn(sender, receiver, amount) {
-    return token.connect(sender).burn(receiver.address, amount);
-  }
-
-  async function expectBalanceOf(signer): Promise<Chai.Assertion> {
-    return expect(await token.balanceOf(signer.address));
-  }
-
-  async function expectTotalSupply(): Promise<Chai.Assertion> {
-    return expect(await token.totalSupply());
-  }
-
-  function expectRevert(promise, message) {
-    return expect(promise).to.be.revertedWith(message);
-  }
 
   describe("Deploy", async () =>
   {
     it("Should set the right owner and initial supply", async () =>
     {
-      let manager = await token.manager();
-      expect(manager).to.equal(owner.address);
-      (await expectBalanceOf(owner)).to.equal(0);
-      (await expectTotalSupply()).to.equal(0);
+      expect(await token.manager()).to.equal(owner.address);
+      expect(await token.balanceOf(owner)).to.equal(0);
+      expect(await token.totalSupply()).to.equal(0);
     });
 
     it("Should set name and symbol", async () =>
@@ -54,26 +46,26 @@ describe("Owner Mintable Token", async () => {
     it("Should allow Owner to mint to Owner", async () =>
     {
       // owner mints to himself
-      await mint(owner, owner, 10);
-      (await expectBalanceOf(owner)).to.equal(10);
-      (await expectTotalSupply()).to.equal(10);
+      await token.mint(owner, owner, 10);
+      expect(await token.balanceOf(owner)).to.equal(10);
+      expect(await token.totalSupply()).to.equal(10);
     });
 
     it("Should allow Owner to mint to User", async () =>
     {
-      await mint(owner, user, 10); // Owner mints to User
-      (await expectBalanceOf(user)).to.equal(10);
-      (await expectTotalSupply()).to.equal(10);
+      await token.mint(owner, user, 10); // Owner mints to User
+      expect(await token.balanceOf(user)).to.equal(10);
+      expect(await token.totalSupply()).to.equal(10);
     });
 
     it("Should not allow Users to mint to User", async () =>
     {
-      await expectRevert(mint(user, user, 10), "mint: only manager can mint");
+      (await revert(token.mint(user, user, 10))).to.equal("mint: only manager can mint");
     });
 
     it("Should not allow Users to mint to Owner", async () =>
     {
-      await expectRevert(mint(user, owner, 10), "mint: only manager can mint");
+      (await revert(token.mint(user, owner, 10))).to.equal("mint: only manager can mint");
     });
   });
 
@@ -81,60 +73,60 @@ describe("Owner Mintable Token", async () => {
   {
     it("Should allow Owner to burn his own tokens", async () =>
     {
-      await mint(owner, owner, 10); // Owner mints to Owner
-      (await expectBalanceOf(owner)).to.equal(10);
-      (await expectTotalSupply()).to.equal(10);
+      await token.mint(owner, owner, 10); // Owner mints to Owner
+      expect(await token.balanceOf(owner)).to.equal(10);
+      expect(await token.totalSupply()).to.equal(10);
 
-      await burn(owner, owner, 5); // Owner burns Owner
-      (await expectBalanceOf(owner)).to.equal(5);
-      (await expectTotalSupply()).to.equal(5);
+      await token.burn(owner, owner, 5); // Owner burns Owner
+      expect(await token.balanceOf(owner)).to.equal(5);
+      expect(await token.totalSupply()).to.equal(5);
 
-      await burn(owner, owner, 5);
-      (await expectBalanceOf(owner)).to.equal(0);
-      (await expectTotalSupply()).to.equal(0);
+      await token.burn(owner, owner, 5);
+      expect(await token.balanceOf(owner)).to.equal(0);
+      expect(await token.totalSupply()).to.equal(0);
     });
 
     it("Should allow Owner to burn User tokens", async () =>
     {
-      await mint(owner, user, 8); // Owner mints to User
-      (await expectBalanceOf(user)).to.equal(8);
-      (await expectTotalSupply()).to.equal(8);
+      await token.mint(owner, user, 8); // Owner mints to User
+      expect(await token.balanceOf(user)).to.equal(8);
+      expect(await token.totalSupply()).to.equal(8);
 
-      await burn(owner, user, 8); // Owner burns User
-      (await expectBalanceOf(user)).to.equal(0);
-      (await expectTotalSupply()).to.equal(0);
+      await token.burn(owner, user, 8); // Owner burns User
+      expect(await token.balanceOf(user)).to.equal(0);
+      expect(await token.totalSupply()).to.equal(0);
     });
 
     it("Should not allow Users to burn their own tokens", async () =>
     {
-      await mint(owner, user, 10); // Owner mints to User
-      (await expectBalanceOf(user)).to.equal(10);
-      (await expectTotalSupply()).to.equal(10);
+      await token.mint(owner, user, 10); // Owner mints to User
+      expect(await token.balanceOf(user)).to.equal(10);
+      expect(await token.totalSupply()).to.equal(10);
 
       // User tries to burn User tokens
-      await expectRevert(burn(user, user, 5), "burn: only manager can burn");
-      await expectRevert(burn(user, user, 10), "burn: only manager can burn");
+      (await revert(token.burn(user, user, 5))).to.equal("burn: only manager can burn");
+      (await revert(token.burn(user, user, 10))).to.equal("burn: only manager can burn");
     });
 
     it("Should not allow Users to burn Owners tokens", async () =>
     {
-      await mint(owner, owner, 10); // Owner mints to Owner
-      (await expectBalanceOf(owner)).to.equal(10);
-      (await expectTotalSupply()).to.equal(10);
+      await token.mint(owner, owner, 10); // Owner mints to Owner
+      expect(await token.balanceOf(owner)).to.equal(10);
+      expect(await token.totalSupply()).to.equal(10);
 
       // User tries to burn Owner tokens
-      await expectRevert(burn(user, owner, 5), "burn: only manager can burn");
-      await expectRevert(burn(user, owner, 10), "burn: only manager can burn");
+      (await revert(token.burn(user, owner, 5))).to.equal("burn: only manager can burn");
+      (await revert(token.burn(user, owner, 10))).to.equal("burn: only manager can burn");
     });
 
     it("Should not allow Owner to burn more User tokens than available", async () =>
     {
-      await mint(owner, user, 5); // Owner mints to User
-      (await expectBalanceOf(user)).to.equal(5);
-      (await expectTotalSupply()).to.equal(5);
+      await token.mint(owner, user, 5); // Owner mints to User
+      expect(await token.balanceOf(user)).to.equal(5);
+      expect(await token.totalSupply()).to.equal(5);
 
       // Owner burns User, but more than exists
-      await expectRevert(burn(owner, user, 10), "ERC20: burn amount exceeds balance");
+      (await revert(token.burn(owner, user, 10))).to.equal("ERC20: burn amount exceeds balance");
     });
   });
 });
