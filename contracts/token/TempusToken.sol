@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.6;
 
-import "./ERC20OwnerMintableToken.sol";
+import "./ERC20FixedSupply.sol";
 
 contract TempusToken is ERC20FixedSupply {
     /// TEMP Token constructor, implemented as a fixed supply
