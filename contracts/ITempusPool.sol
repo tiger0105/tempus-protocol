@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.5;
+pragma solidity 0.8.6;
 
 /// @author The tempus.finance team
 /// @title A simple interface that tempus pools will be implementing
