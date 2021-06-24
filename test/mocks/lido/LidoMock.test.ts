@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { ERC20, Signer, toWei, toEth, addressOf, revert } from "../../ERC20";
+import { ERC20, Signer, toWei, toEth, addressOf, revert, NumberOrString } from "../../ERC20";
 
 describe("Lido Mock", async () => {
   let owner:Signer, user:Signer;
@@ -10,15 +10,15 @@ describe("Lido Mock", async () => {
     constructor() {
       super("LidoMock");
     }
-    async sharesOf(signer:Signer) {
-      return toEth(await this.contract.sharesOf(addressOf(signer)));
+    async sharesOf(signer:Signer): Promise<NumberOrString> {
+      return this.fromBigNum(await this.contract.sharesOf(addressOf(signer)));
     }
-    async getTotalShares() {
-      return toEth(await this.contract.getTotalShares());
+    async getTotalShares(): Promise<NumberOrString> {
+      return this.fromBigNum(await this.contract.getTotalShares());
     }
-    async submit(signer:Signer, etherAmount:Number) {
-      const wei = toWei(etherAmount); // payable call, set msg.value in wei
-      return await this.connect(signer).submit(addressOf(signer), {value: wei})
+    async submit(signer:Signer, amount:NumberOrString) {
+      const val = this.toBigNum(amount); // payable call, set value:
+      return await this.connect(signer).submit(addressOf(signer), {value: val})
     }
     async depositBufferedEther() {
       // ethers.js does not resolve overloads, so need to call the function by string lookup
@@ -112,7 +112,7 @@ describe("Lido Mock", async () => {
       //await lido.printState("after pushBeaconRewards (1 eth)");
 
       expect(await lido.totalSupply()).to.equal(initial + rewards);
-      expect(await lido.getTotalShares()).to.equal(initial + minted);
+      expect(await lido.getTotalShares()).to.equal('50.098231827111984282');
 
       const ownerBalance = await lido.balanceOf(owner);
       const userBalance  = await lido.balanceOf(user);
@@ -120,7 +120,7 @@ describe("Lido Mock", async () => {
       expect(userBalance).to.equal(40.72);
 
       // TODO: Check if owner and user received accurate amount of new balance
-      const added = ownerBalance.valueOf() + userBalance.valueOf() - initial;
+      const added = Number(ownerBalance) + Number(userBalance) - initial;
       console.log("minted: ", minted);
       console.log("added balances: ", added);
       console.log("added + minted: ", added+minted);
