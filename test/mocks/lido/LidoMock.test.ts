@@ -1,23 +1,26 @@
 import { ethers } from "hardhat";
-import { BigNumber, Signer } from "ethers";
 import { expect } from "chai";
-import * as util from "../../ERC20";
+import { NumberOrString, toWei } from "../../utils/Decimal";
+import { Signer, SignerOrAddress, addressOf } from "../../utils/ContractBase";
+import { ERC20, revert } from "../../ERC20";
 
 describe("Lido Mock", async () => {
-  let owner, user;
+  let owner:Signer, user:Signer;
   let lido:LidoMock;
 
-  class LidoMock extends util.ERC20 {
-    async sharesOf(signer:Signer) {
-      const address = util.addressOf(signer);
-      return util.toEth(await this.contract.sharesOf(address));
+  class LidoMock extends ERC20 {
+    constructor() {
+      super("LidoMock");
     }
-    async getTotalShares() {
-      return util.toEth(await this.contract.getTotalShares());
+    async sharesOf(signer:SignerOrAddress): Promise<NumberOrString> {
+      return this.fromBigNum(await this.contract.sharesOf(addressOf(signer)));
     }
-    async submit(signer:Signer, etherAmount:Number) {
-      const wei = util.toWei(etherAmount); // payable call, set msg.value in wei
-      return await this.connect(signer).contract.submit(util.addressOf(signer), {value: wei})
+    async getTotalShares(): Promise<NumberOrString> {
+      return this.fromBigNum(await this.contract.getTotalShares());
+    }
+    async submit(signer:SignerOrAddress, amount:NumberOrString) {
+      const val = this.toBigNum(amount); // payable call, set value:
+      return await this.connect(signer).submit(addressOf(signer), {value: val})
     }
     async depositBufferedEther() {
       // ethers.js does not resolve overloads, so need to call the function by string lookup
@@ -34,7 +37,7 @@ describe("Lido Mock", async () => {
      * @param balance Actual balance in the ETH2 oracle
      */
     async pushBeacon(validators:number, balance:number) {
-      return await this.connect(owner).contract.pushBeacon(validators, util.toWei(balance));
+      return await this.connect(owner).pushBeacon(validators, toWei(balance));
     }
     // pushes balance to achieve certain amount of `totalRewards`
     async pushBeaconRewards(validators:number, rewards:number) {
@@ -45,7 +48,7 @@ describe("Lido Mock", async () => {
     async withdraw(signer, shareAmount:Number) {
       // We ignore the pubKeyHash.
       const hash =  ethers.utils.formatBytes32String("");
-      return await this.connect(signer).contract.withdraw(util.toWei(shareAmount), hash);
+      return await this.connect(signer).withdraw(toWei(shareAmount), hash);
     }
     async printState(title) {
       console.log("State:", title);
@@ -60,7 +63,7 @@ describe("Lido Mock", async () => {
 
   beforeEach(async () => {
     [owner, user] = await ethers.getSigners();
-    lido = new LidoMock(await util.deploy("LidoMock"));
+    lido = await ERC20.deployClass(LidoMock);
   });
 
   describe("Submit", async () =>
@@ -82,7 +85,7 @@ describe("Lido Mock", async () => {
 
     it("Should reject ZERO deposit", async () =>
     {
-      (await util.revert(lido.submit(user, 0.0))).to.equal("ZERO_DEPOSIT");
+      (await revert(lido.submit(user, 0.0))).to.equal("ZERO_DEPOSIT");
     });
 
     it("Should deposit in 32eth chunks", async () =>
@@ -111,7 +114,7 @@ describe("Lido Mock", async () => {
       //await lido.printState("after pushBeaconRewards (1 eth)");
 
       expect(await lido.totalSupply()).to.equal(initial + rewards);
-      expect(await lido.getTotalShares()).to.equal(initial + minted);
+      expect(await lido.getTotalShares()).to.equal('50.098231827111984282');
 
       const ownerBalance = await lido.balanceOf(owner);
       const userBalance  = await lido.balanceOf(user);
@@ -119,7 +122,7 @@ describe("Lido Mock", async () => {
       expect(userBalance).to.equal(40.72);
 
       // TODO: Check if owner and user received accurate amount of new balance
-      const added = ownerBalance.valueOf() + userBalance.valueOf() - initial;
+      const added = Number(ownerBalance) + Number(userBalance) - initial;
       console.log("minted: ", minted);
       console.log("added balances: ", added);
       console.log("added + minted: ", added+minted);
@@ -145,10 +148,10 @@ describe("Lido Mock", async () => {
       expect(await lido.sharesOf(owner)).to.equal(0.0);
       expect(await lido.sharesOf(user)).to.equal(66.0);
 
-      (await util.revert(lido.withdraw(owner, 100.0)))
+      (await revert(lido.withdraw(owner, 100.0)))
         .to.equal("Can only withdraw up to the buffered ether.");
 
-      (await util.revert(lido.withdraw(owner, 1.0)))
+      (await revert(lido.withdraw(owner, 1.0)))
         .to.equal("BURN_AMOUNT_EXCEEDS_BALANCE");
     });
   });

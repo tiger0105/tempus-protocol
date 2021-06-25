@@ -1,14 +1,15 @@
 import { ethers } from "hardhat";
-import { BigNumber, Signer } from "ethers";
 import { expect } from "chai";
-import { Aave } from "../../utils/Aave"
+import { Aave } from "../../utils/Aave";
+import { toRay } from "../../utils/Decimal";
+import { Signer } from "../../utils/ContractBase";
 
 describe("AAVE Mock", async () => {
-  let owner, user;
+  let owner:Signer, user:Signer;
   let pool: Aave;
-  const oneRay  = ethers.utils.parseUnits("1.0", 27);
-  const twoRay  = ethers.utils.parseUnits("2.0", 27);
-  const halfRay = ethers.utils.parseUnits("0.5", 27);
+  const oneRay  = toRay(1.0);
+  const twoRay  = toRay(2.0);
+  const halfRay = toRay(0.5);
 
   beforeEach(async () => {
     [owner, user] = await ethers.getSigners();
