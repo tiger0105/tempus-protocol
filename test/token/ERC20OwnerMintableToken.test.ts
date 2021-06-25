@@ -1,29 +1,16 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { NumberOrString, toWei } from "../utils/Decimal";
-import { Signer, SignerOrAddress, addressOf } from "../utils/ContractBase";
-import { ERC20, revert } from "../ERC20";
+import { Signer } from "../utils/ContractBase";
+import { revert } from "../utils/ERC20";
+import { ERC20OwnerMintable } from "../utils/ERC20OwnerMintable";
 
 describe("Owner Mintable Token", async () => {
   let owner:Signer, user:Signer;
   let token:ERC20OwnerMintable;
 
-  class ERC20OwnerMintable extends ERC20 {
-    constructor() {
-      super("ERC20OwnerMintableToken");
-    }
-    async mint(sender:SignerOrAddress, receiver:SignerOrAddress, amount:NumberOrString) {
-      return await this.connect(sender).mint(addressOf(receiver), this.toBigNum(amount));
-    }
-    async burn(sender:SignerOrAddress, receiver:SignerOrAddress, amount:NumberOrString) {
-      return await this.connect(sender).burn(addressOf(receiver), this.toBigNum(amount));
-    }
-    async manager() { return await this.contract.manager(); }
-  }
-
   beforeEach(async () => {
     [owner, user] = await ethers.getSigners();
-    token = await ERC20.deployClass(ERC20OwnerMintable, "Owner Mintable Test Token", "OTEST");
+    token = await ERC20OwnerMintable.deployClass(ERC20OwnerMintable, "Owner Mintable Test Token", "OTEST");
   });
 
   describe("Deploy", async () =>
