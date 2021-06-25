@@ -4,9 +4,10 @@ pragma solidity 0.8.6;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./ATokenMock.sol";
 import "./WadRayMath.sol";
+import "./ILendingPool.sol";
 
 // TODO: emit events matching with AAVE, these will be useful for frontend development
-contract AavePoolMock {
+contract AavePoolMock is ILendingPool {
     using WadRayMath for uint;
 
     // AAVE supports multi-reserve lending, but in this Mock we only support 1 reserve
@@ -21,7 +22,7 @@ contract AavePoolMock {
         IERC20 asset // DAI
     ) {
         assetToken = asset;
-        yieldToken = new ATokenMock("AaveAToken", "AAT");
+        yieldToken = new ATokenMock(ILendingPool(address(this)), address(asset), "AaveAToken", "AAT");
         liquidityIndex = uint128(WadRayMath.ray()); // 1ray
     }
 
@@ -35,7 +36,7 @@ contract AavePoolMock {
     /// @dev Returns the normalized income per unit of asset
     /// @param asset The address of the underlying asset of the reserve
     /// @return The reserve's normalized income
-    function getReserveNormalizedIncome(address asset) public view returns (uint) {
+    function getReserveNormalizedIncome(address asset) public view override returns (uint) {
         require(address(assetToken) == asset, "invalid reserve asset");
         return liquidityIndex;
     }
