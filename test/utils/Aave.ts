@@ -1,6 +1,7 @@
-import { ethers } from "hardhat";
 import { Contract, BigNumber } from "ethers";
-import { ERC20, ContractBase, Signer, NumberOrString, toWei, addressOf } from "../ERC20"
+import { NumberOrString, toWei } from "../utils/Decimal";
+import { ContractBase, SignerOrAddress, addressOf } from "../utils/ContractBase";
+import { ERC20 } from "../ERC20";
 
 export class Aave extends ContractBase {
   asset: ERC20;
@@ -20,7 +21,7 @@ export class Aave extends ContractBase {
    * @param userBalance How much to transfer to user
    * @return Deployed Aave instance
    */
-  static async deploy(owner:Signer, user:Signer, totalSupply:Number, userBalance:Number): Promise<Aave> {
+  static async deploy(owner:SignerOrAddress, user:SignerOrAddress, totalSupply:Number, userBalance:Number): Promise<Aave> {
     // using WEI, because DAI has 18 decimal places
     const backingAsset = await ERC20.deploy("ERC20FixedSupply", "DAI Stablecoin", "DAI", toWei(totalSupply));
     const aavePool = await ContractBase.deployContract("AavePoolMock", backingAsset.address());
@@ -34,14 +35,14 @@ export class Aave extends ContractBase {
   /**
    * @return Current Asset balance of the user as a decimal, eg. 1.0
    */
-  async assetBalance(user:Signer): Promise<NumberOrString> {
+  async assetBalance(user:SignerOrAddress): Promise<NumberOrString> {
     return await this.asset.balanceOf(user);
   }
 
   /**
    * @return Yield Token balance of the user as a decimal, eg. 2.0
    */
-  async yieldBalance(user:Signer): Promise<NumberOrString> {
+  async yieldBalance(user:SignerOrAddress): Promise<NumberOrString> {
     let wei = await this.contract.getDeposit(addressOf(user));
     return this.fromBigNum(wei);
   }
@@ -66,7 +67,7 @@ export class Aave extends ContractBase {
    * @param user User who wants to deposit ETH into AAVE Pool
    * @param ethAmount # of ETH to deposit, eg: 1.0
    */
-  async deposit(user:Signer, ethAmount:NumberOrString) {
+  async deposit(user:SignerOrAddress, ethAmount:NumberOrString) {
     await this.asset.approve(user, this.address(), ethAmount);
     await this.contract.connect(user).deposit(this.asset.address(), toWei(ethAmount), addressOf(user), 0);
   }

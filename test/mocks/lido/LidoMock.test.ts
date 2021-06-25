@@ -1,6 +1,8 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { ERC20, Signer, toWei, toEth, addressOf, revert, NumberOrString } from "../../ERC20";
+import { NumberOrString, toWei } from "../../utils/Decimal";
+import { Signer, SignerOrAddress, addressOf } from "../../utils/ContractBase";
+import { ERC20, revert } from "../../ERC20";
 
 describe("Lido Mock", async () => {
   let owner:Signer, user:Signer;
@@ -10,13 +12,13 @@ describe("Lido Mock", async () => {
     constructor() {
       super("LidoMock");
     }
-    async sharesOf(signer:Signer): Promise<NumberOrString> {
+    async sharesOf(signer:SignerOrAddress): Promise<NumberOrString> {
       return this.fromBigNum(await this.contract.sharesOf(addressOf(signer)));
     }
     async getTotalShares(): Promise<NumberOrString> {
       return this.fromBigNum(await this.contract.getTotalShares());
     }
-    async submit(signer:Signer, amount:NumberOrString) {
+    async submit(signer:SignerOrAddress, amount:NumberOrString) {
       const val = this.toBigNum(amount); // payable call, set value:
       return await this.connect(signer).submit(addressOf(signer), {value: val})
     }

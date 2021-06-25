@@ -1,7 +1,8 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { Aave } from "../../utils/Aave";
-import { toRay, Signer } from "../../ERC20"
+import { toRay } from "../../utils/Decimal";
+import { Signer } from "../../utils/ContractBase";
 
 describe("AAVE Mock", async () => {
   let owner:Signer, user:Signer;
