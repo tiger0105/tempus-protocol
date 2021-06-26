@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { Contract } from "ethers";
-import { NumberOrString } from "./utils/Decimal";
-import { ContractBase, SignerOrAddress, Signer, addressOf } from "./utils/ContractBase";
+import { NumberOrString } from "./Decimal";
+import { ContractBase, SignerOrAddress, Signer, addressOf } from "./ContractBase";
 
 /**
  * Typed wrapper for ERC20 contracts

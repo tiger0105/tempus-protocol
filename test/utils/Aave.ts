@@ -1,7 +1,7 @@
 import { Contract, BigNumber } from "ethers";
-import { NumberOrString, toWei } from "../utils/Decimal";
-import { ContractBase, SignerOrAddress, addressOf } from "../utils/ContractBase";
-import { ERC20 } from "../ERC20";
+import { NumberOrString, toWei } from "./Decimal";
+import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
+import { ERC20 } from "./ERC20";
 
 export class Aave extends ContractBase {
   asset: ERC20;

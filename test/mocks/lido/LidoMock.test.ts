@@ -1,69 +1,16 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { NumberOrString, toWei } from "../../utils/Decimal";
-import { Signer, SignerOrAddress, addressOf } from "../../utils/ContractBase";
-import { ERC20, revert } from "../../ERC20";
+import { Lido } from "../../utils/Lido";
+import { Signer } from "../../utils/ContractBase";
+import { revert } from "../../utils/ERC20";
 
 describe("Lido Mock", async () => {
   let owner:Signer, user:Signer;
-  let lido:LidoMock;
-
-  class LidoMock extends ERC20 {
-    constructor() {
-      super("LidoMock");
-    }
-    async sharesOf(signer:SignerOrAddress): Promise<NumberOrString> {
-      return this.fromBigNum(await this.contract.sharesOf(addressOf(signer)));
-    }
-    async getTotalShares(): Promise<NumberOrString> {
-      return this.fromBigNum(await this.contract.getTotalShares());
-    }
-    async submit(signer:SignerOrAddress, amount:NumberOrString) {
-      const val = this.toBigNum(amount); // payable call, set value:
-      return await this.connect(signer).submit(addressOf(signer), {value: val})
-    }
-    async depositBufferedEther() {
-      // ethers.js does not resolve overloads, so need to call the function by string lookup
-      return await this.contract["depositBufferedEther()"]();
-    }
-    async depositBufferedEther2(maxDeposits:number) {
-      return await this.contract["depositBufferedEther(uint256)"](maxDeposits);
-    }
-    /**
-     * Updates the contract with information from ETH2 orcale
-     * Calculates rewards using formulae:  rewards = balance - 32*validators
-     * @param validators Total number of ACTUAL 32xETH deposits made during deposit event.
-     *                   This could be different than # of depositBufferedEther(1) calls.
-     * @param balance Actual balance in the ETH2 oracle
-     */
-    async pushBeacon(validators:number, balance:number) {
-      return await this.connect(owner).pushBeacon(validators, toWei(balance));
-    }
-    // pushes balance to achieve certain amount of `totalRewards`
-    async pushBeaconRewards(validators:number, rewards:number) {
-      // push X eth reward, rewards = balance - 32*validators
-      const balance = rewards + 32*validators;
-      return await this.pushBeacon(validators, balance);
-    }
-    async withdraw(signer, shareAmount:Number) {
-      // We ignore the pubKeyHash.
-      const hash =  ethers.utils.formatBytes32String("");
-      return await this.connect(signer).withdraw(toWei(shareAmount), hash);
-    }
-    async printState(title) {
-      console.log("State:", title);
-      console.log("  totalSupply:", await lido.totalSupply());
-      console.log("  totalShares:", await lido.getTotalShares());
-      console.log("  owner.shares: ", await lido.sharesOf(owner));
-      console.log("  owner.balance:", await lido.balanceOf(owner));
-      console.log("  user.shares: ", await lido.sharesOf(user));
-      console.log("  user.balance:", await lido.balanceOf(user));
-    }
-  }
+  let lido:Lido;
 
   beforeEach(async () => {
     [owner, user] = await ethers.getSigners();
-    lido = await ERC20.deployClass(LidoMock);
+    lido = await Lido.deployClass(Lido);
   });
 
   describe("Submit", async () =>
@@ -110,7 +57,7 @@ describe("Lido Mock", async () => {
 
       const rewards = 1.0;
       const minted = 0.098231827111984282;
-      await lido.pushBeaconRewards(1, rewards);
+      await lido.pushBeaconRewards(owner, 1, rewards);
       //await lido.printState("after pushBeaconRewards (1 eth)");
 
       expect(await lido.totalSupply()).to.equal(initial + rewards);
@@ -139,7 +86,7 @@ describe("Lido Mock", async () => {
       await lido.submit(user, 33.0);
 
       // Three validators and total balance of 34, i.e accrued 2 eth of yield
-      await lido.pushBeacon(1, 34.0);
+      await lido.pushBeacon(owner, 1, 34.0);
       expect(await lido.sharesOf(owner)).to.equal(32.0);
       expect(await lido.sharesOf(user)).to.equal(66.0);
 
