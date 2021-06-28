@@ -25,7 +25,7 @@ contract TempusPool is ITempusPool {
     YieldShare public yieldShare;
 
     /// Constructs Pool with underlying token, start and maturity date
-    /// @param token underlying collateral token
+    /// @param token underlying yield bearing token
     /// @param oracle the price oracle correspoding to the token
     /// @param start start time of this pool
     /// @param maturity maturity time of this pool
