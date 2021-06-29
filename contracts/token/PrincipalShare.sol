@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.6;
 
-import "./ERC20OwnerMintableToken.sol";
+import "./PoolShare.sol";
 
 /// @dev Token representing the principal shares of a pool.
-contract PrincipalShare is ERC20OwnerMintableToken {
+contract PrincipalShare is PoolShare {
     // solhint-disable-next-line no-empty-blocks
-    constructor(string memory name, string memory symbol) ERC20OwnerMintableToken(name, symbol) {}
+    constructor(
+        ITempusPool _pool,
+        string memory name,
+        string memory symbol
+    ) PoolShare(ShareKind.Principal, _pool, name, symbol) {}
 }

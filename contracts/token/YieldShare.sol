@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.6;
 
-import "./ERC20OwnerMintableToken.sol";
+import "./PoolShare.sol";
 
 /// @dev Token representing the yield shares of a pool.
-contract YieldShare is ERC20OwnerMintableToken {
+contract YieldShare is PoolShare {
     // solhint-disable-next-line no-empty-blocks
-    constructor(string memory name, string memory symbol) ERC20OwnerMintableToken(name, symbol) {}
+    constructor(
+        ITempusPool _pool,
+        string memory name,
+        string memory symbol
+    ) PoolShare(ShareKind.Yield, _pool, name, symbol) {}
 }

@@ -44,12 +44,12 @@ contract TempusPool is ITempusPool {
         // TODO add maturity
         string memory principalName = string(bytes.concat("TPS-", bytes(ERC20(token).symbol())));
         // TODO separate name vs. symbol?
-        principalShare = new PrincipalShare(principalName, principalName);
+        principalShare = new PrincipalShare(this, principalName, principalName);
 
         // TODO add maturity
         string memory yieldName = string(bytes.concat("TYS-", bytes(ERC20(token).symbol())));
         // TODO separate name vs. symbol?
-        yieldShare = new YieldShare(yieldName, yieldName);
+        yieldShare = new YieldShare(this, yieldName, yieldName);
     }
 
     function deposit(uint256 tokenAmount) public override {
