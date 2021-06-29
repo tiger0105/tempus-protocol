@@ -41,9 +41,19 @@ export function toWei(eth:NumberOrString): BigNumber {
   return parseDecimal(eth.toString(), 18);
 }
 
+/** @return Decimal from a WEI BigNumber */
+export function fromWei(wei:BigNumber): NumberOrString {
+  return formatDecimal(wei, 18);
+}
+
 /** @return RAY BigNumber from a decimal number */
 export function toRay(decimal:NumberOrString): BigNumber {
   return parseDecimal(decimal.toString(), 27);
+}
+
+/** @return Decimal from a RAY BigNumber */
+export function fromRay(wei:BigNumber): NumberOrString {
+  return formatDecimal(wei, 27);
 }
 
 /** @return ETH decimal from WEI BigNumber */

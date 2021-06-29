@@ -1,55 +1,34 @@
 import { ethers } from "hardhat";
-import { Signer } from "ethers";
 import { expect } from "chai";
-import { toWei } from "./utils/Decimal";
-import { ERC20 } from "./utils/ERC20";
+import { Signer } from "./utils/ContractBase";
+import { Aave } from "./utils/Aave";
+import { TempusPool } from "./utils/TempusPool";
 
 describe("Tempus Pool", async () => {
-  let owner, user;
-  let aavePool, yieldToken:ERC20;
-  let pool, principalShare:ERC20, yieldShare:ERC20;
+  let owner:Signer, user:Signer;
+  let aave:Aave;
+  let pool:TempusPool;
 
   beforeEach(async () => {
     [owner, user] = await ethers.getSigners();
 
-    // TODO use actual yield bearing implementation
-    let BackingToken = await ethers.getContractFactory("ERC20FixedSupply");
-    let aaveBackingAsset = await BackingToken.deploy("DAI Stablecoin", "DAI", toWei(1000000));
+    aave = await Aave.deploy(owner, user, 1000000, 10000);
+    // generate some ATokens by owner depositing to aave, and then transfer some to user
+    await aave.deposit(owner, 1000);
+    await aave.earn.transfer(owner, user, 500);
 
-    let AavePoolMock = await ethers.getContractFactory("AavePoolMock");
-    aavePool = await AavePoolMock.deploy(aaveBackingAsset.address);
-
-    yieldToken = await ERC20.attach("ATokenMock", await aavePool.yieldToken());
-
-    // Pre-fund the user with 10000 backing tokens, and enter the pool
-    await aaveBackingAsset.connect(owner).transfer(user.address, toWei(10000));
-    await aaveBackingAsset.connect(user).approve(aavePool.address, toWei(1000));
-    await aavePool.connect(user).deposit(aaveBackingAsset.address, toWei(1000), user.address, 0);
-
-    let AavePriceOracle = await ethers.getContractFactory("AavePriceOracle");
-    let priceOracle = await AavePriceOracle.deploy();
-
-    let TempusPool = await ethers.getContractFactory("TempusPool");
     // TODO: use block.timestamp
     let startTime = Date.now();
     let maturityTime = startTime + 60*60; // maturity is in 1hr
-    pool = await TempusPool.connect(owner).deploy(yieldToken.address(), priceOracle.address, startTime, maturityTime);
-
-    principalShare = await ERC20.attach("PrincipalShare", await pool.principalShare());
-
-    yieldShare = await ERC20.attach("YieldShare", await pool.yieldShare());
+    pool = await TempusPool.deploy(aave.earn, "AavePriceOracle", startTime, maturityTime);
   });
-
-  async function deposit(amount) {
-    return pool.connect(user).deposit(toWei(amount));
-  }
 
   describe("Deploy", async () =>
   {
     it("Initial exchange rate should be set", async () =>
     {
-      expect(await pool.initialExchangeRate()).to.equal(ethers.utils.parseUnits("1.0", 27));
-      expect(await pool.currentExchangeRate()).to.equal(ethers.utils.parseUnits("1.0", 27));
+      expect(await pool.initialExchangeRate()).to.equal(1.0);
+      expect(await pool.currentExchangeRate()).to.equal(1.0);
     });
   });
 
@@ -57,37 +36,34 @@ describe("Tempus Pool", async () => {
   {
     it("Should allow depositing 100", async () =>
     {
-      await yieldToken.approve(user, pool, 100);
-      await deposit(100);
-      expect(await principalShare.balanceOf(user.address)).to.equal(100);
-      expect(await yieldShare.balanceOf(user.address)).to.equal(100);
+      await pool.deposit(user, 100);
+      expect(await pool.principal.balanceOf(user)).to.equal(100);
+      expect(await pool.yield.balanceOf(user)).to.equal(100);
     });
 
     it("Should allow depositing 100 again", async () =>
     {
-      await yieldToken.approve(user, pool, 200);
-      await deposit(100);
-      expect(await principalShare.balanceOf(user.address)).to.equal(100);
-      expect(await yieldShare.balanceOf(user.address)).to.equal(100);
-      await deposit(100);
-      expect(await principalShare.balanceOf(user.address)).to.equal(200);
-      expect(await yieldShare.balanceOf(user.address)).to.equal(200);
+      await pool.deposit(user, 100);
+      expect(await pool.principal.balanceOf(user)).to.equal(100);
+      expect(await pool.yield.balanceOf(user)).to.equal(100);
+      await pool.deposit(user, 100);
+      expect(await pool.principal.balanceOf(user)).to.equal(200);
+      expect(await pool.yield.balanceOf(user)).to.equal(200);
     });
 
     it("Depositing after AAVE increase", async () =>
     {
-      await yieldToken.approve(user, pool, 200);
-      await deposit(100);
-      expect(await principalShare.balanceOf(user.address)).to.equal(100);
-      expect(await yieldShare.balanceOf(user.address)).to.equal(100);
+      await pool.deposit(user, 100);
+      expect(await pool.principal.balanceOf(user)).to.equal(100);
+      expect(await pool.yield.balanceOf(user)).to.equal(100);
 
-      await aavePool.connect(owner).setLiquidityIndex("2000000000000000000000000000");
-      await deposit(100);
-      expect(await principalShare.balanceOf(user.address)).to.equal(150);
-      expect(await yieldShare.balanceOf(user.address)).to.equal(150);
+      await aave.setLiquidityIndex(2.0);
+      await pool.deposit(user, 100);
+      expect(await pool.principal.balanceOf(user)).to.equal(150);
+      expect(await pool.yield.balanceOf(user)).to.equal(150);
 
-      expect(await pool.initialExchangeRate()).to.equal(ethers.utils.parseUnits("1.0", 27));
-      expect(await pool.currentExchangeRate()).to.equal(ethers.utils.parseUnits("2.0", 27));
+      expect(await pool.initialExchangeRate()).to.equal(1.0);
+      expect(await pool.currentExchangeRate()).to.equal(2.0);
     });
   });
 });
