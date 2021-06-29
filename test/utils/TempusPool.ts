@@ -45,8 +45,6 @@ export class TempusPool extends ContractBase {
    */
   async deposit(user:SignerOrAddress, assetAmount:NumberOrString) {
     try {
-      console.log("asset amount:", assetAmount);
-      console.log("balanceOf(user):", await this.yieldBearing.balanceOf(user));
       await this.yieldBearing.approve(user, this.contract.address, assetAmount);
       await this.contract.connect(user).deposit(this.toBigNum(assetAmount));
     } catch(e) {
@@ -54,12 +52,16 @@ export class TempusPool extends ContractBase {
     }
   }
 
-  // TODO: docs
+  /**
+   * @returns Initial exchange rate when the pool started
+   */
   async initialExchangeRate(): Promise<NumberOrString> {
     return fromRay(await this.contract.initialExchangeRate());
   }
   
-  // TODO: docs
+  /**
+   * @returns Current exchange rate of the pool
+   */
   async currentExchangeRate(): Promise<NumberOrString> {
     return fromRay(await this.contract.currentExchangeRate());
   }
