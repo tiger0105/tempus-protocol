@@ -23,4 +23,8 @@ interface ITempusPool {
     /// Deposit funds to the pool.
     /// @param tokenAmount Amount of collateral user wants to deposit to mint principal and interest token.
     function deposit(uint256 tokenAmount) external;
+
+    /// The current exchange rate of yield bearing token versus its backing.
+    /// @return The rate.
+    function currentExchangeRate() external view returns (uint256);
 }
