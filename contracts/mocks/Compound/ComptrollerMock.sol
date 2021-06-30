@@ -3,25 +3,26 @@ pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./CTokenMock.sol";
+import "./CErc20.sol";
 import "./ComptrollerInterface.sol";
 import "./ComptrollerStorage.sol";
 
-contract ComptrollerMock is ComptrollerInterface, ComptrollerStorage {
+contract ComptrollerMock is ComptrollerStorage, ComptrollerInterface {
     IERC20 public assetToken; // DAI
     CTokenMock public yieldToken; // cDAI
-    uint128 public exchangeRate; // current exchange rate as 1e18 decimal
+    uint public exchangeRate; // current exchange rate as 1e18 decimal
 
     /// @dev Initialize AAVE Mock with a single supported reserve.
     /// We only support 1 reserve right now.
     /// @param asset The single ERC20 reserve token, such as DAI
     constructor(IERC20 asset) {
         assetToken = asset;
-        yieldToken = new CTokenMock(ComptrollerInterface(address(this)), address(asset), "CompoundCToken", "CCT");
+        yieldToken = new CErc20(this, address(asset), "CompoundCToken", "CCT");
         exchangeRate = 1e18; // 1.0
     }
 
     /// @notice MOCK ONLY
-    function setExchangeRate(uint128 rate) public {
+    function setExchangeRate(uint rate) public {
         exchangeRate = rate;
     }
 
