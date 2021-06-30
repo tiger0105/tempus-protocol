@@ -25,6 +25,10 @@ describe("Tempus Pool", async () => {
 
   describe("Deploy", async () =>
   {
+    it("Version is correct", async () =>
+    {
+      expect(await pool.version()).to.equal(1);
+    });
     it("Initial exchange rate should be set", async () =>
     {
       expect(await pool.initialExchangeRate()).to.equal(1.0);

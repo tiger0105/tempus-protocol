@@ -53,6 +53,13 @@ export class TempusPool extends ContractBase {
   }
 
   /**
+   * @returns The version of the pool
+   */
+  async version(): Promise<NumberOrString> {
+    return await this.contract.version();
+  }
+
+  /**
    * @returns Initial exchange rate when the pool started
    */
   async initialExchangeRate(): Promise<NumberOrString> {

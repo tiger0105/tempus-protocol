@@ -4,6 +4,9 @@ pragma solidity 0.8.6;
 /// @author The tempus.finance team
 /// @title The interface of a Tempus Pool
 interface ITempusPool {
+    /// @return The version of the pool.
+    function version() external returns (uint);
+
     /// @return The underlying yield bearing token.
     /// @dev This token will be used as a token that user can deposit to mint same amounts
     /// of principal and interest shares.

@@ -14,6 +14,8 @@ import "./token/YieldShare.sol";
 contract TempusPool is ITempusPool {
     using SafeERC20 for IERC20;
 
+    uint public constant override version = 1;
+
     IPriceOracle public priceOracle;
     address public override yieldBearingToken;
 
