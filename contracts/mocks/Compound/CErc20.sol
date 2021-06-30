@@ -22,9 +22,4 @@ contract CErc20 is CTokenMock {
     function mint() external payable {
         mintInternal(msg.sender, msg.value);
     }
-
-    /// @notice Send Ether to CEther to mint
-    receive() external payable {
-        mintInternal(msg.sender, msg.value);
-    }
 }

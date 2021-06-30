@@ -1,11 +1,11 @@
 import { Contract, BigNumber } from "ethers";
 import { NumberOrString, toWei, formatDecimal } from "./Decimal";
-import { ContractBase, SignerOrAddress } from "./ContractBase";
+import { addressOf, ContractBase, SignerOrAddress } from "./ContractBase";
 import { ERC20 } from "./ERC20";
 
 export class Comptroller extends ContractBase {
-  asset: ERC20;
-  earn: ERC20; // yield token
+  asset: ERC20; // backing asset - DAI
+  earn: ERC20; // yield token - cDAI
   
   constructor(pool: Contract, asset: ERC20, earn: ERC20) {
     super("AavePoolMock", 18, pool);
@@ -79,6 +79,14 @@ export class Comptroller extends ContractBase {
   async exitMarket(user:SignerOrAddress): Promise<boolean> {
     const result:BigNumber = await this.contract.connect(user).exitMarket(this.earn.address());
     return result == BigNumber.from("0"); // no error
+  }
+
+  /**
+   * @dev MOCK ONLY
+   * @return True if user is particiapnt in cToken market
+   */
+  async isParticipant(user:SignerOrAddress): Promise<boolean> {
+    return await this.contract.isParticipant(this.earn.address(), addressOf(user));
   }
 
   /**

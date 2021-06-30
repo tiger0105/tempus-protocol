@@ -12,12 +12,15 @@ describe("Compound Mock", async () => {
     pool = await Comptroller.deploy(owner, user, 1000000, 10);
   });
 
-  describe("Deposit", async () =>
+  describe("EnterMarket", async () =>
   {
     it("Should have 1.0 rate at initial deposit", async () =>
     {
       expect(await pool.exchangeRate()).to.equal(1.0);
+      expect(await pool.isParticipant(user)).to.be.false;
+
       await pool.enterMarkets(user);
+      expect(await pool.isParticipant(user)).to.be.true;
       await pool.payableDeposit(user, 4);
       
       expect(await pool.assetBalance(user)).to.equal(6);
@@ -61,6 +64,17 @@ describe("Compound Mock", async () => {
       await pool.setExchangeRate(2.0);
       await pool.payableDeposit(user, 4);
       expect(await pool.yieldBalance(user)).to.equal(6);
+    });
+  });
+
+  describe("ExitMarket", async () =>
+  {
+    it("Should be non-participant after exitMarket was called", async () =>
+    {
+        await pool.enterMarkets(user);
+        expect(await pool.isParticipant(user)).to.be.true;
+        await pool.exitMarket(user);
+        expect(await pool.isParticipant(user)).to.be.false;
     });
   });
 });

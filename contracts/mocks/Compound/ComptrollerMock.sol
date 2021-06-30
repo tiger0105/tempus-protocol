@@ -80,4 +80,11 @@ contract ComptrollerMock is ComptrollerStorage, ComptrollerInterface {
         delete accountAssets[msg.sender][assetIndex];
         return 0;
     }
+
+    /// @dev MOCK ONLY.
+    /// @return True if user is participant in cToken market
+    function isParticipant(address cTokenAddress, address participant) public view returns (bool) {
+        Market storage market = markets[cTokenAddress];
+        return market.accountMembership[participant];
+    }
 }
