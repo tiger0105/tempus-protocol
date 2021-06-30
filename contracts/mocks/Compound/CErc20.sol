@@ -6,7 +6,6 @@ import "./CTokenMock.sol";
 
 /// Yield Bearing Token for AAVE - AToken
 contract CErc20 is CTokenMock {
-
     constructor(
         ComptrollerMock comptrollerInterface,
         address underlyingAsset,

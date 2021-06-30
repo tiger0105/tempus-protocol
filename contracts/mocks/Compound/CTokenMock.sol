@@ -29,7 +29,7 @@ contract CTokenMock is ERC20 {
         uint exchangeRate = exchangeRateCurrent();
         uint actualMintAmount = doTransferIn(minter, mintAmount);
 
-        uint mintTokens = (actualMintAmount*1e18) / exchangeRate;
+        uint mintTokens = (actualMintAmount * 1e18) / exchangeRate;
         _mint(minter, mintTokens);
     }
 
