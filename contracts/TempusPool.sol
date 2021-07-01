@@ -16,15 +16,15 @@ contract TempusPool is ITempusPool {
 
     uint public constant override version = 1;
 
-    IPriceOracle public priceOracle;
-    address public override yieldBearingToken;
+    IPriceOracle public immutable priceOracle;
+    address public immutable override yieldBearingToken;
 
-    uint256 public override startTime;
-    uint256 public override maturityTime;
+    uint256 public immutable override startTime;
+    uint256 public immutable override maturityTime;
 
-    uint256 public initialExchangeRate;
-    PrincipalShare public principalShare;
-    YieldShare public yieldShare;
+    uint256 public immutable initialExchangeRate;
+    PrincipalShare public immutable principalShare;
+    YieldShare public immutable yieldShare;
 
     /// Constructs Pool with underlying token, start and maturity date
     /// @param token underlying yield bearing token
@@ -35,11 +35,13 @@ contract TempusPool is ITempusPool {
         IPriceOracle oracle,
         uint256 maturity
     ) {
+        require(maturity > block.timestamp, "maturityTime is after startTime");
+
         yieldBearingToken = token;
         priceOracle = oracle;
         startTime = block.timestamp;
         maturityTime = maturity;
-        initialExchangeRate = currentExchangeRate();
+        initialExchangeRate = oracle.currentRate(token);
 
         // TODO add maturity
         string memory principalName = string(bytes.concat("TPS-", bytes(ERC20(token).symbol())));
@@ -62,7 +64,7 @@ contract TempusPool is ITempusPool {
         yieldShare.mint(msg.sender, tokensToIssue);
     }
 
-    function currentExchangeRate() public view returns (uint256) {
+    function currentExchangeRate() public view override returns (uint256) {
         return priceOracle.currentRate(yieldBearingToken);
     }
 }
