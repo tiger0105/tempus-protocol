@@ -8,6 +8,12 @@ describe("Tempus Pool", async () => {
   let owner:Signer, user:Signer;
   let aave:Aave;
   let pool:TempusPool;
+  let maturityTime:number;
+
+  // TODO: use block.timestamp
+  function timestamp() {
+    return Math.floor(Date.now() / 1000);
+  }
 
   beforeEach(async () => {
     [owner, user] = await ethers.getSigners();
@@ -17,9 +23,7 @@ describe("Tempus Pool", async () => {
     await aave.deposit(owner, 1000);
     await aave.earn.transfer(owner, user, 500);
 
-    // TODO: use block.timestamp
-    let startTime = Date.now();
-    let maturityTime = startTime + 60*60; // maturity is in 1hr
+    maturityTime = timestamp() + 60*60; // Maturity is in 1hr
     pool = await TempusPool.deploy(aave.earn, "AavePriceOracle", maturityTime);
   });
 
@@ -28,6 +32,11 @@ describe("Tempus Pool", async () => {
     it("Version is correct", async () =>
     {
       expect(await pool.version()).to.equal(1);
+    });
+    it("Start and maturity time", async () =>
+    {
+      expect(await pool.startTime()).to.lt(timestamp());
+      expect(await pool.maturityTime()).to.equal(maturityTime);
     });
     it("Initial exchange rate should be set", async () =>
     {
