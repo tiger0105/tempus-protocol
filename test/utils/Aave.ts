@@ -1,5 +1,5 @@
 import { Contract, BigNumber } from "ethers";
-import { NumberOrString, toWei } from "./Decimal";
+import { NumberOrString, toWei, toRay, fromRay } from "./Decimal";
 import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
 
@@ -51,24 +51,24 @@ export class Aave extends ContractBase {
    * @return Current liquidity index of AAVE pool in RAY, which is 
    *         almost equivalent to reserve normalized income.
    */
-  async liquidityIndex(): Promise<BigNumber> {
-    return await this.contract.getReserveNormalizedIncome(this.asset.address());
+  async liquidityIndex(): Promise<NumberOrString> {
+    return fromRay(await this.contract.getReserveNormalizedIncome(this.asset.address()));
   }
 
   /**
    * Sets the AAVE pool's MOCK liquidity index in RAY
    */
-  async setLiquidityIndex(rayLiquidityIndex:BigNumber) {
-    await this.contract.setLiquidityIndex(rayLiquidityIndex);
+  async setLiquidityIndex(liquidityIndex:NumberOrString) {
+    await this.contract.setLiquidityIndex(toRay(liquidityIndex));
   }
 
   /**
    * Approves and deposits funds from User into the AAVE Pool
    * @param user User who wants to deposit ETH into AAVE Pool
-   * @param ethAmount # of ETH to deposit, eg: 1.0
+   * @param amount # of ETH to deposit, eg: 1.0
    */
-  async deposit(user:SignerOrAddress, ethAmount:NumberOrString) {
-    await this.asset.approve(user, this.address(), ethAmount);
-    await this.contract.connect(user).deposit(this.asset.address(), toWei(ethAmount), addressOf(user), 0);
+  async deposit(user:SignerOrAddress, amount:NumberOrString) {
+    await this.asset.approve(user, this.address(), amount);
+    await this.contract.connect(user).deposit(this.asset.address(), this.toBigNum(amount), addressOf(user), 0);
   }
 }
