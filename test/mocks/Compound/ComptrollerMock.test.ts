@@ -9,7 +9,8 @@ describe("Compound Mock", async () => {
 
   beforeEach(async () => {
     [owner, user] = await ethers.getSigners();
-    pool = await Comptroller.deploy(owner, user, 1000000, 10);
+    pool = await Comptroller.deploy(owner, user, 1000000);
+    await pool.asset.transfer(owner, user, 10); // give user 10 coins
   });
 
   describe("EnterMarket", async () =>

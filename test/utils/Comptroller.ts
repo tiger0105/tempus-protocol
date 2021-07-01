@@ -17,17 +17,13 @@ export class Comptroller extends ContractBase {
    * @param owner Owner of the pool who has some liquidity
    * @param user Second user which requires an initial liquidity
    * @param totalSupply Total DAI supply
-   * @param userBalance How much to transfer to user
    * @return Deployed instance
    */
-  static async deploy(owner:SignerOrAddress, user:SignerOrAddress, totalSupply:Number, userBalance:Number): Promise<Comptroller> {
+  static async deploy(owner:SignerOrAddress, user:SignerOrAddress, totalSupply:Number): Promise<Comptroller> {
     // using WEI, because DAI has 18 decimal places
     const asset = await ERC20.deploy("ERC20FixedSupply", "DAI Stablecoin", "DAI", toWei(totalSupply));
     const pool = await ContractBase.deployContract("ComptrollerMock", asset.address());
     const yield_ = await ERC20.attach("CErc20", await pool.yieldToken());
-
-    // Pre-fund the user with backing tokens
-    await asset.transfer(owner, user, userBalance);
     return new Comptroller(pool, asset, yield_);
   }
 
