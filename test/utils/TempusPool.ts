@@ -8,15 +8,15 @@ import { ERC20 } from "./ERC20";
  */
 export class TempusPool extends ContractBase {
   yieldBearing:ERC20; // actual yield bearing token such as AToken or CToken
-  principal:ERC20; // principal share
-  yield:ERC20; // yield share
+  principalShare:ERC20;
+  yieldShare:ERC20;
   oracle:Contract; // price oracle
 
-  constructor(pool:Contract, yieldBearing:ERC20, principal:ERC20, _yield:ERC20, oracle:Contract) {
+  constructor(pool:Contract, yieldBearing:ERC20, principalShare:ERC20, yieldShare:ERC20, oracle:Contract) {
     super("TempusPool", 18, pool);
     this.yieldBearing = yieldBearing;
-    this.principal = principal;
-    this.yield = _yield;
+    this.principalShare = principalShare;
+    this.yieldShare = yieldShare;
     this.oracle = oracle;
     if (this.yieldBearing.decimals != this.decimals) {
       throw new Error("TempusPool decimals must equal backing asset decimals");

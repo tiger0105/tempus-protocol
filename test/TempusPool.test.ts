@@ -37,30 +37,30 @@ describe("Tempus Pool", async () => {
     it("Should allow depositing 100", async () =>
     {
       await pool.deposit(user, 100);
-      expect(await pool.principal.balanceOf(user)).to.equal(100);
-      expect(await pool.yield.balanceOf(user)).to.equal(100);
+      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
+      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
     });
 
     it("Should allow depositing 100 again", async () =>
     {
       await pool.deposit(user, 100);
-      expect(await pool.principal.balanceOf(user)).to.equal(100);
-      expect(await pool.yield.balanceOf(user)).to.equal(100);
+      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
+      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
       await pool.deposit(user, 100);
-      expect(await pool.principal.balanceOf(user)).to.equal(200);
-      expect(await pool.yield.balanceOf(user)).to.equal(200);
+      expect(await pool.principalShare.balanceOf(user)).to.equal(200);
+      expect(await pool.yieldShare.balanceOf(user)).to.equal(200);
     });
 
     it("Depositing after AAVE increase", async () =>
     {
       await pool.deposit(user, 100);
-      expect(await pool.principal.balanceOf(user)).to.equal(100);
-      expect(await pool.yield.balanceOf(user)).to.equal(100);
+      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
+      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
 
       await aave.setLiquidityIndex(2.0);
       await pool.deposit(user, 100);
-      expect(await pool.principal.balanceOf(user)).to.equal(150);
-      expect(await pool.yield.balanceOf(user)).to.equal(150);
+      expect(await pool.principalShare.balanceOf(user)).to.equal(150);
+      expect(await pool.yieldShare.balanceOf(user)).to.equal(150);
 
       expect(await pool.initialExchangeRate()).to.equal(1.0);
       expect(await pool.currentExchangeRate()).to.equal(2.0);
