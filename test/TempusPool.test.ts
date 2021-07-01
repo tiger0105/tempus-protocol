@@ -20,7 +20,7 @@ describe("Tempus Pool", async () => {
     // TODO: use block.timestamp
     let startTime = Date.now();
     let maturityTime = startTime + 60*60; // maturity is in 1hr
-    pool = await TempusPool.deploy(aave.earn, "AavePriceOracle", startTime, maturityTime);
+    pool = await TempusPool.deploy(aave.earn, "AavePriceOracle", maturityTime);
   });
 
   describe("Deploy", async () =>
