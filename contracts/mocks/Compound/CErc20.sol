@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.6;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./CTokenMock.sol";
 
-/// Yield Bearing Token for AAVE - AToken
+/// Yield Bearing Token for Compound - CErc20 / CToken
 contract CErc20 is CTokenMock {
     constructor(
         ComptrollerMock comptrollerInterface,

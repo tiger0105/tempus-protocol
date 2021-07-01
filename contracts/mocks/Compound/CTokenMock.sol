@@ -4,7 +4,7 @@ pragma solidity 0.8.6;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./ComptrollerMock.sol";
 
-/// Yield Bearing Token for AAVE - AToken
+/// Yield Bearing Token for Compound - CToken
 contract CTokenMock is ERC20 {
     ComptrollerMock public immutable comptroller;
     address public immutable underlying;
