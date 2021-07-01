@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract ERC20OwnerMintableToken is ERC20 {
     /// The manager who is allowed to mint and burn.
-    address public manager;
+    address public immutable manager;
 
     constructor(string memory name, string memory symbol) ERC20(name, symbol) {
         manager = msg.sender;
