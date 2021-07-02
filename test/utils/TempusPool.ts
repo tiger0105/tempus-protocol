@@ -1,4 +1,4 @@
-import { Contract } from "ethers";
+import { BigNumber, Contract } from "ethers";
 import { NumberOrString, fromRay } from "./Decimal";
 import { ContractBase, SignerOrAddress } from "./ContractBase";
 import { ERC20 } from "./ERC20";
@@ -63,27 +63,29 @@ export class TempusPool extends ContractBase {
    * @returns The start time of the pool
    */
   async startTime(): Promise<NumberOrString> {
-    return await this.contract.startTime();
+    let start:BigNumber = await this.contract.startTime();
+    return start.toNumber();
   }
 
   /**
    * @returns The maturity time of the pool
    */
   async maturityTime(): Promise<NumberOrString> {
-    return await this.contract.maturityTime();
+    let maturity:BigNumber = await this.contract.maturityTime();
+    return maturity.toNumber();
   }
 
   /**
    * @returns Initial exchange rate when the pool started
    */
   async initialExchangeRate(): Promise<NumberOrString> {
-    return fromRay(await this.contract.initialExchangeRate());
+    return this.fromBigNum(await this.contract.initialExchangeRate());
   }
   
   /**
    * @returns Current exchange rate of the pool
    */
   async currentExchangeRate(): Promise<NumberOrString> {
-    return fromRay(await this.contract.currentExchangeRate());
+    return this.fromBigNum(await this.contract.currentExchangeRate());
   }
 }
