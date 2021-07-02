@@ -2,6 +2,7 @@ import { Contract } from "ethers";
 import { NumberOrString, fromRay } from "./Decimal";
 import { ContractBase, SignerOrAddress } from "./ContractBase";
 import { ERC20 } from "./ERC20";
+import { IPriceOracle } from "./IPriceOracle";
 
 /**
  * Wrapper around TempusPool
@@ -10,14 +11,14 @@ export class TempusPool extends ContractBase {
   yieldBearing:ERC20; // actual yield bearing token such as AToken or CToken
   principalShare:ERC20;
   yieldShare:ERC20;
-  oracle:Contract; // price oracle
+  priceOracle:IPriceOracle;
 
-  constructor(pool:Contract, yieldBearing:ERC20, principalShare:ERC20, yieldShare:ERC20, oracle:Contract) {
+  constructor(pool:Contract, yieldBearing:ERC20, principalShare:ERC20, yieldShare:ERC20, priceOracle:IPriceOracle) {
     super("TempusPool", 18, pool);
     this.yieldBearing = yieldBearing;
     this.principalShare = principalShare;
     this.yieldShare = yieldShare;
-    this.oracle = oracle;
+    this.priceOracle = priceOracle;
     if (this.yieldBearing.decimals != this.decimals) {
       throw new Error("TempusPool decimals must equal backing asset decimals");
     }
@@ -30,12 +31,11 @@ export class TempusPool extends ContractBase {
    * @param startTime Starting time of the pool
    * @param maturityTime Maturity time of the pool
    */
-  static async deploy(yieldToken:ERC20, priceOracle:string, maturityTime:number): Promise<TempusPool> {
-    const oracle = await ContractBase.deployContract(priceOracle);
-    const pool = await ContractBase.deployContract("TempusPool", yieldToken.address(), oracle.address, maturityTime);
+  static async deploy(yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number): Promise<TempusPool> {
+    const pool = await ContractBase.deployContract("TempusPool", yieldToken.address(), priceOracle.address(), maturityTime);
     const principalShare = await ERC20.attach("PrincipalShare", await pool.principalShare());
     const yieldShare = await ERC20.attach("YieldShare", await pool.yieldShare());
-    return new TempusPool(pool, yieldToken, principalShare, yieldShare, oracle);
+    return new TempusPool(pool, yieldToken, principalShare, yieldShare, priceOracle);
   }
 
   /**

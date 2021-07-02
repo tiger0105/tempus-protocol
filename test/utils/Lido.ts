@@ -1,15 +1,37 @@
 import { ethers } from "hardhat";
+import { Contract } from "ethers";
 import { NumberOrString, toWei } from "./Decimal";
-import { SignerOrAddress, addressOf } from "./ContractBase";
+import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
+import { IPriceOracle } from "./IPriceOracle";
 
 /**
  * Type safe wrapper over LidoMock
  */
 export class Lido extends ERC20 {
-  constructor() {
+  asset:ERC20; // ETH
+  yieldToken:ERC20; // StETH
+  priceOracle:IPriceOracle;
+
+  constructor(pool:Contract, asset:ERC20, priceOracle:IPriceOracle) {
     super("LidoMock");
+    this.contract = pool;
+    this.asset = asset;
+    this.yieldToken = this; // for Lido, the pool itself is the Yield Token
+    this.priceOracle = priceOracle;
   }
+  
+  /**
+   * @param totalSupply Total ETH supply
+   */
+  static async create(totalSupply:Number): Promise<Lido> {
+    // using WEI, because DAI has 18 decimal places
+    const asset = await ERC20.deploy("ERC20FixedSupply", "ETH Mock", "ETH", toWei(totalSupply));
+    const pool = await ContractBase.deployContract("LidoMock");
+    const priceOracle = await IPriceOracle.deploy("StETHPriceOracle");
+    return new Lido(pool, asset, priceOracle);
+  }
+
   async sharesOf(signer:SignerOrAddress): Promise<NumberOrString> {
     return this.fromBigNum(await this.contract.sharesOf(addressOf(signer)));
   }
