@@ -23,8 +23,11 @@ contract TempusPool is ITempusPool {
     uint256 public immutable override maturityTime;
 
     uint256 public immutable initialExchangeRate;
+    uint256 public maturityExchangeRate;
     PrincipalShare public immutable principalShare;
     YieldShare public immutable yieldShare;
+
+    bool public override matured;
 
     /// Constructs Pool with underlying token, start and maturity date
     /// @param token underlying yield bearing token
@@ -54,12 +57,23 @@ contract TempusPool is ITempusPool {
         yieldShare = new YieldShare(this, yieldName, yieldName);
     }
 
+    /// Finalize the pool after maturity.
+    function finalize() public override {
+        if (!matured) {
+            require(block.timestamp >= maturityTime, "Maturity not been reached yet.");
+            maturityExchangeRate = currentExchangeRate();
+            matured = true;
+        }
+    }
+
     /// @dev Deposits yield bearing tokens (such as cDAI) into TempusPool
     ///      msg.sender must approve `yieldTokenAmount` to this TempusPool
     /// @param yieldTokenAmount Amount of yield bearing tokens to deposit
     /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
     /// @return Amount of TPS and TYS minted to `recipient`
     function deposit(uint256 yieldTokenAmount, address recipient) public override returns (uint256) {
+        require(!matured, "Maturity reached.");
+
         // Collect the deposit
         IERC20(yieldBearingToken).safeTransferFrom(msg.sender, address(this), yieldTokenAmount);
 
@@ -68,6 +82,14 @@ contract TempusPool is ITempusPool {
         principalShare.mint(recipient, tokensToIssue);
         yieldShare.mint(recipient, tokensToIssue);
         return tokensToIssue;
+    }
+
+    function redeem(uint256 principalAmount, uint256 yieldAmount) public override {
+        // Redeeming prior to maturity is only allowed in equal amounts.
+        require(matured || (principalAmount == yieldAmount), "Inequal redemption not allowed before maturity.");
+
+        // TODO: implement
+        revert("Unimplemented.");
     }
 
     function currentExchangeRate() public view override returns (uint256) {
