@@ -60,6 +60,20 @@ export class TempusPool extends ContractBase {
   }
 
   /**
+   * @returns The start time of the pool
+   */
+  async startTime(): Promise<NumberOrString> {
+    return await this.contract.startTime();
+  }
+
+  /**
+   * @returns The maturity time of the pool
+   */
+  async maturityTime(): Promise<NumberOrString> {
+    return await this.contract.maturityTime();
+  }
+
+  /**
    * @returns Initial exchange rate when the pool started
    */
   async initialExchangeRate(): Promise<NumberOrString> {
