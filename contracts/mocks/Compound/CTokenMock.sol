@@ -3,9 +3,10 @@ pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./ComptrollerMock.sol";
+import "./CTokenInterface.sol";
 
 /// Yield Bearing Token for Compound - CToken
-contract CTokenMock is ERC20 {
+contract CTokenMock is ERC20, CTokenInterface {
     ComptrollerMock public immutable comptroller;
     address public immutable underlying;
 
@@ -19,7 +20,7 @@ contract CTokenMock is ERC20 {
         underlying = underlyingAsset;
     }
 
-    function exchangeRateCurrent() public view returns (uint) {
+    function exchangeRateCurrent() public view override returns (uint) {
         return comptroller.exchangeRate();
     }
 
