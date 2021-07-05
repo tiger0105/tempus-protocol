@@ -20,7 +20,7 @@ contract CTokenMock is ERC20, CTokenInterface {
         underlying = underlyingAsset;
     }
 
-    function exchangeRateCurrent() public override view returns (uint) {
+    function exchangeRateCurrent() public view override returns (uint) {
         return comptroller.exchangeRate();
     }
 
