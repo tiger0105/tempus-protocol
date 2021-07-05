@@ -77,13 +77,13 @@ export class TempusPool extends ContractBase {
    * @returns Initial exchange rate when the pool started
    */
   async initialExchangeRate(): Promise<NumberOrString> {
-    return fromRay(await this.contract.initialExchangeRate());
+    return this.fromBigNum(await this.contract.initialExchangeRate());
   }
   
   /**
    * @returns Current exchange rate of the pool
    */
   async currentExchangeRate(): Promise<NumberOrString> {
-    return fromRay(await this.contract.currentExchangeRate());
+    return this.fromBigNum(await this.contract.currentExchangeRate());
   }
 }
