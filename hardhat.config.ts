@@ -37,4 +37,9 @@ module.exports = {
     hardhat: {
     }
   },
+  namedAccounts: {
+    deployer: {
+      default: 0
+    }
+  },
 };
