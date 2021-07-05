@@ -9,8 +9,9 @@
     "chai": "^4.3.4",
     "coveralls": "^3.1.0",
     "ethereum-waffle": "^3.3.0",
-    "ethers": "^5.1.4",
+    "ethers": "^5.4.1",
     "hardhat": "^2.2.1",
+    "hardhat-deploy": "^0.8.9",
     "hardhat-gas-reporter": "^1.0.4",
     "prettier": "^2.2.1",
     "prettier-plugin-solidity": "^1.0.0-beta.10",
@@ -25,7 +26,8 @@
     "coverage": "npx hardhat coverage",
     "solhint": "solhint \"contracts/**/*.sol\"",
     "lint": "prettier --write \"contracts/**/*.sol\"",
-    "lint-check": "prettier --check \"contracts/**/*.sol\""
+    "lint-check": "prettier --check \"contracts/**/*.sol\"",
+    "start-local": "npx hardhat node"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.1.0"
