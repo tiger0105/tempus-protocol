@@ -10,7 +10,8 @@ describe("Lido Mock", async () => {
 
   beforeEach(async () => {
     [owner, user] = await ethers.getSigners();
-    lido = await Lido.deployClass(Lido);
+    lido = await Lido.create(1000000);
+    await lido.asset.transfer(owner, user, 10); // give user 10 asset coins
   });
 
   describe("Submit", async () =>

@@ -1,35 +1,31 @@
-import { Contract, BigNumber } from "ethers";
+import { Contract } from "ethers";
 import { NumberOrString, toWei, toRay, fromRay } from "./Decimal";
 import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
+import { IPriceOracle } from "./IPriceOracle";
 
 export class Aave extends ContractBase {
-  asset: ERC20;
-  earn: ERC20; // yield token
+  asset:ERC20;
+  yieldToken:ERC20;
+  priceOracle:IPriceOracle;
   
-  constructor(pool: Contract, asset: ERC20, earn: ERC20) {
+  constructor(pool:Contract, asset:ERC20, yieldToken:ERC20, priceOracle:IPriceOracle) {
     super("AavePoolMock", 18, pool);
     this.asset = asset;
-    this.earn = earn;
+    this.yieldToken = yieldToken;
+    this.priceOracle = priceOracle;
   }
 
   /**
-   * Sets up an AAVE Instance for Unit Testing, initializes liquidity for User
-   * @param owner Owner of the pool who has some liquidity
-   * @param user Second user which requires an initial liquidity
    * @param totalSupply Total DAI supply
-   * @param userBalance How much to transfer to user
-   * @return Deployed Aave instance
    */
-  static async deploy(owner:SignerOrAddress, user:SignerOrAddress, totalSupply:Number, userBalance:Number): Promise<Aave> {
+  static async create(totalSupply:Number): Promise<Aave> {
     // using WEI, because DAI has 18 decimal places
-    const backingAsset = await ERC20.deploy("ERC20FixedSupply", "DAI Stablecoin", "DAI", toWei(totalSupply));
-    const aavePool = await ContractBase.deployContract("AavePoolMock", backingAsset.address());
-    const yieldToken = await ERC20.attach("ATokenMock", await aavePool.yieldToken());
-
-    // Pre-fund the user with backing tokens
-    await backingAsset.transfer(owner, user, userBalance);
-    return new Aave(aavePool, backingAsset, yieldToken);
+    const asset = await ERC20.deploy("ERC20FixedSupply", "DAI Stablecoin", "DAI", toWei(totalSupply));
+    const pool = await ContractBase.deployContract("AavePoolMock", asset.address());
+    const yieldToken = await ERC20.attach("ATokenMock", await pool.yieldToken());
+    const priceOracle = await IPriceOracle.deploy("AavePriceOracle");
+    return new Aave(pool, asset, yieldToken, priceOracle);
   }
 
   /**
