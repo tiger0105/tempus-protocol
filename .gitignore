@@ -1,5 +1,6 @@
 node_modules/*
 artifacts/*
+abi-artifacts/*
 cache/*
 coverage/*
 coverage.json
