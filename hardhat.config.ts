@@ -24,7 +24,7 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
 module.exports = {
   abiExporter: {
     path: './abi-artifacts',
-    clear: true,
+    clear: false,
     flat: true,
     only: ['TempusToken'],
     spacing: 2
@@ -47,6 +47,9 @@ module.exports = {
       accounts: [{
         balance: "10000000000000000000000",
         privateKey: "0x6c6c264916401a7c067c014c61e8c89dba5525e904a6631fd84ccc6e0829f0b3"
+      }, {
+        balance: "10000000000000000000000",
+        privateKey: "0xddb0d7ed4eae780e20fef9bf8d4591b3766526cee8b7307ebb8ea597cd16d066"
       }]
     }
   },
