@@ -37,7 +37,7 @@ describe("Tempus Pool", async () => {
     await aave.yieldToken.transfer(owner, user, 500);
 
     maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
-    pool = await TempusPool.deploy(aave.yieldToken, aave.priceOracle, maturityTime);
+    pool = await TempusPool.deploy(aave.assetPool, maturityTime);
   }
 
   async function createCompoundPool() {
@@ -50,7 +50,7 @@ describe("Tempus Pool", async () => {
     await compound.yieldToken.transfer(owner, user, 500);
 
     maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
-    pool = await TempusPool.deploy(compound.yieldToken, compound.priceOracle, maturityTime);
+    pool = await TempusPool.deploy(compound.assetPool, maturityTime);
   }
 
   async function createLidoPool() {
@@ -62,7 +62,7 @@ describe("Tempus Pool", async () => {
     await lido.yieldToken.transfer(owner, user, 500);
 
     maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
-    pool = await TempusPool.deploy(lido.yieldToken, lido.priceOracle, maturityTime);
+    pool = await TempusPool.deploy(lido.assetPool, maturityTime);
   }
 
   describe("Deploy", async () =>

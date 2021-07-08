@@ -1,24 +1,24 @@
 import { BigNumber, Contract } from "ethers";
-import { NumberOrString, fromRay } from "./Decimal";
-import { ContractBase, SignerOrAddress } from "./ContractBase";
+import { NumberOrString } from "./Decimal";
+import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
-import { IPriceOracle } from "./IPriceOracle";
+import { IAssetPool } from "./IAssetPool";
 
 /**
  * Wrapper around TempusPool
  */
 export class TempusPool extends ContractBase {
+  assetPool:IAssetPool;
   yieldBearing:ERC20; // actual yield bearing token such as AToken or CToken
   principalShare:ERC20;
   yieldShare:ERC20;
-  priceOracle:IPriceOracle;
 
-  constructor(pool:Contract, yieldBearing:ERC20, principalShare:ERC20, yieldShare:ERC20, priceOracle:IPriceOracle) {
+  constructor(pool:Contract, assetPool:IAssetPool, principalShare:ERC20, yieldShare:ERC20) {
     super("TempusPool", 18, pool);
-    this.yieldBearing = yieldBearing;
+    this.assetPool = assetPool;
+    this.yieldBearing = assetPool.yieldBearing;
     this.principalShare = principalShare;
     this.yieldShare = yieldShare;
-    this.priceOracle = priceOracle;
     if (this.yieldBearing.decimals != this.decimals) {
       throw new Error("TempusPool decimals must equal backing asset decimals");
     }
@@ -26,16 +26,15 @@ export class TempusPool extends ContractBase {
 
   /**
    * Deploys TempusPool
-   * @param yieldToken The yield bearing token, such as aave.earn (AToken)
-   * @param priceOracle Price oracle name which returns the current exchange rate from yieldTokens, such as AavePriceOracle
+   * @param assetPool Asset pool which manages the Yield Bearing Token
    * @param startTime Starting time of the pool
    * @param maturityTime Maturity time of the pool
    */
-  static async deploy(yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number): Promise<TempusPool> {
-    const pool = await ContractBase.deployContract("TempusPool", yieldToken.address(), priceOracle.address(), maturityTime);
+  static async deploy(assetPool:IAssetPool, maturityTime:number): Promise<TempusPool> {
+    const pool = await ContractBase.deployContract("TempusPool", assetPool.address(), maturityTime);
     const principalShare = await ERC20.attach("PrincipalShare", await pool.principalShare());
     const yieldShare = await ERC20.attach("YieldShare", await pool.yieldShare());
-    return new TempusPool(pool, yieldToken, principalShare, yieldShare, priceOracle);
+    return new TempusPool(pool, assetPool, principalShare, yieldShare);
   }
 
   /**
@@ -46,7 +45,7 @@ export class TempusPool extends ContractBase {
   async deposit(user:SignerOrAddress, assetAmount:NumberOrString) {
     try {
       await this.yieldBearing.approve(user, this.contract.address, assetAmount);
-      await this.contract.connect(user).deposit(this.toBigNum(assetAmount));
+      await this.contract.connect(user).deposit(addressOf(user), this.toBigNum(assetAmount));
     } catch(e) {
       throw new Error("TempusPool.deposit failed: " + e.message);
     }
