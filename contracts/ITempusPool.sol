@@ -15,16 +15,23 @@ interface ITempusPool {
     // TODO: expose principalShare and yieldShare
 
     /// @return Start time of the pool.
-    function startTime() external returns (uint256);
+    function startTime() external returns (uint);
 
     /// @return Maturity time of the pool.
-    function maturityTime() external returns (uint256);
+    function maturityTime() external returns (uint);
 
-    /// Deposit funds to the pool.
-    /// @param tokenAmount Amount of collateral user wants to deposit to mint principal and interest token.
-    function deposit(uint256 tokenAmount) external;
+    /// @dev Deposits yield bearing tokens (such as cDAI) into tempus pool
+    /// @param onBehalfOf Address whichs holds the depositable Yield Bearing Tokens and
+    ///                   will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
+    ///                   This account must approve() tokenAmount to this Tempus Pool
+    /// @param tokenAmount Number of yield bearing tokens to deposit
+    function deposit(address onBehalfOf, uint tokenAmount) external;
+
+    /// @dev Deposits asset tokens (such as DAI or ETH) into tempus pool on behalf of sender
+    /// @param tokenAmount Number of asset tokens to deposit
+    function depositAsset(uint tokenAmount) external;
 
     /// The current exchange rate of yield bearing token versus its backing.
     /// @return The rate.
-    function currentExchangeRate() external view returns (uint256);
+    function currentExchangeRate() external view returns (uint);
 }

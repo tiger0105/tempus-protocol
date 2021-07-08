@@ -4,7 +4,7 @@ pragma solidity 0.8.6;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./IPriceOracle.sol";
+import "./IAssetPool.sol";
 import "./ITempusPool.sol";
 import "./token/PrincipalShare.sol";
 import "./token/YieldShare.sol";
@@ -16,32 +16,28 @@ contract TempusPool is ITempusPool {
 
     uint public constant override version = 1;
 
-    IPriceOracle public immutable priceOracle;
+    IAssetPool public immutable assetPool;
     address public immutable override yieldBearingToken;
 
-    uint256 public immutable override startTime;
-    uint256 public immutable override maturityTime;
+    uint public immutable override startTime;
+    uint public immutable override maturityTime;
 
-    uint256 public immutable initialExchangeRate;
+    uint public immutable initialExchangeRate;
     PrincipalShare public immutable principalShare;
     YieldShare public immutable yieldShare;
 
     /// Constructs Pool with underlying token, start and maturity date
-    /// @param token underlying yield bearing token
-    /// @param oracle the price oracle correspoding to the token
+    /// @param pool Asset pool which manages the Yield Bearing Token
     /// @param maturity maturity time of this pool
-    constructor(
-        address token,
-        IPriceOracle oracle,
-        uint256 maturity
-    ) {
+    constructor(IAssetPool pool, uint maturity) {
         require(maturity > block.timestamp, "maturityTime is after startTime");
 
+        address token = pool.yieldToken();
         yieldBearingToken = token;
-        priceOracle = oracle;
+        assetPool = pool;
         startTime = block.timestamp;
         maturityTime = maturity;
-        initialExchangeRate = oracle.currentRate(token);
+        initialExchangeRate = pool.currentRate();
 
         // TODO add maturity
         string memory principalName = string(bytes.concat("TPS-", bytes(ERC20(token).symbol())));
@@ -54,17 +50,39 @@ contract TempusPool is ITempusPool {
         yieldShare = new YieldShare(this, yieldName, yieldName);
     }
 
-    function deposit(uint256 tokenAmount) public override {
-        // Collect the deposit
-        IERC20(yieldBearingToken).safeTransferFrom(msg.sender, address(this), tokenAmount);
-
-        // Issue appropriate shares
-        uint256 tokensToIssue = (tokenAmount * initialExchangeRate) / currentExchangeRate();
-        principalShare.mint(msg.sender, tokensToIssue);
-        yieldShare.mint(msg.sender, tokensToIssue);
+    /// @dev Deposits yield bearing tokens (such as cDAI) into tempus pool
+    /// @param onBehalfOf Address whichs holds the depositable Yield Bearing Tokens and
+    ///                   will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
+    ///                   This account must approve() tokenAmount to this Tempus Pool
+    /// @param tokenAmount Number of yield bearing tokens to deposit
+    function deposit(address onBehalfOf, uint tokenAmount) public override {
+        tempusDeposit(onBehalfOf, onBehalfOf, tokenAmount);
     }
 
-    function currentExchangeRate() public view override returns (uint256) {
-        return priceOracle.currentRate(yieldBearingToken);
+    /// @dev Deposits asset tokens (such as DAI or ETH) into tempus pool on behalf of sender
+    /// @param tokenAmount Number of asset tokens to deposit
+    function depositAsset(uint tokenAmount) public override {
+        // deposit asset and receive YBT such a cDAI or aDAI into Tempus pool
+        assetPool.depositAsset(address(this), tokenAmount);
+
+        // mint TPS and TYS to sender
+        tempusDeposit(address(this), msg.sender, tokenAmount);
+    }
+
+    /// deposit YBT into tempus pool, mint TPS and TYS to recipient
+    function tempusDeposit(address from, address recipient, uint tokenAmount) internal {
+        // Collect the deposit
+        IERC20(yieldBearingToken).safeTransferFrom(from, address(this), tokenAmount);
+
+        // Issue appropriate shares
+        uint tokensToIssue = (tokenAmount * initialExchangeRate) / currentExchangeRate();
+        principalShare.mint(recipient, tokensToIssue);
+        yieldShare.mint(recipient, tokensToIssue);
+    }
+
+    /// The current exchange rate of yield bearing token versus its backing.
+    /// @return The rate.
+    function currentExchangeRate() public view override returns (uint) {
+        return assetPool.currentRate();
     }
 }
