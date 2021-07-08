@@ -1,11 +1,13 @@
-import { task } from "hardhat/config";
-import "hardhat-gas-reporter";
-import "@nomiclabs/hardhat-waffle";
+import { task } from 'hardhat/config';
 
-require('solidity-coverage');
-require('hardhat-deploy');
-require("@nomiclabs/hardhat-ethers");
-require('hardhat-abi-exporter');
+import 'solidity-coverage';
+import 'hardhat-gas-reporter';
+import 'hardhat-deploy';
+import 'hardhat-abi-exporter';
+import "@typechain/hardhat";
+import "@nomiclabs/hardhat-waffle";
+import "@nomiclabs/hardhat-ethers";
+
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -24,7 +26,7 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
 module.exports = {
   abiExporter: {
     path: './abi-artifacts',
-    clear: false,
+    clear: true,
     flat: true,
     only: ['TempusToken'],
     spacing: 2
