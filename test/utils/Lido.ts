@@ -27,10 +27,10 @@ export class Lido extends ERC20 {
   static async create(totalSupply:Number): Promise<Lido> {
     // using WEI, because ETH has 18 decimal places
     const asset = await ERC20.deploy("ERC20FixedSupply", "ETH Mock", "ETH", toWei(totalSupply));
-    const lido = await ContractBase.deployContract("LidoMock");
-    const yieldToken = await ERC20.attach("LidoMock", lido.address);
-    const assetPool = await IAssetPool.deploy("StETHAssetPool", yieldToken);
-    return new Lido(lido, asset, assetPool);
+    const pool = await ContractBase.deployContract("LidoMock");
+    const yieldToken = await ERC20.attach("LidoMock", pool.address);
+    const assetPool = await IAssetPool.deploy("StETHAssetPool", asset, yieldToken, pool);
+    return new Lido(pool, asset, assetPool);
   }
 
   async sharesOf(signer:SignerOrAddress): Promise<NumberOrString> {

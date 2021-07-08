@@ -24,7 +24,7 @@ export class Aave extends ContractBase {
     const asset = await ERC20.deploy("ERC20FixedSupply", "DAI Stablecoin", "DAI", toWei(totalSupply));
     const pool = await ContractBase.deployContract("AavePoolMock", asset.address());
     const yieldToken = await ERC20.attach("ATokenMock", await pool.yieldToken());
-    const assetPool = await IAssetPool.deploy("AaveAssetPool", yieldToken);
+    const assetPool = await IAssetPool.deploy("AaveAssetPool", asset, yieldToken, pool);
     return new Aave(pool, asset, yieldToken, assetPool);
   }
 
@@ -64,7 +64,7 @@ export class Aave extends ContractBase {
    * @param amount # of ETH to deposit, eg: 1.0
    */
   async deposit(user:SignerOrAddress, amount:NumberOrString) {
-    await this.asset.approve(user, this.address(), amount);
+    await this.asset.approve(user, this.contract.address, amount);
     await this.contract.connect(user).deposit(this.asset.address(), this.toBigNum(amount), addressOf(user), 0);
   }
 }

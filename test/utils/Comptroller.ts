@@ -24,7 +24,7 @@ export class Comptroller extends ContractBase {
     const asset = await ERC20.deploy("ERC20FixedSupply", "DAI Stablecoin", "DAI", toWei(totalSupply));
     const pool = await ContractBase.deployContract("ComptrollerMock", asset.address());
     const yieldToken = await ERC20.attach("CErc20", await pool.yieldToken());
-    const assetPool = await IAssetPool.deploy("CompoundAssetPool", yieldToken);
+    const assetPool = await IAssetPool.deploy("CompoundAssetPool", asset, yieldToken, pool);
     return new Comptroller(pool, asset, yieldToken, assetPool);
   }
 
