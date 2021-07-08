@@ -54,32 +54,27 @@ contract TempusPool is ITempusPool {
     /// @param onBehalfOf Address whichs holds the depositable Yield Bearing Tokens and
     ///                   will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
     ///                   This account must approve() tokenAmount to this Tempus Pool
-    /// @param tokenAmount Number of yield bearing tokens to deposit
-    function deposit(address onBehalfOf, uint tokenAmount) public override {
-        tempusDeposit(onBehalfOf, onBehalfOf, tokenAmount);
+    /// @param yieldTokenAmount Number of yield bearing tokens to deposit
+    function deposit(address onBehalfOf, uint yieldTokenAmount) public override {
+        // Collect the deposit from sender
+        IERC20(yieldBearingToken).safeTransferFrom(onBehalfOf, address(this), yieldTokenAmount);
+        // mint TPS and TYS back to sender
+        mintShares(onBehalfOf, yieldTokenAmount);
     }
 
     /// @dev Deposits asset tokens (such as DAI or ETH) into tempus pool on behalf of sender
-    /// @param tokenAmount Number of asset tokens to deposit
-    function depositAsset(uint tokenAmount) public override {
+    /// @param assetTokenAmount Number of asset tokens to deposit
+    function depositAsset(uint assetTokenAmount) public override {
         // deposit asset and receive YBT such a cDAI or aDAI into Tempus pool
-        assetPool.depositAsset(address(this), tokenAmount);
-
-        // mint TPS and TYS to sender
-        tempusDeposit(address(this), msg.sender, tokenAmount);
+        uint yieldTokenAmount = assetPool.depositAsset(address(this), assetTokenAmount);
+        // mint TPS and TYS back to sender
+        mintShares(msg.sender, yieldTokenAmount);
     }
 
-    /// deposit YBT into tempus pool, mint TPS and TYS to recipient
-    function tempusDeposit(
-        address from,
-        address recipient,
-        uint tokenAmount
-    ) internal {
-        // Collect the deposit
-        IERC20(yieldBearingToken).safeTransferFrom(from, address(this), tokenAmount);
-
+    /// mint TPS and TYS to recipient
+    function mintShares(address recipient, uint yieldTokenAmount) internal {
         // Issue appropriate shares
-        uint tokensToIssue = (tokenAmount * initialExchangeRate) / currentExchangeRate();
+        uint tokensToIssue = (yieldTokenAmount * initialExchangeRate) / currentExchangeRate();
         principalShare.mint(recipient, tokensToIssue);
         yieldShare.mint(recipient, tokensToIssue);
     }

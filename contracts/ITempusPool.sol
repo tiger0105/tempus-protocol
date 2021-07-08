@@ -24,12 +24,12 @@ interface ITempusPool {
     /// @param onBehalfOf Address whichs holds the depositable Yield Bearing Tokens and
     ///                   will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
     ///                   This account must approve() tokenAmount to this Tempus Pool
-    /// @param tokenAmount Number of yield bearing tokens to deposit
-    function deposit(address onBehalfOf, uint tokenAmount) external;
+    /// @param yieldTokenAmount Number of yield bearing tokens to deposit
+    function deposit(address onBehalfOf, uint yieldTokenAmount) external;
 
     /// @dev Deposits asset tokens (such as DAI or ETH) into tempus pool on behalf of sender
-    /// @param tokenAmount Number of asset tokens to deposit
-    function depositAsset(uint tokenAmount) external;
+    /// @param assetTokenAmount Number of asset tokens to deposit
+    function depositAsset(uint assetTokenAmount) external;
 
     /// The current exchange rate of yield bearing token versus its backing.
     /// @return The rate.
