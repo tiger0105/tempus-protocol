@@ -70,7 +70,11 @@ contract TempusPool is ITempusPool {
     }
 
     /// deposit YBT into tempus pool, mint TPS and TYS to recipient
-    function tempusDeposit(address from, address recipient, uint tokenAmount) internal {
+    function tempusDeposit(
+        address from,
+        address recipient,
+        uint tokenAmount
+    ) internal {
         // Collect the deposit
         IERC20(yieldBearingToken).safeTransferFrom(from, address(this), tokenAmount);
 
