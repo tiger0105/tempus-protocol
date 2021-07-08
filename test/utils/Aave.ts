@@ -2,18 +2,18 @@ import { Contract } from "ethers";
 import { NumberOrString, toWei, toRay, fromRay } from "./Decimal";
 import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
-import { IPriceOracle } from "./IPriceOracle";
+import { IAssetPool } from "./IAssetPool";
 
 export class Aave extends ContractBase {
   asset:ERC20;
   yieldToken:ERC20;
-  priceOracle:IPriceOracle;
+  assetPool:IAssetPool;
   
-  constructor(pool:Contract, asset:ERC20, yieldToken:ERC20, priceOracle:IPriceOracle) {
+  constructor(pool:Contract, asset:ERC20, yieldToken:ERC20, assetPool:IAssetPool) {
     super("AavePoolMock", 18, pool);
     this.asset = asset;
     this.yieldToken = yieldToken;
-    this.priceOracle = priceOracle;
+    this.assetPool = assetPool;
   }
 
   /**
@@ -24,8 +24,8 @@ export class Aave extends ContractBase {
     const asset = await ERC20.deploy("ERC20FixedSupply", "DAI Stablecoin", "DAI", toWei(totalSupply));
     const pool = await ContractBase.deployContract("AavePoolMock", asset.address());
     const yieldToken = await ERC20.attach("ATokenMock", await pool.yieldToken());
-    const priceOracle = await IPriceOracle.deploy("AavePriceOracle");
-    return new Aave(pool, asset, yieldToken, priceOracle);
+    const assetPool = await IAssetPool.deploy("AaveAssetPool", yieldToken);
+    return new Aave(pool, asset, yieldToken, assetPool);
   }
 
   /**

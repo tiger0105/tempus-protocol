@@ -3,7 +3,7 @@ import { Contract } from "ethers";
 import { NumberOrString, toWei } from "./Decimal";
 import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
-import { IPriceOracle } from "./IPriceOracle";
+import { IAssetPool } from "./IAssetPool";
 
 /**
  * Type safe wrapper over LidoMock
@@ -11,14 +11,14 @@ import { IPriceOracle } from "./IPriceOracle";
 export class Lido extends ERC20 {
   asset:ERC20; // ETH
   yieldToken:ERC20; // StETH
-  priceOracle:IPriceOracle;
+  assetPool:IAssetPool;
 
-  constructor(pool:Contract, asset:ERC20, priceOracle:IPriceOracle) {
+  constructor(pool:Contract, asset:ERC20, assetPool:IAssetPool) {
     super("LidoMock");
     this.contract = pool;
     this.asset = asset;
     this.yieldToken = this; // for Lido, the pool itself is the Yield Token
-    this.priceOracle = priceOracle;
+    this.assetPool = assetPool;
   }
   
   /**
@@ -27,9 +27,10 @@ export class Lido extends ERC20 {
   static async create(totalSupply:Number): Promise<Lido> {
     // using WEI, because ETH has 18 decimal places
     const asset = await ERC20.deploy("ERC20FixedSupply", "ETH Mock", "ETH", toWei(totalSupply));
-    const pool = await ContractBase.deployContract("LidoMock");
-    const priceOracle = await IPriceOracle.deploy("StETHPriceOracle");
-    return new Lido(pool, asset, priceOracle);
+    const lido = await ContractBase.deployContract("LidoMock");
+    const yieldToken = await ERC20.attach("LidoMock", lido.address);
+    const assetPool = await IAssetPool.deploy("StETHAssetPool", yieldToken);
+    return new Lido(lido, asset, assetPool);
   }
 
   async sharesOf(signer:SignerOrAddress): Promise<NumberOrString> {

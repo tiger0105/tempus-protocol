@@ -2,18 +2,18 @@ import { Contract, BigNumber } from "ethers";
 import { NumberOrString, toWei, formatDecimal } from "./Decimal";
 import { addressOf, ContractBase, SignerOrAddress } from "./ContractBase";
 import { ERC20 } from "./ERC20";
-import { IPriceOracle } from "./IPriceOracle";
+import { IAssetPool } from "./IAssetPool";
 
 export class Comptroller extends ContractBase {
   asset:ERC20; // backing asset - DAI
   yieldToken:ERC20; // yield token - cDAI
-  priceOracle:IPriceOracle;
+  assetPool:IAssetPool;
   
-  constructor(pool:Contract, asset: ERC20, yieldToken:ERC20, priceOracle:IPriceOracle) {
+  constructor(pool:Contract, asset: ERC20, yieldToken:ERC20, assetPool:IAssetPool) {
     super("AavePoolMock", 18, pool);
     this.asset = asset;
     this.yieldToken = yieldToken;
-    this.priceOracle = priceOracle;
+    this.assetPool = assetPool;
   }
 
   /**
@@ -24,8 +24,8 @@ export class Comptroller extends ContractBase {
     const asset = await ERC20.deploy("ERC20FixedSupply", "DAI Stablecoin", "DAI", toWei(totalSupply));
     const pool = await ContractBase.deployContract("ComptrollerMock", asset.address());
     const yieldToken = await ERC20.attach("CErc20", await pool.yieldToken());
-    const priceOracle = await IPriceOracle.deploy("CompoundPriceOracle");
-    return new Comptroller(pool, asset, yieldToken, priceOracle);
+    const assetPool = await IAssetPool.deploy("CompoundAssetPool", yieldToken);
+    return new Comptroller(pool, asset, yieldToken, assetPool);
   }
 
   /**
