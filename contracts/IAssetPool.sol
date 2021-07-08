@@ -7,10 +7,16 @@ interface IAssetPool {
     /// @return The address of the Yield Bearing Token contract.
     function yieldToken() external returns (address);
 
-    /// @dev Deposits X amount of backing tokens from sender into the pool
-    /// @param onBehalfOf ERC20 Address which will receive the Yield Bearing Tokens
+    /// @dev This can be used for approve() before depositAsset()
+    /// @return The address of the underlying pool which transfers deposits
+    function pool() external returns (address);
+
+    /// @dev Deposits X amount of backing tokens from `msg.sender` into the pool
+    ///      msg.sender must first approve transfer to this `yieldToken` address
+    /// @param recipient ERC20 Address which will receive the Yield Bearing Tokens
     /// @param amount Amount of backing tokens, such as ETH or DAI to deposit
-    function depositAsset(address onBehalfOf, uint amount) external;
+    /// @return Number of Yield Bearing Tokens minted to `recipient`
+    function depositAsset(address recipient, uint amount) external returns (uint);
 
     /// @dev The current exchange rate of the yield bearing instrument compared
     ///      to the backing instrument. e.g it is an AToken in case of AAVE.
