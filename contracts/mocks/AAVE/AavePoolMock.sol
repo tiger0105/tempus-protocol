@@ -55,7 +55,7 @@ contract AavePoolMock is ILendingPool {
         uint16 /*referralCode*/
     ) public override {
         require(address(assetToken) == asset, "invalid reserve asset");
-        
+
         // AAVE deposits into aToken
         address pool = address(yieldToken);
         require(assetToken.transferFrom(msg.sender, pool, amount), "transfer failed");

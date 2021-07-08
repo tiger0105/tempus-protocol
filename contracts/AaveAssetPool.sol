@@ -26,7 +26,7 @@ contract AaveAssetPool is IAssetPool {
     /// @return Number of Yield Bearing Tokens minted to `recipient`
     function depositAsset(address recipient, uint amount) external override returns (uint) {
         // solhint-disable-previous-line no-empty-blocks
-        
+
         // TODO: Implement this
         // IAToken aToken = IAToken(yieldToken);
         // address asset = aToken.UNDERLYING_ASSET_ADDRESS();
