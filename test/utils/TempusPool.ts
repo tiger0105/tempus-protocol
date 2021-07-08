@@ -9,6 +9,7 @@ import { IAssetPool } from "./IAssetPool";
  */
 export class TempusPool extends ContractBase {
   assetPool:IAssetPool;
+  asset:ERC20; // backing asset such as DAI or ETH
   yieldBearing:ERC20; // actual yield bearing token such as AToken or CToken
   principalShare:ERC20;
   yieldShare:ERC20;
@@ -16,6 +17,7 @@ export class TempusPool extends ContractBase {
   constructor(pool:Contract, assetPool:IAssetPool, principalShare:ERC20, yieldShare:ERC20) {
     super("TempusPool", 18, pool);
     this.assetPool = assetPool;
+    this.asset = assetPool.asset;
     this.yieldBearing = assetPool.yieldBearing;
     this.principalShare = principalShare;
     this.yieldShare = yieldShare;
@@ -38,16 +40,31 @@ export class TempusPool extends ContractBase {
   }
 
   /**
-   * Deposits backing asset tokens into Tempus Pool on behalf of user
+   * Deposits Yield Bearin Tokens into Tempus Pool on behalf of user
    * @param user User who is depositing
-   * @param assetAmount How much to deposit
+   * @param yieldBearingAmount How much YBT to deposit
    */
-  async deposit(user:SignerOrAddress, assetAmount:NumberOrString) {
+  async deposit(user:SignerOrAddress, yieldBearingAmount:NumberOrString) {
     try {
-      await this.yieldBearing.approve(user, this.contract.address, assetAmount);
-      await this.contract.connect(user).deposit(addressOf(user), this.toBigNum(assetAmount));
+      await this.yieldBearing.approve(user, this.contract.address, yieldBearingAmount);
+      await this.contract.connect(user).deposit(addressOf(user), this.toBigNum(yieldBearingAmount));
     } catch(e) {
       throw new Error("TempusPool.deposit failed: " + e.message);
+    }
+  }
+
+  /**
+   * Deposits backing asset tokens into Tempus Pool on behalf of user
+   * @param user User who is depositing
+   * @param backingAssetAmount How much backing asset tokens to deposit
+   */
+  async depositAsset(user:SignerOrAddress, backingAssetAmount:NumberOrString) {
+    try {
+      const pool = await this.assetPool.pool();
+      await this.asset.approve(user, pool, backingAssetAmount);
+      await this.contract.connect(user).depositAsset(this.toBigNum(backingAssetAmount));
+    } catch(e) {
+      throw new Error("TempusPool.depositAsset failed: " + e.message);
     }
   }
 
