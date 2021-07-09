@@ -7,6 +7,6 @@ interface IPriceOracle {
     ///
     /// @param token The address of the appropraite contract for the protocol.
     /// e.g it is an AToken in case of AAVE.
-    /// @return Current exchange rate as a WAD decimal
+    /// @return Current exchange rate as a 1e18 decimal
     function currentRate(address token) external view returns (uint256);
 }

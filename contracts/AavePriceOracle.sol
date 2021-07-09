@@ -5,7 +5,7 @@ import "./IPriceOracle.sol";
 import "./mocks/aave/IAToken.sol";
 
 contract AavePriceOracle is IPriceOracle {
-    /// @return Current exchange rate as a WAD decimal
+    /// @return Current exchange rate as a 1e18 decimal
     function currentRate(address token) external view override returns (uint256) {
         IAToken atoken = IAToken(token);
         uint rateInRay = atoken.POOL().getReserveNormalizedIncome(atoken.UNDERLYING_ASSET_ADDRESS());
