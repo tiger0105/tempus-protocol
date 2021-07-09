@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.6;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
 import "../ITempusPool.sol";
 import "../mocks/lido/ILido.sol";
 
@@ -14,9 +11,8 @@ contract LidoDepositWrapper {
     constructor(ITempusPool _pool) {
         ILido _lido = ILido(_pool.yieldBearingToken());
         // Sanity checks
-        IERC20Metadata lidoMetadata = IERC20Metadata(address(_lido));
-        require(keccak256(bytes(lidoMetadata.name())) == keccak256(bytes("Liquid staked Ether 2.0")));
-        require(keccak256(bytes(lidoMetadata.symbol())) == keccak256(bytes("stETH")));
+        require(keccak256(bytes(_lido.name())) == keccak256(bytes("Liquid staked Ether 2.0")));
+        require(keccak256(bytes(_lido.symbol())) == keccak256(bytes("stETH")));
 
         pool = _pool;
         lido = _lido;

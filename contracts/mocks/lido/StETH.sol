@@ -79,7 +79,7 @@ abstract contract StETH is ILido {
     /**
      * @return the name of the token.
      */
-    function name() public pure returns (string memory) {
+    function name() public override pure returns (string memory) {
         return "Liquid staked Ether 2.0";
     }
 
@@ -87,14 +87,14 @@ abstract contract StETH is ILido {
      * @return the symbol of the token, usually a shorter version of the
      * name.
      */
-    function symbol() public pure returns (string memory) {
+    function symbol() public override pure returns (string memory) {
         return "stETH";
     }
 
     /**
      * @return the number of decimals for getting user representation of a token amount.
      */
-    function decimals() public pure returns (uint8) {
+    function decimals() public override pure returns (uint8) {
         return 18;
     }
 
