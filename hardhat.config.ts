@@ -26,7 +26,7 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
 module.exports = {
   abiExporter: {
     path: './abi-artifacts',
-    clear: true,
+    clear: false,
     flat: true,
     only: ['TempusToken'],
     spacing: 2
