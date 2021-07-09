@@ -54,14 +54,20 @@ contract TempusPool is ITempusPool {
         yieldShare = new YieldShare(this, yieldName, yieldName);
     }
 
-    function deposit(uint256 tokenAmount) public override {
+    /// @dev Deposits yield bearing tokens (such as cDAI) into TempusPool
+    ///      msg.sender must approve `yieldTokenAmount` to this TempusPool
+    /// @param yieldTokenAmount Amount of yield bearing tokens to deposit
+    /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
+    /// @return Amount of TPS and TYS minted to `recipient`
+    function deposit(uint256 yieldTokenAmount, address recipient) public override returns (uint256) {
         // Collect the deposit
-        IERC20(yieldBearingToken).safeTransferFrom(msg.sender, address(this), tokenAmount);
+        IERC20(yieldBearingToken).safeTransferFrom(msg.sender, address(this), yieldTokenAmount);
 
         // Issue appropriate shares
-        uint256 tokensToIssue = (tokenAmount * initialExchangeRate) / currentExchangeRate();
-        principalShare.mint(msg.sender, tokensToIssue);
-        yieldShare.mint(msg.sender, tokensToIssue);
+        uint256 tokensToIssue = (yieldTokenAmount * initialExchangeRate) / currentExchangeRate();
+        principalShare.mint(recipient, tokensToIssue);
+        yieldShare.mint(recipient, tokensToIssue);
+        return tokensToIssue;
     }
 
     function currentExchangeRate() public view override returns (uint256) {
