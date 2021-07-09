@@ -198,6 +198,19 @@ describe("Tempus Pool", async () => {
 
   describe("Redeem AAVE", async () =>
   {
+    it("Should fail with insufficient share balances", async () =>
+    {
+      await createAavePool(/*depositToUser:*/500);
+      await pool.deposit(user, 100, /*recipient:*/user);
+      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
+      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
+
+      await expectRevert(pool.redeem(user, 150, 100), "Insufficient principal balance.");
+      await expectRevert(pool.redeem(user, 100, 150), "Insufficient yield balance.");
+      // We're checking principal first.
+      await expectRevert(pool.redeem(user, 150, 150), "Insufficient principal balance.");
+    });
+
     it("Should fail before maturity with uneqal shares", async () =>
     {
       await createAavePool(/*depositToUser:*/500);

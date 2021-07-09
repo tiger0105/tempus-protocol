@@ -85,6 +85,9 @@ contract TempusPool is ITempusPool {
     }
 
     function redeem(uint256 principalAmount, uint256 yieldAmount) public override {
+        require(principalShare.balanceOf(msg.sender) >= principalAmount, "Insufficient principal balance.");
+        require(yieldShare.balanceOf(msg.sender) >= yieldAmount, "Insufficient yield balance.");
+
         // Redeeming prior to maturity is only allowed in equal amounts.
         require(matured || (principalAmount == yieldAmount), "Inequal redemption not allowed before maturity.");
 
