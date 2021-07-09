@@ -6,7 +6,7 @@
 
 pragma solidity 0.8.6;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./ILido.sol";
 
 /*
  * WARNING: THIS IS A SLIGHTLY MODIFIED StETH CONTRACT.
@@ -45,7 +45,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * pooled Ether increases, no `Transfer` events are generated: doing so would require
  * emitting an event for each token holder and thus running an unbounded loop.
  */
-abstract contract StETH is IERC20 {
+abstract contract StETH is ILido {
     /**
      * @dev StETH balances are dynamic and are calculated based on the accounts' shares
      * and the total amount of Ether controlled by the protocol. Account shares aren't
@@ -248,7 +248,7 @@ abstract contract StETH is IERC20 {
      * @dev The sum of all accounts' shares can be an arbitrary number, therefore
      * it is necessary to store it in order to calculate each account's relative share.
      */
-    function getTotalShares() public view returns (uint256) {
+    function getTotalShares() public override view returns (uint256) {
         return _getTotalShares();
     }
 

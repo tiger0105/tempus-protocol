@@ -31,8 +31,7 @@ contract LidoDepositWrapper {
         uint256 shares = lido.submit{value: msg.value}(address(0));
 
         // Deposit to the TempusPool
-        // TODO: do we need to use SafeERC20 for this? We should double check Lido that it conforms to ERC20 and avoid SafeERC20.
-        IERC20(address(lido)).approve(address(pool), shares);
+        lido.approve(address(pool), shares);
         return pool.deposit(shares, msg.sender);
     }
 }
