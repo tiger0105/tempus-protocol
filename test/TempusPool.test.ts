@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { Signer } from "./utils/ContractBase";
+import { ContractBase, Signer, addressOf } from "./utils/ContractBase";
 import { Aave } from "./utils/Aave";
 import { Lido } from "./utils/Lido";
 import { Comptroller } from "./utils/Comptroller";
@@ -138,6 +138,15 @@ describe("Tempus Pool", async () => {
     {
       await createLidoPool(/*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
+      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
+      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
+    });
+
+    it("Should give appropriate shares after ASSET Wrapper deposit", async () =>
+    {
+      await createLidoPool();
+      const wrapper = await ContractBase.deployContract("LidoDepositWrapper", pool.address());
+      await wrapper.connect(user).deposit({value: lido.toBigNum(100)});
       expect(await pool.principalShare.balanceOf(user)).to.equal(100);
       expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
     });
