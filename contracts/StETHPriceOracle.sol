@@ -9,10 +9,7 @@ contract StETHPriceOracle is IPriceOracle {
     function currentRate(address token) external view override returns (uint256) {
         ILido steth = ILido(token);
         uint totalSupply = steth.totalSupply();
-        if (totalSupply == 0) {
-            return 1e18;
-        } else {
-            return (steth.getTotalShares() * 1e18) / totalSupply;
-        }
+        require(totalSupply != 0, "Lido has no deposits yet.");
+        return (steth.getTotalShares() * 1e18) / totalSupply;
     }
 }
