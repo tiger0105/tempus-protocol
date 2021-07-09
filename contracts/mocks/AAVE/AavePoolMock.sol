@@ -53,7 +53,7 @@ contract AavePoolMock is ILendingPool {
         uint amount,
         address onBehalfOf,
         uint16 /*referralCode*/
-    ) public {
+    ) public override {
         require(address(assetToken) == asset, "invalid reserve asset");
 
         address pool = address(this);
