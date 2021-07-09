@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../ITempusPool.sol";
+import "../mocks/AAVE/IAToken.sol";
 import "../mocks/AAVE/ILendingPool.sol";
 
 contract AaveDepositWrapper {
@@ -15,15 +16,12 @@ contract AaveDepositWrapper {
     address internal immutable yieldBearingToken;
     ILendingPool internal immutable aavePool;
 
-    constructor(
-        ITempusPool _pool,
-        ILendingPool _aavePool,
-        address _backingToken
-    ) {
+    constructor(ITempusPool _pool) {
         pool = _pool;
-        backingToken = _backingToken;
-        yieldBearingToken = _pool.yieldBearingToken();
-        aavePool = _aavePool; // TODO: retrieve this from IAToken(yieldBearingToken).POOL()
+        IAToken _yieldBearingToken = IAToken(_pool.yieldBearingToken());
+        yieldBearingToken = address(_yieldBearingToken);
+        aavePool = _yieldBearingToken.POOL();
+        backingToken = _yieldBearingToken.UNDERLYING_ASSET_ADDRESS();
     }
 
     /// Deposits backing token to the appropriate AAVE pool, and then to Tempus Pool.
