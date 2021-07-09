@@ -40,9 +40,12 @@ describe("Tempus Pool", async () => {
     else if (compound) compound.setExchangeRate(exchangeRate);
   }
 
-  async function createAavePool(depositToUser:number = 0) {
+  async function createAavePool(liquidityIndex:number = 1.0, depositToUser:number = 0) {
     aave = await Aave.create(1000000);
     await aave.asset.transfer(owner, user, 10000); // initial deposit for User
+
+    // set starting rate
+    await aave.setLiquidityIndex(liquidityIndex);
 
     // generate some ATokens by owner depositing, and then transfer some to user
     if (depositToUser > 0) {
@@ -158,9 +161,9 @@ describe("Tempus Pool", async () => {
 
   describe("Deposit AAVE", async () =>
   {
-    it("Should allow depositing 100", async () =>
+    it("Should allow depositing 100 (starting rate 1.0)", async () =>
     {
-      await createAavePool(/*depositToUser:*/500);
+      await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
       expect(await pool.principalShare.balanceOf(user)).to.equal(100);
       expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
@@ -168,7 +171,7 @@ describe("Tempus Pool", async () => {
 
     it("Should allow depositing 100 again", async () =>
     {
-      await createAavePool(/*depositToUser:*/500);
+      await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
       expect(await pool.principalShare.balanceOf(user)).to.equal(100);
       expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
@@ -177,9 +180,17 @@ describe("Tempus Pool", async () => {
       expect(await pool.yieldShare.balanceOf(user)).to.equal(200);
     });
 
+    it("Should allow depositing 100 (starting rate !=1.0)", async () =>
+    {
+      await createAavePool(/*liquidityIndex:*/1.2, /*depositToUser:*/500);
+      await pool.deposit(user, 100, /*recipient:*/user);
+      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
+      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
+    });
+
     it("Depositing after increase", async () =>
     {
-      await createAavePool(/*depositToUser:*/500);
+      await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
       expect(await pool.principalShare.balanceOf(user)).to.equal(100);
       expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
@@ -205,7 +216,7 @@ describe("Tempus Pool", async () => {
 
     it("Should not allow depositing after finalization", async () =>
     {
-      await createAavePool(/*depositToUser:*/500);
+      await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
       await increaseTime(60*60);
       await pool.finalize();
       await expectRevert(pool.deposit(user, 100, /*recipient:*/user), "Maturity reached.");
@@ -216,7 +227,7 @@ describe("Tempus Pool", async () => {
   {
     it("Should fail with insufficient share balances", async () =>
     {
-      await createAavePool(/*depositToUser:*/500);
+      await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
       expect(await pool.principalShare.balanceOf(user)).to.equal(100);
       expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
@@ -229,7 +240,7 @@ describe("Tempus Pool", async () => {
 
     it("Should fail before maturity with uneqal shares", async () =>
     {
-      await createAavePool(/*depositToUser:*/500);
+      await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
       expect(await pool.principalShare.balanceOf(user)).to.equal(100);
       expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
@@ -239,7 +250,7 @@ describe("Tempus Pool", async () => {
 
     it("Should work before maturity with equal shares (unimplemented)", async () =>
     {
-      await createAavePool(/*depositToUser:*/500);
+      await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
       expect(await pool.principalShare.balanceOf(user)).to.equal(100);
       expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
@@ -250,7 +261,7 @@ describe("Tempus Pool", async () => {
 
     it("Should work after maturity with unequal shares (unimplemented)", async () =>
     {
-      await createAavePool(/*depositToUser:*/500);
+      await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
       expect(await pool.principalShare.balanceOf(user)).to.equal(100);
       expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
