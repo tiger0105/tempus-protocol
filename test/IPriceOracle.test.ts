@@ -4,6 +4,7 @@ import { toWei } from "./utils/Decimal";
 import { ContractBase, Signer } from "./utils/ContractBase";
 import { IPriceOracle } from "./utils/IPriceOracle";
 import { ERC20 } from "./utils/ERC20";
+import { Comptroller } from "./utils/Comptroller";
 
 describe("Tempus Pool", async () => {
   let owner:Signer, user:Signer;
@@ -36,12 +37,9 @@ describe("Tempus Pool", async () => {
     
     it("Should give correct exchange rate from Compound", async () =>
     {
-      const backingAsset = await ERC20.deploy("ERC20FixedSupply", "DAI Stablecoin", "DAI", toWei(1000000));
-      const pool = await ContractBase.deployContract("ComptrollerMock", backingAsset.address());
-      const yieldToken = await ERC20.attach("CErc20", await pool.yieldToken());
-
-      let oracle:IPriceOracle = await IPriceOracle.deploy("CompoundPriceOracle");
-      let exchangeRate = await oracle.currentRate(yieldToken);
+      let compound = await Comptroller.create('CErc20', 1000000);
+      const yieldToken = compound.yieldToken;
+      let exchangeRate = await compound.priceOracle.currentRate(yieldToken);
       expect(exchangeRate).to.equal(1.0);
     });
   });
