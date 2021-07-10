@@ -3,6 +3,8 @@ pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+import "./utils/BokkyPooBahsDateTimeLibrary.sol";
 
 import "./IPriceOracle.sol";
 import "./ITempusPool.sol";
@@ -46,13 +48,20 @@ contract TempusPool is ITempusPool {
         maturityTime = maturity;
         initialExchangeRate = oracle.currentRate(token);
 
-        // TODO add maturity
-        string memory principalName = string(bytes.concat("TPS-", bytes(ERC20(token).symbol())));
+        (uint256 year, uint256 month, uint256 day) = BokkyPooBahsDateTimeLibrary.timestampToDate(maturity);
+        bytes memory maturityText = bytes.concat(
+            bytes(Strings.toString(year)),
+            "-",
+            bytes(Strings.toString(month)),
+            "-",
+            bytes(Strings.toString(day))
+        );
+
+        string memory principalName = string(bytes.concat("TPS-", bytes(ERC20(token).symbol()), "-", maturityText));
         // TODO separate name vs. symbol?
         principalShare = new PrincipalShare(this, principalName, principalName);
 
-        // TODO add maturity
-        string memory yieldName = string(bytes.concat("TYS-", bytes(ERC20(token).symbol())));
+        string memory yieldName = string(bytes.concat("TYS-", bytes(ERC20(token).symbol()), "-", maturityText));
         // TODO separate name vs. symbol?
         yieldShare = new YieldShare(this, yieldName, yieldName);
     }
