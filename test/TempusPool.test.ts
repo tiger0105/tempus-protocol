@@ -138,6 +138,22 @@ describe("Tempus Pool", async () => {
       await pool.finalize();
       expect(await pool.matured()).to.equal(true);
     });
+
+    it("Principal shares initial details", async () =>
+    {
+      await createAavePool();
+      expect(await pool.principalShare.totalSupply()).to.equal(0);
+      expect(await pool.principalShare.name()).to.equal("TPS-AAT");
+      expect(await pool.principalShare.symbol()).to.equal("TPS-AAT");
+    });
+
+    it("Yield shares initial details", async () =>
+    {
+      await createAavePool();
+      expect(await pool.yieldShare.totalSupply()).to.equal(0);
+      expect(await pool.yieldShare.name()).to.equal("TYS-AAT");
+      expect(await pool.yieldShare.symbol()).to.equal("TYS-AAT");
+    });
   });
 
   describe("Deposit AAVE", async () =>
