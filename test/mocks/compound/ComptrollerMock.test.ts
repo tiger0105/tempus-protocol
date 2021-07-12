@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { Comptroller } from "../../utils/Comptroller";
 import { Signer } from "../../utils/ContractBase";
 import { NumberOrString } from "../../utils/Decimal";
+import { revert } from "../../utils/ERC20";
 
 describe("Compound Mock", async () => {
   let owner:Signer, user:Signer;
@@ -148,10 +149,18 @@ describe("Compound Mock", async () => {
     
     it("Should be non-participant after exitMarket was called", async () =>
     {
-        await pool.enterMarkets(user);
-        expect(await pool.isParticipant(user)).to.be.true;
-        await pool.exitMarket(user);
-        expect(await pool.isParticipant(user)).to.be.false;
+      await pool.enterMarkets(user);
+      await pool.enterMarkets(user); // call it twice for extra branch coverage
+      expect(await pool.isParticipant(user)).to.be.true;
+      expect(await pool.mintAllowed(user, 10)).to.be.true;
+      await pool.exitMarket(user);
+      expect(await pool.isParticipant(user)).to.be.false;
+      expect(await pool.mintAllowed(user, 10)).to.be.false;
+    });
+    
+    it("Should fail to mint if user is non-participant", async () =>
+    {
+      (await revert(pool.mintEther(user, 10))).to.be.equal("mint is not allowed");
     });
   });
 });

@@ -103,6 +103,15 @@ export class Comptroller extends ContractBase {
   }
 
   /**
+   * Is minting allowed for this user and this CToken?
+   * @param user User to check
+   * @param mintAmount How much he wants to mint
+   */
+  async mintAllowed(user:SignerOrAddress, mintAmount:NumberOrString): Promise<boolean> {
+    return await this.contract.mintAllowed(this.yieldToken.address(), addressOf(user), this.toBigNum(mintAmount)) == 0;
+  }
+
+  /**
    * Calls payable mint on the CToken, which means CToken must be CEther
    */
   async mintEther(user:SignerOrAddress, ethAmount:NumberOrString) {

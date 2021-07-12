@@ -19,8 +19,7 @@ contract CEther is CTokenMock {
     /// @notice Sender supplies ETH into the market and receives cTokens in exchange
     /// @dev Reverts upon any failure
     function mint() external payable {
-        (uint err, ) = mintInternal(msg.value);
-        require(err == 0, "mint failed");
+        mintInternal(msg.value);
     }
 
     /**
@@ -29,10 +28,9 @@ contract CEther is CTokenMock {
      * @param amount Amount of Ether being sent
      * @return The actual amount of Ether transferred
      */
-    function doTransferIn(address from, uint amount) internal override returns (uint) {
-        // Sanity checks
-        require(msg.sender == from, "sender mismatch");
-        require(msg.value == amount, "value mismatch");
+    function doTransferIn(address from, uint amount) internal pure override returns (uint) {
+        // NOTE: Nothing to do in pure ETH transfers
+        from;
         return amount;
     }
 }
