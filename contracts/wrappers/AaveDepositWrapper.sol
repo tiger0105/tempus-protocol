@@ -5,8 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../ITempusPool.sol";
-import "../mocks/AAVE/IAToken.sol";
-import "../mocks/AAVE/ILendingPool.sol";
+import "../mocks/aave/IAToken.sol";
+import "../mocks/aave/ILendingPool.sol";
 
 contract AaveDepositWrapper {
     using SafeERC20 for IERC20;

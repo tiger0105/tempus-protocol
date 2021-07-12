@@ -2,7 +2,7 @@
 pragma solidity 0.8.6;
 
 import "./IPriceOracle.sol";
-import "./mocks/AAVE/IAToken.sol";
+import "./mocks/aave/IAToken.sol";
 
 contract AavePriceOracle is IPriceOracle {
     /// @return Current exchange rate as a WAD decimal

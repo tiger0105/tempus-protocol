@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.6;
 
-import "./mocks/Compound/CTokenInterface.sol";
+import "./mocks/compound/CTokenInterface.sol";
 import "./IPriceOracle.sol";
 
 contract CompoundPriceOracle is IPriceOracle {
