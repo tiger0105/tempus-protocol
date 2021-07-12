@@ -55,6 +55,34 @@ export class TempusPool extends ContractBase {
   }
 
   /**
+   * Reedem shares from the Tempus Pool
+   * @param user User who is depositing
+   * @param principalAmount How many principal shares to redeem
+   * @param yieldAmount How many yield shares to redeem
+   */
+  async redeem(user:SignerOrAddress, principalAmount:NumberOrString, yieldAmount:NumberOrString) {
+    try {
+      await this.contract.connect(user).redeem(this.toBigNum(principalAmount), this.toBigNum(yieldAmount));
+    } catch(e) {
+      throw new Error("TempusPool.redeem failed: " + e.message);
+    }
+  }
+
+  /**
+   * Finalize the pool after maturity
+   */
+  async finalize() {
+    await this.contract.finalize();
+  }
+
+  /**
+   * @returns True if maturity has been reached and the pool was finalized.
+   */
+  async matured() {
+    return this.contract.matured();
+  }
+
+  /**
    * @returns The version of the pool
    */
   async version(): Promise<NumberOrString> {
@@ -89,5 +117,12 @@ export class TempusPool extends ContractBase {
    */
   async currentExchangeRate(): Promise<NumberOrString> {
     return this.fromBigNum(await this.contract.currentExchangeRate());
+  }
+
+  /**
+   * @returns Exchange rate at maturity of the pool
+   */
+  async maturityExchangeRate(): Promise<NumberOrString> {
+    return this.fromBigNum(await this.contract.maturityExchangeRate());
   }
 }
