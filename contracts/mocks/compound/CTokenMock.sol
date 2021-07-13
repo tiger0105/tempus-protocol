@@ -8,19 +8,16 @@ import "./CTokenInterfaces.sol";
 /// Yield Bearing Token for Compound - CToken
 abstract contract CTokenMock is ERC20, CTokenInterface {
     constructor(
-        ComptrollerInterface comptroller_,
+        ComptrollerInterface comptrollerInterface,
         string memory name,
         string memory symbol
     ) ERC20(name, symbol) {
-        comptroller = comptroller_;
+        comptroller = comptrollerInterface;
     }
-
-    /// User Interface ///
 
     function exchangeRateCurrent() public view override returns (uint) {
         // TODO: this exchange rate is completely mocked
-        ComptrollerMock mock = ComptrollerMock(address(comptroller));
-        return mock.exchangeRate();
+        return ComptrollerMock(address(comptroller)).exchangeRate();
     }
 
     /**
@@ -35,7 +32,7 @@ abstract contract CTokenMock is ERC20, CTokenInterface {
         return mintFresh(msg.sender, mintAmount);
     }
 
-    function mintFresh(address minter, uint mintAmount) internal returns (uint, uint) {
+    function mintFresh(address minter, uint mintAmount) internal returns (uint errorCode, uint actualMintAmount) {
         uint err = comptroller.mintAllowed(address(this), minter, mintAmount);
         require(err == 0, "mint is not allowed");
 
@@ -49,11 +46,11 @@ abstract contract CTokenMock is ERC20, CTokenInterface {
          *  in case of a fee. On success, the cToken holds an additional `actualMintAmount`
          *  of cash.
          */
-        uint actualMintAmount = doTransferIn(minter, mintAmount);
+        actualMintAmount = doTransferIn(minter, mintAmount);
 
         uint mintTokens = (actualMintAmount * 1e18) / exchangeRate;
         _mint(minter, mintTokens);
-        return (0, actualMintAmount);
+        errorCode = 0;
     }
 
     /**

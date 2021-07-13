@@ -12,12 +12,12 @@ contract CErc20 is CTokenMock, CErc20Interface {
     using SafeERC20 for IERC20;
 
     constructor(
-        ComptrollerMock comptroller_,
-        address underlying_,
+        ComptrollerMock comptrollerInterface,
+        address underlyingAsset,
         string memory name,
         string memory symbol
-    ) CTokenMock(comptroller_, name, symbol) {
-        underlying = underlying_;
+    ) CTokenMock(comptrollerInterface, name, symbol) {
+        underlying = underlyingAsset;
     }
 
     /// User Interface ///

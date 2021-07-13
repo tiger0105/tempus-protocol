@@ -7,10 +7,10 @@ import "./CTokenInterfaces.sol";
 /// Token to support ETH deposits
 contract CEther is CTokenMock {
     constructor(
-        ComptrollerInterface comptroller_,
+        ComptrollerInterface comptrollerInterface,
         string memory name,
         string memory symbol
-    ) CTokenMock(comptroller_, name, symbol) {
+    ) CTokenMock(comptrollerInterface, name, symbol) {
         // solhint-disable-previous-line no-empty-blocks
     }
 

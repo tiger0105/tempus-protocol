@@ -77,12 +77,11 @@ contract ComptrollerMock is ComptrollerStorage, ComptrollerInterface {
     function mintAllowed(
         address cToken,
         address minter,
-        uint mintAmount
+        uint /*mintAmount*/
     ) external view override returns (uint) {
         if (!isParticipant(cToken, minter)) {
             return 1; // error!
         }
-        mintAmount; // unused
         return 0;
     }
 
