@@ -58,13 +58,13 @@ describe("Tempus Pool", async () => {
   }
 
   async function createCompoundPool(depositToUser:number = 0) {
-    compound = await Comptroller.create(1000000);
+    compound = await Comptroller.create('CErc20', 1000000);
     await compound.asset.transfer(owner, user, 10000); // initial deposit for User
 
     // generate some CTokens by owner depositing, and then transfer some to user
     if (depositToUser > 0) {
       await compound.enterMarkets(owner);
-      await compound.payableDeposit(owner, depositToUser*2);
+      await compound.mintERC20(owner, depositToUser*2);
       await compound.yieldToken.transfer(owner, user, depositToUser);
     }
 

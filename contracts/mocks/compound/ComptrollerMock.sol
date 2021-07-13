@@ -8,16 +8,9 @@ import "./ComptrollerInterface.sol";
 import "./ComptrollerStorage.sol";
 
 contract ComptrollerMock is ComptrollerStorage, ComptrollerInterface {
-    IERC20 public assetToken; // DAI
-    CTokenMock public yieldToken; // cDAI
     uint public exchangeRate; // current exchange rate as 1e18 decimal
 
-    /// @dev Initialize AAVE Mock with a single supported reserve.
-    /// We only support 1 reserve right now.
-    /// @param asset The single ERC20 reserve token, such as DAI
-    constructor(IERC20 asset) {
-        assetToken = asset;
-        yieldToken = new CErc20(this, address(asset), "CompoundCToken", "CCT");
+    constructor() {
         exchangeRate = 1e18; // 1.0
     }
 
@@ -78,6 +71,17 @@ contract ComptrollerMock is ComptrollerStorage, ComptrollerInterface {
         // We *must* have found the asset in the list or our redundant data structure is broken
         assert(assetIndex < len);
         delete accountAssets[msg.sender][assetIndex];
+        return 0;
+    }
+
+    function mintAllowed(
+        address cToken,
+        address minter,
+        uint /*mintAmount*/
+    ) external view override returns (uint) {
+        if (!isParticipant(cToken, minter)) {
+            return 1; // error!
+        }
         return 0;
     }
 
