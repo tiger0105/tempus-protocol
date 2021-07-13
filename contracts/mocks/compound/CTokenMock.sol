@@ -15,7 +15,7 @@ abstract contract CTokenMock is ERC20, CTokenInterface {
         comptroller = comptrollerInterface;
     }
 
-    function exchangeRateCurrent() public view override returns (uint) {
+    function exchangeRateCurrent() public override returns (uint) {
         // TODO: this exchange rate is completely mocked
         return ComptrollerMock(address(comptroller)).exchangeRate();
     }
