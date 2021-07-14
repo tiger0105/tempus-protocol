@@ -2,29 +2,38 @@ import { ethers } from "hardhat";
 import { blockTimestamp } from "./../test/utils/TimeUtils";
 import { Aave } from "../test/utils/Aave";
 import { TempusPool } from "./../test/utils/TempusPool";
+import { SignerOrAddress } from "../test/utils/ContractBase";
 
-async function main() {
-  const [owner, user] = await ethers.getSigners();
-
-  /// aToken pool
-
-  const aave:Aave = await Aave.create(1000000);
-  await aave.asset.transfer(owner, user, 10000); // initial deposit for User
+async function deployAavePool(
+  backingTokenSupply: Number,
+  initialLiquidityIndex: Number
+): Promise<Aave> {
+  const aave:Aave = await Aave.create(backingTokenSupply);
+  
   // set starting rate
-  await aave.setLiquidityIndex(100);
+  await aave.setLiquidityIndex(initialLiquidityIndex);
 
-  // generate some ATokens by owner depositing, and then transfer some to user
-  await aave.deposit(owner, 200000);
-  await aave.yieldToken.transfer(owner, user, 1000);
+  console.log('Aave pool deployed to: ', aave.address());
+  console.log('Backing token deployed to: ', aave.asset.address());
+  console.log('YBT deployed to: ', aave.yieldToken.address());
 
-  const maturityTime = await blockTimestamp() + 60*60*24*30; // maturity is in 30 days
+  return aave;
+}
+
+async function deployATokenTempusPool(aave: Aave, poolLength: number) {
+  const maturityTime = await blockTimestamp() + poolLength;
   const pool:TempusPool = await TempusPool.deploy(aave.yieldToken, aave.priceOracle, maturityTime);
 
-  console.log('TempusPool for Aave AToken data');
-  console.log('  TempusPool deployed to:    ', pool.address());
-  console.log('  Aave pool deployed to:     ', aave.address());
-  console.log('  Backing token deployed to: ', aave.asset.address());
-  console.log('  YBT deployed to:           ', aave.yieldToken.address());
+  console.log('AToken TempusPool deployed with length %i sec to: %s', poolLength, pool.address());
+}
+
+async function main() {
+  // deploy multiple aave pools
+  const aave:Aave = await deployAavePool(1000000, 100);
+  // deploy one month pool
+  await deployATokenTempusPool(aave, 60*60*24*30);
+  // deploy one year pool
+  await deployATokenTempusPool(aave, 60*60*24*365);
 }
 
 main()
