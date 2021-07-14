@@ -10,9 +10,7 @@ contract LidoDepositWrapper {
 
     constructor(ITempusPool _pool) {
         ILido _lido = ILido(_pool.yieldBearingToken());
-        // Sanity checks
-        require(keccak256(bytes(_lido.name())) == keccak256(bytes("Liquid staked Ether 2.0")));
-        require(keccak256(bytes(_lido.symbol())) == keccak256(bytes("stETH")));
+        // TODO: consider adding sanity check for _lido.name() and _lido.symbol()
 
         pool = _pool;
         lido = _lido;
