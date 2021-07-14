@@ -1,11 +1,7 @@
 import { ethers } from "hardhat";
-import { toWei } from "./../test/utils/Decimal";
+import { blockTimestamp } from "./../test/utils/TimeUtils";
 import { Aave } from "../test/utils/Aave";
 import { TempusPool } from "./../test/utils/TempusPool";
-
-async function blockTimestamp() {
-  return (await ethers.provider.getBlock('latest')).timestamp;
-}
 
 async function main() {
   const [owner, user] = await ethers.getSigners();

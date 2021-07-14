@@ -6,6 +6,7 @@ import { Lido } from "./utils/Lido";
 import { Comptroller } from "./utils/Comptroller";
 import { TempusPool } from "./utils/TempusPool";
 import { NumberOrString } from "./utils/Decimal";
+import { blockTimestamp, increaseTime } from "./utils/TimeUtils";
 
 describe("Tempus Pool", async () => {
   let owner:Signer, user:Signer;
@@ -20,15 +21,6 @@ describe("Tempus Pool", async () => {
       expect(promise).to.be.revertedWith(message)
       :
       expect(promise).to.be.reverted;
-  }
-
-  async function blockTimestamp() {
-    return (await ethers.provider.getBlock('latest')).timestamp;
-  }
-
-   async function increaseTime(addSeconds) {
-    await ethers.provider.send("evm_increaseTime", [addSeconds]);
-    await ethers.provider.send("evm_mine", []);
   }
 
   beforeEach(async () => {
