@@ -6,6 +6,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @author The tempus.finance team
 /// @title The interface of a Tempus Pool
 interface ITempusPool {
+    /// Event emitted on deposit.
+    event Deposited(address depositor, address recipient, uint256 yieldTokenAmount, uint256 shareAmounts, uint256 rate);
+
+    /// Event emitted on redemption.
+    event Redeemed(address redeemer, uint256 principalAmount, uint256 yieldAmount, uint256 rate);
+
     /// @return The version of the pool.
     function version() external returns (uint);
 
