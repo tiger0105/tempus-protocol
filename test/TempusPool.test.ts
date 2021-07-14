@@ -4,6 +4,7 @@ import { ContractBase, Signer } from "./utils/ContractBase";
 import { Aave } from "./utils/Aave";
 import { Lido } from "./utils/Lido";
 import { Comptroller } from "./utils/Comptroller";
+import { Yearn } from './utils/Yearn';
 import { TempusPool } from "./utils/TempusPool";
 import { NumberOrString } from "./utils/Decimal";
 
@@ -11,6 +12,7 @@ describe("Tempus Pool", async () => {
   let owner:Signer, user:Signer;
   let aave:Aave;
   let lido:Lido;
+  let yearn:Yearn;
   let compound:Comptroller;
   let pool:TempusPool;
   let maturityTime:number;
@@ -84,6 +86,25 @@ describe("Tempus Pool", async () => {
 
     maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
     pool = await TempusPool.deploy(lido.yieldToken, lido.priceOracle, maturityTime);
+  }
+
+  async function createYearnVault(depositToUser:number = 0, initialPrice?:number) {
+    yearn = await Yearn.create(1000000);
+    await yearn.asset.transfer(owner, user, 10000); // initial deposit for User
+
+    await yearn.deposit(owner, depositToUser ?? 100000); // initial deposit for owner to allow setting the initial price
+    
+    if (depositToUser > 0) {
+      await yearn.yieldToken.transfer(owner, user, depositToUser);
+    }
+
+    // optionally sets the initial price (that will be used as the initialExchangeRate in the TempusPool)
+    if (initialPrice) {
+      yearn.increasePricePerShare(initialPrice);
+    } 
+
+    maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
+    pool = await TempusPool.deploy(yearn.yieldToken, yearn.priceOracle, maturityTime);
   }
 
   describe("Deploy", async () =>
@@ -301,6 +322,31 @@ describe("Tempus Pool", async () => {
       await pool.deposit(user, 100, /*recipient:*/user);
       expect(await pool.principalShare.balanceOf(user)).to.equal(100);
       expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
+    });
+  });
+
+  describe("Deposit Yearn", async () =>
+  {
+    it("Should give appropriate shares after pool deposit", async () =>
+    {
+      await createYearnVault(/*depositToUser:*/500);
+      await pool.deposit(user, 100, /*recipient:*/user);
+      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
+      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
+    });
+
+    it("Should give appropriate shares after pool deposit", async () =>
+    {
+      await createYearnVault(/*depositToUser:*/500, /*initialPrice:*/1.2);
+      await pool.deposit(user, 100, /*recipient:*/owner);
+      expect(await pool.principalShare.balanceOf(user)).to.equal(0);
+      expect(await pool.yieldShare.balanceOf(user)).to.equal(0);
+
+      await yearn.increasePricePerShare(1.6);
+      await pool.deposit(user, 100, /*recipient:*/user);
+      
+      expect(await pool.principalShare.balanceOf(user)).to.equal(75);
+      expect(await pool.yieldShare.balanceOf(user)).to.equal(75);
     });
   });
 });
