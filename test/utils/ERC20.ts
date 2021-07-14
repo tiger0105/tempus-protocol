@@ -8,7 +8,7 @@ import { ContractBase, SignerOrAddress, Signer, addressOf } from "./ContractBase
  */
 export class ERC20 extends ContractBase {
 
-  constructor(contractName:string,) {
+  constructor(contractName:string) {
     super(contractName, 18/*default decimals*/);
   }
 
