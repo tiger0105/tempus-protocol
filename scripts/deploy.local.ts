@@ -1,8 +1,6 @@
-import { ethers } from "hardhat";
 import { blockTimestamp } from "./../test/utils/TimeUtils";
 import { Aave } from "../test/utils/Aave";
 import { TempusPool } from "./../test/utils/TempusPool";
-import { SignerOrAddress } from "../test/utils/ContractBase";
 
 async function deployAavePool(
   backingTokenSupply: Number,
