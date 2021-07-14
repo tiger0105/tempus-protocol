@@ -28,7 +28,7 @@ export class Comptroller extends ContractBase {
 
     if (type == 'CErc20') {
       let asset = await ERC20.deploy("ERC20FixedSupply", "DAI Stablecoin", "DAI", toWei(totalErc20Supply));
-      const cDAI = await ERC20.deploy("CErc20", pool.address, asset.address(), "Compound DAI Yield Token", "cDAI");
+      const cDAI = await ERC20.deploy("CErc20", pool.address, asset.address, "Compound DAI Yield Token", "cDAI");
       return new Comptroller(pool, asset, cDAI, priceOracle);
     }
     if (type == 'CEther') {
@@ -78,7 +78,7 @@ export class Comptroller extends ContractBase {
    * @return Success indicator for whether each corresponding market was entered
    */
   async enterMarkets(user:SignerOrAddress): Promise<boolean> {
-    const results:BigNumber[] = await this.contract.connect(user).enterMarkets([this.yieldToken.address()]);
+    const results:BigNumber[] = await this.contract.connect(user).enterMarkets([this.yieldToken.address]);
     return results[0] == BigNumber.from("0"); // no error
   }
 
@@ -90,7 +90,7 @@ export class Comptroller extends ContractBase {
    * @return Whether or not the account successfully exited the market
    */
   async exitMarket(user:SignerOrAddress): Promise<boolean> {
-    const result:BigNumber = await this.contract.connect(user).exitMarket(this.yieldToken.address());
+    const result:BigNumber = await this.contract.connect(user).exitMarket(this.yieldToken.address);
     return result == BigNumber.from("0"); // no error
   }
 
@@ -99,7 +99,7 @@ export class Comptroller extends ContractBase {
    * @return True if user is particiapnt in cToken market
    */
   async isParticipant(user:SignerOrAddress): Promise<boolean> {
-    return await this.contract.isParticipant(this.yieldToken.address(), addressOf(user));
+    return await this.contract.isParticipant(this.yieldToken.address, addressOf(user));
   }
 
   /**
@@ -108,7 +108,7 @@ export class Comptroller extends ContractBase {
    * @param mintAmount How much he wants to mint
    */
   async mintAllowed(user:SignerOrAddress, mintAmount:NumberOrString): Promise<boolean> {
-    return await this.contract.mintAllowed(this.yieldToken.address(), addressOf(user), this.toBigNum(mintAmount)) == 0;
+    return await this.contract.mintAllowed(this.yieldToken.address, addressOf(user), this.toBigNum(mintAmount)) == 0;
   }
 
   /**
@@ -130,7 +130,7 @@ export class Comptroller extends ContractBase {
       throw new Error("Asset is not CErc20");
     }
     const assetAmount = this.asset.toBigNum(amount);
-    await this.asset.approve(user, this.yieldToken.address(), amount);
+    await this.asset.approve(user, this.yieldToken.address, amount);
     await this.yieldToken.contract.connect(user).mint(assetAmount);
   }
 }

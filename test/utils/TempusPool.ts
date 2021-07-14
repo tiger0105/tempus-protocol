@@ -32,7 +32,7 @@ export class TempusPool extends ContractBase {
    * @param maturityTime Maturity time of the pool
    */
   static async deploy(yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number): Promise<TempusPool> {
-    const pool = await ContractBase.deployContract("TempusPool", yieldToken.address(), priceOracle.address(), maturityTime);
+    const pool = await ContractBase.deployContract("TempusPool", yieldToken.address, priceOracle.address, maturityTime);
     const principalShare = await ERC20.attach("PrincipalShare", await pool.principalShare());
     const yieldShare = await ERC20.attach("YieldShare", await pool.yieldShare());
     return new TempusPool(pool, yieldToken, principalShare, yieldShare, priceOracle);

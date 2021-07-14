@@ -17,7 +17,7 @@ export class IPriceOracle extends ContractBase {
    * @returns Current exchange rate of that Token in the pool
    */
   async currentRate(token:ERC20|string): Promise<NumberOrString> {
-    const address:string = (typeof(token) == 'string') ? token : token.address();
+    const address:string = (typeof(token) == 'string') ? token : token.address;
     return this.fromBigNum(await this.contract.currentRate(address));
   }
 }

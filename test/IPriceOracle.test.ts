@@ -19,7 +19,7 @@ describe("Tempus Pool", async () => {
     {
       // TODO: use new deployment utilities (will come in another PR)
       const backingAsset = await ERC20.deploy("ERC20FixedSupply", "DAI Stablecoin", "DAI", toWei(1000000));
-      const aavePool = await ContractBase.deployContract("AavePoolMock", backingAsset.address());
+      const aavePool = await ContractBase.deployContract("AavePoolMock", backingAsset.address);
       const yieldToken = await ERC20.attach("ATokenMock", await aavePool.yieldToken());
 
       let oracle:IPriceOracle = await IPriceOracle.deploy("AavePriceOracle");

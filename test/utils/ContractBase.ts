@@ -24,6 +24,7 @@ export abstract class ContractBase
   contractName:string;
   contract:Contract;
   decimals:number;
+  address:string; // address of the contract, `this.contract.address`
 
   constructor(contractName:string, decimals:number, contract?:Contract) {
     if (!contractName)
@@ -31,16 +32,15 @@ export abstract class ContractBase
     this.contractName = contractName;
     this.contract = contract;
     this.decimals = decimals;
+    this.address = contract ? contract.address : null;
   }
 
   protected initialize(contract:Contract) {
     if (!contract)
       throw new Error("`contract` cannot be null");
     this.contract = contract;
+    this.address = contract.address;
   }
-  
-  /** @return Address of the contract */
-  address(): string { return this.contract.address; }
   
   /** Connects a user to the contract, so that transactions can be sent by the user */
   connect(user:SignerOrAddress): Contract {

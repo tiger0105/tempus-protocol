@@ -22,7 +22,7 @@ export class Aave extends ContractBase {
   static async create(totalSupply:Number): Promise<Aave> {
     // using WEI, because DAI has 18 decimal places
     const asset = await ERC20.deploy("ERC20FixedSupply", "DAI Stablecoin", "DAI", toWei(totalSupply));
-    const pool = await ContractBase.deployContract("AavePoolMock", asset.address());
+    const pool = await ContractBase.deployContract("AavePoolMock", asset.address);
     const yieldToken = await ERC20.attach("ATokenMock", await pool.yieldToken());
     const priceOracle = await IPriceOracle.deploy("AavePriceOracle");
     return new Aave(pool, asset, yieldToken, priceOracle);
@@ -48,7 +48,7 @@ export class Aave extends ContractBase {
    *         almost equivalent to reserve normalized income.
    */
   async liquidityIndex(): Promise<NumberOrString> {
-    return fromRay(await this.contract.getReserveNormalizedIncome(this.asset.address()));
+    return fromRay(await this.contract.getReserveNormalizedIncome(this.asset.address));
   }
 
   /**
@@ -64,7 +64,7 @@ export class Aave extends ContractBase {
    * @param amount # of ETH to deposit, eg: 1.0
    */
   async deposit(user:SignerOrAddress, amount:NumberOrString) {
-    await this.asset.approve(user, this.address(), amount);
-    await this.contract.connect(user).deposit(this.asset.address(), this.toBigNum(amount), addressOf(user), 0);
+    await this.asset.approve(user, this.address, amount);
+    await this.contract.connect(user).deposit(this.asset.address, this.toBigNum(amount), addressOf(user), 0);
   }
 }
