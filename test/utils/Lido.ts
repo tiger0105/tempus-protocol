@@ -14,8 +14,7 @@ export class Lido extends ERC20 {
   priceOracle:IPriceOracle;
 
   constructor(pool:Contract, asset:ERC20, priceOracle:IPriceOracle) {
-    super("LidoMock");
-    this.contract = pool;
+    super("LidoMock", pool);
     this.asset = asset;
     this.yieldToken = this; // for Lido, the pool itself is the Yield Token
     this.priceOracle = priceOracle;

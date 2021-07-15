@@ -207,7 +207,7 @@ describe("Tempus Pool", async () => {
     it("Should give appropriate shares after ASSET Wrapper deposit", async () =>
     {
       await createAavePool();
-      const wrapper = await ContractBase.deployContract("AaveDepositWrapper", pool.address());
+      const wrapper = await ContractBase.deployContract("AaveDepositWrapper", pool.address);
       await aave.asset.approve(user, wrapper.address, 100);
       await wrapper.connect(user).deposit(aave.toBigNum(100));
       expect(await pool.principalShare.balanceOf(user)).to.equal(100);
@@ -286,7 +286,7 @@ describe("Tempus Pool", async () => {
     it("Should give appropriate shares after ASSET Wrapper deposit", async () =>
     {
       await createLidoPool();
-      const wrapper = await ContractBase.deployContract("LidoDepositWrapper", pool.address());
+      const wrapper = await ContractBase.deployContract("LidoDepositWrapper", pool.address);
       await wrapper.connect(user).deposit({value: lido.toBigNum(100)});
       expect(await pool.principalShare.balanceOf(user)).to.equal(100);
       expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
