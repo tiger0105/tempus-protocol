@@ -7,7 +7,7 @@ import "./IPriceOracle.sol";
 contract CompoundPriceOracle is IPriceOracle {
     /// @return Current exchange rate as a WAD decimal
     function currentRate(address token) external view override returns (uint256) {
-        CTokenInterface cToken = CTokenInterface(token);
-        return cToken.exchangeRateCurrent();
+        // TODO: change this to use exchangeRateCurrent() to avoid unwanted arbitrage
+        return CTokenInterface(token).exchangeRateStored();
     }
 }

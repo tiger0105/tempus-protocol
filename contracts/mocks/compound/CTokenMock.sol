@@ -15,7 +15,7 @@ abstract contract CTokenMock is ERC20, CTokenInterface {
         comptroller = comptrollerInterface;
     }
 
-    function exchangeRateCurrent() public view override returns (uint) {
+    function exchangeRateStored() public view override returns (uint) {
         // TODO: this exchange rate is completely mocked
         return ComptrollerMock(address(comptroller)).exchangeRate();
     }
@@ -36,7 +36,7 @@ abstract contract CTokenMock is ERC20, CTokenInterface {
         uint err = comptroller.mintAllowed(address(this), minter, mintAmount);
         require(err == 0, "mint is not allowed");
 
-        uint exchangeRate = exchangeRateCurrent();
+        uint exchangeRate = exchangeRateStored();
 
         /*
          *  We call `doTransferIn` for the minter and the mintAmount.

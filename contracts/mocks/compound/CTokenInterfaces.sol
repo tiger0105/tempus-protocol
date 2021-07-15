@@ -16,8 +16,8 @@ abstract contract CTokenInterface is CTokenStorage {
      */
     bool public constant isCToken = true;
 
-    // as defined in Compound's CTokenInterfaces.sol
-    function exchangeRateCurrent() external view virtual returns (uint);
+    // as defined in Compound protocol
+    function exchangeRateStored() external view virtual returns (uint);
 }
 
 contract CErc20Storage {

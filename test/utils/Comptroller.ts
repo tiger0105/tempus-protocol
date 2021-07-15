@@ -133,4 +133,14 @@ export class Comptroller extends ContractBase {
     await this.asset.approve(user, this.yieldToken.address, amount);
     await this.yieldToken.contract.connect(user).mint(assetAmount);
   }
+
+  /**
+   * Mints either CErc20 or CEther tokens depending on the underlying CToken
+   */
+  async mint(user:SignerOrAddress, amount:NumberOrString) {
+    if (this.asset == null) {
+      return await this.mintEther(user, amount);
+    }
+    return await this.mintERC20(user, amount);
+  }
 }

@@ -6,6 +6,7 @@ import { Lido } from "./utils/Lido";
 import { Comptroller } from "./utils/Comptroller";
 import { TempusPool } from "./utils/TempusPool";
 import { NumberOrString } from "./utils/Decimal";
+import { blockTimestamp, increaseTime } from "./utils/Utils";
 
 describe("Tempus Pool", async () => {
   let owner:Signer, user:Signer;
@@ -20,15 +21,6 @@ describe("Tempus Pool", async () => {
       expect(promise).to.be.revertedWith(message)
       :
       expect(promise).to.be.reverted;
-  }
-
-  async function blockTimestamp() {
-    return (await ethers.provider.getBlock('latest')).timestamp;
-  }
-
-   async function increaseTime(addSeconds) {
-    await ethers.provider.send("evm_increaseTime", [addSeconds]);
-    await ethers.provider.send("evm_mine", []);
   }
 
   beforeEach(async () => {
@@ -55,21 +47,6 @@ describe("Tempus Pool", async () => {
 
     maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
     pool = await TempusPool.deploy(aave.yieldToken, aave.priceOracle, maturityTime);
-  }
-
-  async function createCompoundPool(depositToUser:number = 0) {
-    compound = await Comptroller.create('CErc20', 1000000);
-    await compound.asset.transfer(owner, user, 10000); // initial deposit for User
-
-    // generate some CTokens by owner depositing, and then transfer some to user
-    if (depositToUser > 0) {
-      await compound.enterMarkets(owner);
-      await compound.mintERC20(owner, depositToUser*2);
-      await compound.yieldToken.transfer(owner, user, depositToUser);
-    }
-
-    maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
-    pool = await TempusPool.deploy(compound.yieldToken, compound.priceOracle, maturityTime);
   }
 
   async function createLidoPool(depositToUser:number = 0) {
@@ -288,17 +265,6 @@ describe("Tempus Pool", async () => {
       await createLidoPool();
       const wrapper = await ContractBase.deployContract("LidoDepositWrapper", pool.address);
       await wrapper.connect(user).deposit({value: lido.toBigNum(100)});
-      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
-      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
-    });
-  });
-
-  describe("Deposit Compound", async () =>
-  {
-    it("Should give appropriate shares after pool deposit", async () =>
-    {
-      await createCompoundPool(/*depositToUser:*/500);
-      await pool.deposit(user, 100, /*recipient:*/user);
       expect(await pool.principalShare.balanceOf(user)).to.equal(100);
       expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
     });
