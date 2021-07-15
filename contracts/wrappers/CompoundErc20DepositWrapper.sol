@@ -5,22 +5,20 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../ITempusPool.sol";
-// TODO: replace these with protocol interfaces
-import "../mocks/compound/CErc20.sol";
-import "../mocks/compound/CTokenInterfaces.sol";
+import "../protocols/compound/ICErc20.sol";
 
 /// Allows depositing ERC20 into Compound's CErc20 contracts
 contract CompoundErc20DepositWrapper {
     using SafeERC20 for IERC20;
 
     ITempusPool internal immutable pool;
-    CErc20 internal immutable token;
+    ICErc20 internal immutable token;
     IERC20 internal immutable backingToken;
 
     constructor(ITempusPool _pool) {
         pool = _pool;
 
-        CErc20 cToken = CErc20(_pool.yieldBearingToken());
+        ICErc20 cToken = ICErc20(_pool.yieldBearingToken());
         require(cToken.isCToken(), "token is not a CToken");
         token = cToken;
         backingToken = IERC20(cToken.underlying());
