@@ -219,7 +219,7 @@ describe("Tempus Pool", async () => {
       await expectRevert(pool.redeem(user, 50, 100), "Inequal redemption not allowed before maturity.");
     });
 
-    it("Should work before maturity with equal shares (unimplemented)", async () =>
+    it("Should work before maturity with equal shares, without yield (unimplemented)", async () =>
     {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
@@ -229,11 +229,36 @@ describe("Tempus Pool", async () => {
       await expectRevert(pool.redeem(user, 100, 100), "Unimplemented.");
     });
 
-    it("Should work after maturity with unequal shares (unimplemented)", async () =>
+    it("Should work before maturity with equal shares, with yield (unimplemented)", async () =>
     {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
+      await setExchangeRate(2.0);
+
+      // TODO: implement the underlying
+      await expectRevert(pool.redeem(user, 100, 100), "Unimplemented.");
+    });
+
+    it("Should work after maturity with unequal shares, without yield (unimplemented)", async () =>
+    {
+      await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
+      await pool.deposit(user, 100, /*recipient:*/user);
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
+
+      await increaseTime(60*60);
+      await pool.finalize();
+
+      // TODO: implement the underlying
+      await expectRevert(pool.redeem(user, 50, 100), "Unimplemented.");
+    });
+
+    it("Should work after maturity with unequal shares, with yield (unimplemented)", async () =>
+    {
+      await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
+      await pool.deposit(user, 100, /*recipient:*/user);
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
+      await setExchangeRate(2.0);
 
       await increaseTime(60*60);
       await pool.finalize();
