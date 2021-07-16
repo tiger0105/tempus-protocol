@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { ContractBase, Signer } from "./utils/ContractBase";
+import { ContractBase, Signer, SignerOrAddress } from "./utils/ContractBase";
 import { Aave } from "./utils/Aave";
 import { Lido } from "./utils/Lido";
 import { Comptroller } from "./utils/Comptroller";
@@ -21,6 +21,12 @@ describe("Tempus Pool", async () => {
       expect(promise).to.be.revertedWith(message)
       :
       expect(promise).to.be.reverted;
+  }
+
+  async function expectUserState(owner:SignerOrAddress, principalShares:number, yieldShares:number, yieldBearing:number) {
+    expect(await pool.principalShare.balanceOf(owner)).to.equal(principalShares);
+    expect(await pool.yieldShare.balanceOf(owner)).to.equal(yieldShares);
+    expect(await pool.yieldBearing.balanceOf(owner)).to.equal(yieldBearing);
   }
 
   beforeEach(async () => {
@@ -141,41 +147,37 @@ describe("Tempus Pool", async () => {
     it("Should allow depositing 100 (starting rate 1.0)", async () =>
     {
       await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
+      await expectUserState(user, 0, 0, /*yieldBearing:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
-      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
-      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
+      await expectUserState(user, 100, 100, /*yieldBearing:*/400);
     });
 
     it("Should allow depositing 100 again", async () =>
     {
       await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
-      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
-      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
+      await expectUserState(user, 100, 100, /*yieldBearing:*/400);
       await pool.deposit(user, 100, /*recipient:*/user);
-      expect(await pool.principalShare.balanceOf(user)).to.equal(200);
-      expect(await pool.yieldShare.balanceOf(user)).to.equal(200);
+      await expectUserState(user, 200, 200, /*yieldBearing:*/300);
     });
 
     it("Should allow depositing 100 (starting rate !=1.0)", async () =>
     {
       await createAavePool(/*liquidityIndex:*/1.2, /*depositToUser:*/500);
+      await expectUserState(user, 0, 0, /*yieldBearing:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
-      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
-      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
+      await expectUserState(user, 100, 100, /*yieldBearing:*/400);
     });
 
     it("Depositing after increase", async () =>
     {
       await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
-      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
-      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
+      await expectUserState(user, 100, 100, /*yieldBearing:*/400);
 
       await setExchangeRate(2.0);
       await pool.deposit(user, 100, /*recipient:*/user);
-      expect(await pool.principalShare.balanceOf(user)).to.equal(150);
-      expect(await pool.yieldShare.balanceOf(user)).to.equal(150);
+      await expectUserState(user, 150, 150, /*yieldBearing:*/300);
 
       expect(await pool.initialExchangeRate()).to.equal(1.0);
       expect(await pool.currentExchangeRate()).to.equal(2.0);
@@ -185,10 +187,10 @@ describe("Tempus Pool", async () => {
     {
       await createAavePool();
       const wrapper = await ContractBase.deployContract("AaveDepositWrapper", pool.address);
+      await expectUserState(user, 0, 0, /*yieldBearing:*/0);
       await aave.asset.approve(user, wrapper.address, 100);
       await wrapper.connect(user).deposit(aave.toBigNum(100));
-      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
-      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
+      await expectUserState(user, 100, 100, /*yieldBearing:*/0);
     });
 
     it("Should not allow depositing after finalization", async () =>
@@ -206,8 +208,7 @@ describe("Tempus Pool", async () => {
     {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
-      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
-      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
+      await expectUserState(user, 100, 100, /*yieldBearing:*/400);
 
       await expectRevert(pool.redeem(user, 150, 100), "Insufficient principal balance.");
       await expectRevert(pool.redeem(user, 100, 150), "Insufficient yield balance.");
@@ -219,8 +220,7 @@ describe("Tempus Pool", async () => {
     {
       await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
-      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
-      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
+      await expectUserState(user, 100, 100, /*yieldBearing:*/400);
 
       await expectRevert(pool.redeem(user, 50, 100), "Inequal redemption not allowed before maturity.");
     });
@@ -229,8 +229,7 @@ describe("Tempus Pool", async () => {
     {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
-      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
-      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
+      await expectUserState(user, 100, 100, /*yieldBearing:*/400);
 
       // TODO: implement the underlying
       await expectRevert(pool.redeem(user, 100, 100), "Unimplemented.");
@@ -240,8 +239,8 @@ describe("Tempus Pool", async () => {
     {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
-      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
-      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
+      await expectUserState(user, 100, 100, /*yieldBearing:*/400);
+
       await increaseTime(60*60);
       await pool.finalize();
 
@@ -255,9 +254,9 @@ describe("Tempus Pool", async () => {
     it("Should give appropriate shares after pool deposit", async () =>
     {
       await createLidoPool(/*depositToUser:*/500);
+      await expectUserState(user, 0, 0, /*yieldBearing:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
-      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
-      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
+      await expectUserState(user, 100, 100, /*yieldBearing:*/400);
     });
 
     it("Should give appropriate shares after ASSET Wrapper deposit", async () =>
@@ -265,8 +264,7 @@ describe("Tempus Pool", async () => {
       await createLidoPool();
       const wrapper = await ContractBase.deployContract("LidoDepositWrapper", pool.address);
       await wrapper.connect(user).deposit({value: lido.toBigNum(100)});
-      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
-      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
+      await expectUserState(user, 100, 100, /*yieldBearing:*/0);
     });
   });
 });
