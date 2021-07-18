@@ -28,6 +28,16 @@ jobs:
       - store_artifacts:
           path: coverage
           prefix: coverage
+  localDeployment:
+    executor:
+      name: node/default
+      tag: '15.11'
+    steps:
+      - checkout
+      - node/install-packages
+      - run:
+          command:
+            npm run deploy-ci
 
 workflows:
   testsol_and_solhint:
@@ -37,6 +47,9 @@ workflows:
       - coverage:
           context: 
             - Coveralls
+  test_local_deployment:
+    jobs:
+      - localDeployment
 
 notify:
   webhooks:

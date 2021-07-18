@@ -31,7 +31,10 @@
     "solhint": "solhint \"contracts/**/*.sol\"",
     "lint": "prettier --write \"contracts/**/*.sol\"",
     "lint-check": "prettier --check \"contracts/**/*.sol\"",
-    "start-local": "npx hardhat node"
+    "start-local": "npx hardhat node",
+    "deploy-local": "npx hardhat run scripts/deploy.local.ts --network localhost",
+    "deploy-ci": "npx hardhat run scripts/deploy.local.ts",
+    "increase-time": "npx hardhat run scripts/increaseTime.local.ts --network localhost"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.1.0"
