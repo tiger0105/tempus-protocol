@@ -6,7 +6,7 @@
 
 pragma solidity 0.8.6;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./ILido.sol";
 
 /*
  * WARNING: THIS IS A SLIGHTLY MODIFIED StETH CONTRACT.
@@ -45,7 +45,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * pooled Ether increases, no `Transfer` events are generated: doing so would require
  * emitting an event for each token holder and thus running an unbounded loop.
  */
-abstract contract StETH is IERC20 {
+abstract contract StETH is ILido {
     /**
      * @dev StETH balances are dynamic and are calculated based on the accounts' shares
      * and the total amount of Ether controlled by the protocol. Account shares aren't
@@ -79,7 +79,7 @@ abstract contract StETH is IERC20 {
     /**
      * @return the name of the token.
      */
-    function name() public pure returns (string memory) {
+    function name() public override pure returns (string memory) {
         return "Liquid staked Ether 2.0";
     }
 
@@ -87,14 +87,14 @@ abstract contract StETH is IERC20 {
      * @return the symbol of the token, usually a shorter version of the
      * name.
      */
-    function symbol() public pure returns (string memory) {
+    function symbol() public override pure returns (string memory) {
         return "stETH";
     }
 
     /**
      * @return the number of decimals for getting user representation of a token amount.
      */
-    function decimals() public pure returns (uint8) {
+    function decimals() public override pure returns (uint8) {
         return 18;
     }
 
@@ -248,7 +248,7 @@ abstract contract StETH is IERC20 {
      * @dev The sum of all accounts' shares can be an arbitrary number, therefore
      * it is necessary to store it in order to calculate each account's relative share.
      */
-    function getTotalShares() public view returns (uint256) {
+    function getTotalShares() public override view returns (uint256) {
         return _getTotalShares();
     }
 
