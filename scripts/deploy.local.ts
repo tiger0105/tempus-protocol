@@ -1,9 +1,6 @@
-import { ethers } from "hardhat";
-import { toWei } from "./../test/utils/Decimal";
+import { blockTimestamp } from "./../test/utils/Utils";
 import { Aave } from "../test/utils/Aave";
 import { TempusPool } from "./../test/utils/TempusPool";
-import { SignerOrAddress } from "../test/utils/ContractBase";
-
 
 async function deployAavePool(
   backingTokenSupply: Number,
@@ -25,7 +22,7 @@ async function deployATokenTempusPool(aave: Aave, poolLength: number) {
   const maturityTime = await blockTimestamp() + poolLength;
   const pool:TempusPool = await TempusPool.deploy(aave.yieldToken, aave.priceOracle, maturityTime);
 
-  console.log('AToken TempusPool deployed with length %i sec to: %s', poolLength, pool.address());
+  console.log('AToken TempusPool deployed with length %i sec to: %s', poolLength, pool.address);
 }
 
 async function main() {
