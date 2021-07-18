@@ -2,7 +2,7 @@
 pragma solidity 0.8.6;
 
 import "./IPriceOracle.sol";
-import "./mocks/lido/ILido.sol";
+import "./protocols/lido/ILido.sol";
 
 contract StETHPriceOracle is IPriceOracle {
     /// @return Current exchange rate as a WAD decimal

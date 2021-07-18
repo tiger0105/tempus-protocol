@@ -2,7 +2,7 @@
 pragma solidity 0.8.6;
 
 import "../ITempusPool.sol";
-import "../mocks/lido/ILido.sol";
+import "../protocols/lido/ILido.sol";
 
 contract LidoDepositWrapper {
     ITempusPool internal immutable pool;

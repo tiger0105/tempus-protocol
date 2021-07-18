@@ -6,7 +6,7 @@
 
 pragma solidity 0.8.6;
 
-import "./ILido.sol";
+import "../../protocols/lido/ILido.sol";
 
 /*
  * WARNING: THIS IS A SLIGHTLY MODIFIED StETH CONTRACT.
