@@ -12,10 +12,10 @@ contract YieldShare is PoolShare {
         string memory symbol
     ) PoolShare(ShareKind.Yield, _pool, name, symbol) {}
 
-    function pricePerShare() public view override returns (uint256) {
+    function getPricePerFullShare() public view override returns (uint256) {
         // TODO: Cannot implement this completely yet, too many additional changes needed
         //       Finish this in another PR
-        uint256 price = pool.currentExchangeRate();
-        return price;
+        uint256 rate = pool.currentExchangeRate() - pool.initialExchangeRate();
+        return rate;
     }
 }

@@ -22,7 +22,7 @@ contract TempusPool is ITempusPool {
     uint256 public immutable override startTime;
     uint256 public immutable override maturityTime;
 
-    uint256 public immutable initialExchangeRate;
+    uint256 public immutable override initialExchangeRate;
     uint256 public maturityExchangeRate;
     PrincipalShare public immutable principalShare;
     YieldShare public immutable yieldShare;

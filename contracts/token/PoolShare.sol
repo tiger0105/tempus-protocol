@@ -28,5 +28,5 @@ abstract contract PoolShare is ERC20OwnerMintableToken {
     ///      of the underlying pool.
     ///      Example: exchanging Tempus Yield Share to aDAI
     /// @return 1e18 decimal conversion rate per share
-    function pricePerShare() public view virtual returns (uint256);
+    function getPricePerFullShare() public view virtual returns (uint256);
 }

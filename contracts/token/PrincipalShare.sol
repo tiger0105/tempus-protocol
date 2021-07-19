@@ -12,7 +12,7 @@ contract PrincipalShare is PoolShare {
         string memory symbol
     ) PoolShare(ShareKind.Principal, _pool, name, symbol) {}
 
-    function pricePerShare() public pure override returns (uint256) {
+    function getPricePerFullShare() public pure override returns (uint256) {
         return 1e18;
     }
 }

@@ -34,11 +34,11 @@ describe("Tempus Pool (YieldShare)", async () => {
 
   describe("Deploy", async () =>
   {
-    it("Initial exchange rates must be 1.0", async () =>
+    it("Should have 1.0 Principal rate and 0.0 Yield rate at init", async () =>
     {
       await createAavePool();
-      expect(await pool.principalShare.pricePerShare()).to.equal(1.0);
-      expect(await pool.yieldShare.pricePerShare()).to.equal(1.0);
+      expect(await pool.principalShare.getPricePerFullShare()).to.equal(1.0);
+      expect(await pool.yieldShare.getPricePerFullShare()).to.equal(0.0);
     });
   });
 

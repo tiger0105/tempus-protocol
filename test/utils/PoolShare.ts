@@ -23,7 +23,7 @@ export class PoolShare extends ERC20OwnerMintable {
   /**
    * @returns Price per share as described in PoolShare.sol
    */
-  async pricePerShare(): Promise<NumberOrString> {
-    return this.fromBigNum(await this.contract.pricePerShare());
+  async getPricePerFullShare(): Promise<NumberOrString> {
+    return this.fromBigNum(await this.contract.getPricePerFullShare());
   }
 }
