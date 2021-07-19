@@ -24,9 +24,8 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
-  // Workaround until https://github.com/ethereum-ts/TypeChain/issues/431 is fixed.
   typechain: {
-    outDir: `${__dirname}/typechain`,
+    outDir: `./typechain`,
   },
   abiExporter: {
     path: './abi-artifacts',
