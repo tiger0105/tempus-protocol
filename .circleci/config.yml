@@ -40,10 +40,14 @@ jobs:
             npm run deploy-ci
 
 workflows:
-  testsol_and_solhint:
+  tests:
     jobs:
       - node/test
+  solhint:
+    jobs:
       - solhint
+  code_coverage:
+    jobs:
       - coverage:
           context: 
             - Coveralls
