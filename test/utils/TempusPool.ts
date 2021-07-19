@@ -1,20 +1,21 @@
 import { expect } from "chai";
 import { BigNumber, Contract } from "ethers";
-import { NumberOrString, fromRay } from "./Decimal";
+import { NumberOrString } from "./Decimal";
 import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
 import { IPriceOracle } from "./IPriceOracle";
+import { PoolShare } from "./PoolShare";
 
 /**
  * Wrapper around TempusPool
  */
 export class TempusPool extends ContractBase {
   yieldBearing:ERC20; // actual yield bearing token such as AToken or CToken
-  principalShare:ERC20;
-  yieldShare:ERC20;
+  principalShare:PoolShare;
+  yieldShare:PoolShare;
   priceOracle:IPriceOracle;
 
-  constructor(pool:Contract, yieldBearing:ERC20, principalShare:ERC20, yieldShare:ERC20, priceOracle:IPriceOracle) {
+  constructor(pool:Contract, yieldBearing:ERC20, principalShare:PoolShare, yieldShare:PoolShare, priceOracle:IPriceOracle) {
     super("TempusPool", 18, pool);
     this.yieldBearing = yieldBearing;
     this.principalShare = principalShare;
@@ -34,8 +35,8 @@ export class TempusPool extends ContractBase {
    */
   static async deploy(yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number): Promise<TempusPool> {
     const pool = await ContractBase.deployContract("TempusPool", yieldToken.address, priceOracle.address, maturityTime);
-    const principalShare = await ERC20.attach("PrincipalShare", await pool.principalShare());
-    const yieldShare = await ERC20.attach("YieldShare", await pool.yieldShare());
+    const principalShare = await PoolShare.attach("principal", await pool.principalShare());
+    const yieldShare = await PoolShare.attach("yield", await pool.yieldShare());
     return new TempusPool(pool, yieldToken, principalShare, yieldShare, priceOracle);
   }
 
