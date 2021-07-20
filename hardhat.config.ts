@@ -32,7 +32,7 @@ module.exports = {
     path: './abi-artifacts',
     clear: false,
     flat: true,
-    only: ['TempusToken'],
+    only: ['TempusToken', 'TempusPool', 'ERC20'],
     spacing: 2
   },
   solidity: {
