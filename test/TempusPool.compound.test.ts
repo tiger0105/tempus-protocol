@@ -2,7 +2,7 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import { ContractBase, Signer } from "./utils/ContractBase";
 import { Comptroller } from "./utils/Comptroller";
-import { TempusPool } from "./utils/TempusPool";
+import { TempusPool, expectUserState } from "./utils/TempusPool";
 import { blockTimestamp } from "./utils/Utils";
 
 describe("Tempus Pool (Compound)", async () => {
@@ -37,9 +37,9 @@ describe("Tempus Pool (Compound)", async () => {
     it("Should give appropriate shares after pool deposit", async () =>
     {
       await createCompoundPool('CErc20', /*depositToUser:*/500);
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
-      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
-      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
     });
 
     it("Should give appropriate shares after CEther ASSET Wrapper deposit", async () =>
@@ -47,10 +47,9 @@ describe("Tempus Pool (Compound)", async () => {
       await createCompoundPool('CEther');
 
       const wrapper = await ContractBase.deployContract("CompoundEtherDepositWrapper", pool.address);
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/0);
       await wrapper.connect(user).depositEther({value: compound.toBigNum(100)});
-
-      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
-      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/0);
     });
 
     it("Should give appropriate shares after CErc20 ASSET Wrapper deposit", async () =>
@@ -58,11 +57,10 @@ describe("Tempus Pool (Compound)", async () => {
       await createCompoundPool('CErc20');
 
       const wrapper = await ContractBase.deployContract("CompoundErc20DepositWrapper", pool.address);
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/0);
       await compound.asset.approve(user, wrapper.address, 100);
       await wrapper.connect(user).deposit(compound.asset.toBigNum(100));
-
-      expect(await pool.principalShare.balanceOf(user)).to.equal(100);
-      expect(await pool.yieldShare.balanceOf(user)).to.equal(100);
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/0);
     });
   });
 });
