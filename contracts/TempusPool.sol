@@ -98,4 +98,13 @@ contract TempusPool is ITempusPool {
     function currentExchangeRate() public view override returns (uint256) {
         return priceOracle.currentRate(yieldBearingToken);
     }
+
+    function pricePerYieldShare() public view override returns (uint256) {
+        uint256 currentRate = currentExchangeRate();
+        uint256 initialRate = initialExchangeRate;
+
+        // TODO: Not finished, needs additional testing later
+        uint256 rate = (1e18 * (currentRate - initialRate)) / initialRate;
+        return rate;
+    }
 }

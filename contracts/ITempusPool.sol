@@ -50,4 +50,7 @@ interface ITempusPool {
 
     /// Initial exchange rate of Yield Bearing Token versus Backing Token
     function initialExchangeRate() external view returns (uint256);
+
+    /// @return Rate of exchanging one Tempus Yield Share into Yield Bearing Token
+    function pricePerYieldShare() external view returns (uint256);
 }

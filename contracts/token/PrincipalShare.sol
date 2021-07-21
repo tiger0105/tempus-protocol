@@ -12,6 +12,7 @@ contract PrincipalShare is PoolShare {
         string memory symbol
     ) PoolShare(ShareKind.Principal, _pool, name, symbol) {}
 
+    /// @dev This is for Curve api support.
     function getPricePerFullShare() public pure override returns (uint256) {
         return 1e18;
     }
