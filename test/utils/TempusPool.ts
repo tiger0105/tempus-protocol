@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import { BigNumber, Contract } from "ethers";
 import { NumberOrString, fromRay } from "./Decimal";
 import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
@@ -125,4 +126,10 @@ export class TempusPool extends ContractBase {
   async maturityExchangeRate(): Promise<NumberOrString> {
     return this.fromBigNum(await this.contract.maturityExchangeRate());
   }
+}
+
+export async function expectUserState(pool:TempusPool, owner:SignerOrAddress, principalShares:number, yieldShares:number, yieldBearing:number) {
+  expect(await pool.principalShare.balanceOf(owner)).to.equal(principalShares);
+  expect(await pool.yieldShare.balanceOf(owner)).to.equal(yieldShares);
+  expect(await pool.yieldBearing.balanceOf(owner)).to.equal(yieldBearing);
 }
