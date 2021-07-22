@@ -1,4 +1,4 @@
-
+import { Contract } from "ethers";
 import { NumberOrString } from "./Decimal";
 import { SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
@@ -7,8 +7,8 @@ import { ERC20 } from "./ERC20";
  * Type safe wrapper of ERC20OwnerMintableToken
  */
 export class ERC20OwnerMintable extends ERC20 {
-  constructor() {
-    super("ERC20OwnerMintableToken");
+  constructor(contractName?:string, contract?:Contract) {
+    super(contractName ?? "ERC20OwnerMintableToken", contract);
   }
 
   /** @returns The manager who is allowed to mint and burn. */
