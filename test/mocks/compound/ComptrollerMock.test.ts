@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { Comptroller } from "../../utils/Comptroller";
 import { Signer } from "../../utils/ContractBase";
 import { NumberOrString } from "../../utils/Decimal";
-import { revert } from "../../utils/ERC20";
+import { revert } from "../../utils/Utils";
 
 describe("Compound Mock", async () => {
   let owner:Signer, user:Signer;

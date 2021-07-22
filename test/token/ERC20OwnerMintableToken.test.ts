@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { Signer } from "../utils/ContractBase";
-import { revert } from "../utils/ERC20";
+import { revert } from "../utils/Utils";
 import { ERC20OwnerMintable } from "../utils/ERC20OwnerMintable";
 
 describe("Owner Mintable Token", async () => {

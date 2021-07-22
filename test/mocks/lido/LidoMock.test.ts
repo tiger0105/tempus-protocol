@@ -2,7 +2,7 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import { Lido } from "../../utils/Lido";
 import { Signer } from "../../utils/ContractBase";
-import { revert } from "../../utils/ERC20";
+import { revert } from "../../utils/Utils";
 
 describe("Lido Mock", async () => {
   let owner:Signer, user:Signer;
