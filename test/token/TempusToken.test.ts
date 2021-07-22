@@ -2,46 +2,31 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import { toWei } from "../utils/Decimal"
 import { expectRevert } from "../utils/Utils";
+import { Signer } from "../utils/ContractBase";
+import { TempusToken } from "../utils/TempusToken";
 
 describe("Tempus Token", async () => {
-  const totalTokenSupply = toWei(100000000);
-  let owner, user1, user2;
-  let TempusToken;
+  const totalTokenSupply = 100000000;
+  let owner:Signer, user1:Signer, user2:Signer;
+  let token:TempusToken;
 
   beforeEach(async () => {
     [owner, user1, user2] = await ethers.getSigners();
-    const tempusTokenContractFactory = await ethers.getContractFactory("TempusToken");
-    TempusToken = await tempusTokenContractFactory.connect(owner).deploy(totalTokenSupply);
+    token = await TempusToken.deployClass(TempusToken, toWei(totalTokenSupply));
   });
-
-  function transfer(sender, receiver, amount) {
-    return TempusToken.connect(sender).transfer(receiver.address, amount);
-  }
-
-  function burn(sender, receiver, amount) {
-    return TempusToken.connect(sender).burn(receiver.address, amount);
-  }
-
-  async function expectBalanceOf(signer): Promise<Chai.Assertion> {
-    return expect(await TempusToken.balanceOf(signer.address));
-  }
-
-  async function expectTotalSupply(): Promise<Chai.Assertion> {
-    return expect(await TempusToken.totalSupply());
-  }
 
   describe("Deploy", async () =>
   {
     it("Should mint initial supply to owner", async () =>
     {
-      (await expectBalanceOf(owner)).to.equal(totalTokenSupply);
-      (await expectTotalSupply()).to.equal(totalTokenSupply);
+      expect(await token.balanceOf(owner)).to.equal(totalTokenSupply);
+      expect(await token.totalSupply()).to.equal(totalTokenSupply);
     });
 
     it("Should set name and symbol", async () =>
     {
-      expect(await TempusToken.name()).to.equal("Tempus");
-      expect(await TempusToken.symbol()).to.equal("TEMP");
+      expect(await token.name()).to.equal("Tempus");
+      expect(await token.symbol()).to.equal("TEMP");
     });
   });
   
@@ -50,39 +35,39 @@ describe("Tempus Token", async () => {
     it("Should allow users to burn their own tokens", async () =>
     {
       const amount = 10;
-      const initialTotalSupply = await TempusToken.totalSupply();
+      const initialTotalSupply = await token.totalSupply();
 
-      await transfer(owner, user1, amount); // Owner transfers to User
-      (await expectBalanceOf(user1)).to.equal(amount);
+      await token.transfer(owner, user1, amount); // Owner transfers to User
+      expect(await token.balanceOf(user1)).to.equal(amount);
 
       // User tries to burn its own tokens
-      await burn(user1, user1, amount);
-      (await expectBalanceOf(user1)).to.equal(0);
-      (await expectTotalSupply()).to.equal(initialTotalSupply.sub(amount));
+      await token.burn(user1, user1, amount);
+      expect(await token.balanceOf(user1)).to.equal(0);
+      expect(await token.totalSupply()).to.equal(Number(initialTotalSupply) - amount);
     });
 
     it("Should not allow users to burn other users' tokens", async () =>
     {
       const amount = 10;
 
-      await transfer(owner, user1, amount); // Owner transfers to User
-      (await expectBalanceOf(user1)).to.equal(amount);
+      await token.transfer(owner, user1, amount); // Owner transfers to User
+      expect(await token.balanceOf(user1)).to.equal(amount);
 
       // User tries to burn another user's tokens
       // @TODO: add suitable expected error message once it's added to the contract implementation
-      (await expectRevert(burn(user2, user1, amount))).to.equal("Transaction reverted without a reason");
+      (await expectRevert(token.burn(user2, user1, amount))).to.equal("Transaction reverted without a reason");
     });
 
     it("Should not allow owner to burn users' tokens", async () =>
     {
       const amount = 10;
 
-      await transfer(owner, user1, amount); // Owner transfers to User
-      (await expectBalanceOf(user1)).to.equal(amount);
+      await token.transfer(owner, user1, amount); // Owner transfers to User
+      expect(await token.balanceOf(user1)).to.equal(amount);
 
       // Owner burns User, but more than exists
       // @TODO: add suitable expected error message once it's added to the contract implementation
-      (await expectRevert(burn(owner, user1, 10))).to.equal("Transaction reverted without a reason");
+      (await expectRevert(token.burn(owner, user1, 10))).to.equal("Transaction reverted without a reason");
     });
   });
 });
