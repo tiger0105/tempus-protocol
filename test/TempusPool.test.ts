@@ -6,7 +6,7 @@ import { Lido } from "./utils/Lido";
 import { Comptroller } from "./utils/Comptroller";
 import { TempusPool, expectUserState } from "./utils/TempusPool";
 import { NumberOrString } from "./utils/Decimal";
-import { blockTimestamp, increaseTime } from "./utils/Utils";
+import { blockTimestamp, increaseTime, revert } from "./utils/Utils";
 
 describe("Tempus Pool", async () => {
   let owner:Signer, user:Signer, user2:Signer;
@@ -15,13 +15,6 @@ describe("Tempus Pool", async () => {
   let compound:Comptroller;
   let pool:TempusPool;
   let maturityTime:number;
-
-  function expectRevert(promise, message = null) {
-    return message ?
-      expect(promise).to.be.revertedWith(message)
-      :
-      expect(promise).to.be.reverted;
-  }
 
   beforeEach(async () => {
     [owner, user, user2] = await ethers.getSigners();
@@ -96,7 +89,7 @@ describe("Tempus Pool", async () => {
     it("Finalize prior to maturity", async () =>
     {
       await createAavePool();
-      await expectRevert(pool.finalize(), "Maturity not been reached yet");
+      (await revert(pool.finalize())).to.equal("Maturity not been reached yet.");
     });
 
     it("Finalize on/after maturity", async () =>
@@ -110,7 +103,7 @@ describe("Tempus Pool", async () => {
     it("Finalizing multiple times", async () =>
     {
       await createAavePool();
-      await expectRevert(pool.finalize(), "Maturity not been reached yet");
+      (await revert(pool.finalize())).to.equal("Maturity not been reached yet.");
       await increaseTime(60*60);
       await pool.finalize();
       expect(await pool.matured()).to.equal(true);
@@ -203,7 +196,7 @@ describe("Tempus Pool", async () => {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
       await increaseTime(60*60);
       await pool.finalize();
-      await expectRevert(pool.deposit(user, 100, /*recipient:*/user), "Maturity reached.");
+      (await revert(pool.deposit(user, 100, /*recipient:*/user))).to.equal("Maturity reached.");
     });
 
     it("Should allow depositing from multiple users", async () =>
@@ -245,10 +238,10 @@ describe("Tempus Pool", async () => {
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
 
-      await expectRevert(pool.redeem(user, 150, 100), "Insufficient principal balance.");
-      await expectRevert(pool.redeem(user, 100, 150), "Insufficient yield balance.");
+      (await revert(pool.redeem(user, 150, 100))).to.equal("Insufficient principal balance.");
+      (await revert(pool.redeem(user, 100, 150))).to.equal("Insufficient yield balance.");
       // We're checking principal first.
-      await expectRevert(pool.redeem(user, 150, 150), "Insufficient principal balance.");
+      (await revert(pool.redeem(user, 150, 150))).to.equal("Insufficient principal balance.");
     });
 
     it("Should fail before maturity with uneqal shares", async () =>
@@ -257,7 +250,7 @@ describe("Tempus Pool", async () => {
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
 
-      await expectRevert(pool.redeem(user, 50, 100), "Inequal redemption not allowed before maturity.");
+      (await revert(pool.redeem(user, 50, 100))).to.equal("Inequal redemption not allowed before maturity.");
     });
 
     it("Should work before maturity with equal shares, without yield (unimplemented)", async () =>
@@ -267,7 +260,7 @@ describe("Tempus Pool", async () => {
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
 
       // TODO: implement the underlying
-      await expectRevert(pool.redeem(user, 100, 100), "Unimplemented.");
+      (await revert(pool.redeem(user, 100, 100))).to.equal("Unimplemented.");
     });
 
     it("Should work before maturity with equal shares, with yield (unimplemented)", async () =>
@@ -278,7 +271,7 @@ describe("Tempus Pool", async () => {
       await setExchangeRate(2.0);
 
       // TODO: implement the underlying
-      await expectRevert(pool.redeem(user, 100, 100), "Unimplemented.");
+      (await revert(pool.redeem(user, 100, 100))).to.equal("Unimplemented.");
     });
 
     it("Should work after maturity with unequal shares, without yield (unimplemented)", async () =>
@@ -291,7 +284,7 @@ describe("Tempus Pool", async () => {
       await pool.finalize();
 
       // TODO: implement the underlying
-      await expectRevert(pool.redeem(user, 50, 100), "Unimplemented.");
+      (await revert(pool.redeem(user, 50, 100))).to.equal("Unimplemented.");
     });
 
     it("Should work after maturity with unequal shares, with yield (unimplemented)", async () =>
@@ -305,7 +298,7 @@ describe("Tempus Pool", async () => {
       await pool.finalize();
 
       // TODO: implement the underlying
-      await expectRevert(pool.redeem(user, 50, 100), "Unimplemented.");
+      (await revert(pool.redeem(user, 50, 100))).to.equal("Unimplemented.");
     });
   });
 
