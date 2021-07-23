@@ -1,5 +1,18 @@
 {
-  "name": "hardhat-project",
+  "private": true,
+  "name": "tempus-protocol",
+  "version": "0.0.0",
+  "description": "Tempus Protocol Contracts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tempus-finance/tempus-protocol.git"
+  },
+  "author": "Tempus",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/tempus-finance/tempus-protocol/issues"
+  },
+  "homepage": "https://github.com/tempus-finance/tempus-protocol#readme",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
