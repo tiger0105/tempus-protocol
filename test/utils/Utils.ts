@@ -19,9 +19,9 @@ export async function increaseTime(addSeconds) {
 
 /**
  * Expect called promise to revert with message
- * (await util.revert(lido.withdraw(..))).to.equal("expected revert msg");
+ * (await expectRevert(lido.withdraw(..))).to.equal("expected revert msg");
  */
-export async function revert(promise: Promise<any>): Promise<Chai.Assertion> {
+export async function expectRevert(promise: Promise<any>): Promise<Chai.Assertion> {
   try {
     await promise;
     return expect('TX_NOT_REVERTED');

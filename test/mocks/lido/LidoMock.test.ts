@@ -2,7 +2,7 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import { Lido } from "../../utils/Lido";
 import { Signer } from "../../utils/ContractBase";
-import { revert } from "../../utils/Utils";
+import { expectRevert } from "../../utils/Utils";
 
 describe("Lido Mock", async () => {
   let owner:Signer, user:Signer;
@@ -33,7 +33,7 @@ describe("Lido Mock", async () => {
 
     it("Should reject ZERO deposit", async () =>
     {
-      (await revert(lido.submit(user, 0.0))).to.equal("ZERO_DEPOSIT");
+      (await expectRevert(lido.submit(user, 0.0))).to.equal("ZERO_DEPOSIT");
     });
 
     it("Should deposit in 32eth chunks", async () =>
@@ -96,10 +96,10 @@ describe("Lido Mock", async () => {
       expect(await lido.sharesOf(owner)).to.equal(0.0);
       expect(await lido.sharesOf(user)).to.equal(66.0);
 
-      (await revert(lido.withdraw(owner, 100.0)))
+      (await expectRevert(lido.withdraw(owner, 100.0)))
         .to.equal("Can only withdraw up to the buffered ether.");
 
-      (await revert(lido.withdraw(owner, 1.0)))
+      (await expectRevert(lido.withdraw(owner, 1.0)))
         .to.equal("BURN_AMOUNT_EXCEEDS_BALANCE");
     });
   });

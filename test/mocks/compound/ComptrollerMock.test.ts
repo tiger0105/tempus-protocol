@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { Comptroller } from "../../utils/Comptroller";
 import { Signer } from "../../utils/ContractBase";
 import { NumberOrString } from "../../utils/Decimal";
-import { revert } from "../../utils/Utils";
+import { expectRevert } from "../../utils/Utils";
 
 describe("Compound Mock", async () => {
   let owner:Signer, user:Signer;
@@ -160,7 +160,7 @@ describe("Compound Mock", async () => {
     
     it("Should fail to mint if user is non-participant", async () =>
     {
-      (await revert(pool.mintEther(user, 10))).to.be.equal("mint is not allowed");
+      (await expectRevert(pool.mintEther(user, 10))).to.be.equal("mint is not allowed");
     });
   });
 });
