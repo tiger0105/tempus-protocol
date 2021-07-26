@@ -1,6 +1,7 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { toWei } from "../utils/Decimal"
+import { expectRevert } from "../utils/Utils";
 
 describe("Tempus Token", async () => {
   const totalTokenSupply = toWei(100000000);
@@ -27,13 +28,6 @@ describe("Tempus Token", async () => {
 
   async function expectTotalSupply(): Promise<Chai.Assertion> {
     return expect(await TempusToken.totalSupply());
-  }
-
-  function expectRevert(promise, message = null) {
-    return message ?
-      expect(promise).to.be.revertedWith(message)
-      :
-      expect(promise).to.be.reverted;
   }
 
   describe("Deploy", async () =>
@@ -76,7 +70,7 @@ describe("Tempus Token", async () => {
 
       // User tries to burn another user's tokens
       // @TODO: add suitable expected error message once it's added to the contract implementation
-      await expectRevert(burn(user2, user1, amount));
+      (await expectRevert(burn(user2, user1, amount))).to.equal("Transaction reverted without a reason");
     });
 
     it("Should not allow owner to burn users' tokens", async () =>
@@ -88,7 +82,7 @@ describe("Tempus Token", async () => {
 
       // Owner burns User, but more than exists
       // @TODO: add suitable expected error message once it's added to the contract implementation
-      await expectRevert(burn(owner, user1, 10));
+      (await expectRevert(burn(owner, user1, 10))).to.equal("Transaction reverted without a reason");
     });
   });
 });

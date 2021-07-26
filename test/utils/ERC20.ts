@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { Contract } from "ethers";
 import { NumberOrString } from "./Decimal";
 import { ContractBase, SignerOrAddress, Signer, addressOf } from "./ContractBase";
@@ -125,23 +124,5 @@ export class ERC20 extends ContractBase {
       to: this.contract.address,
       value: this.toBigNum(amount)
     });
-  }
-}
-
-/**
- * Expect called promise to revert with message
- * (await util.revert(lido.withdraw(..))).to.equal("expected revert msg");
- */
-export async function revert(promise: Promise<any>): Promise<Chai.Assertion> {
-  try {
-    await promise;
-    return expect('TX_NOT_REVERTED');
-  } catch (e) {
-    const expectedPrefix = "VM Exception while processing transaction: revert ";
-    if (e.message.startsWith(expectedPrefix)) {
-      const revertMessage = e.message.substr(expectedPrefix.length);
-      return expect(revertMessage);
-    }
-    return expect(e.message); // something else failed
   }
 }
