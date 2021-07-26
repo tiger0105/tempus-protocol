@@ -2,19 +2,17 @@
 pragma solidity 0.8.6;
 
 import "../ITempusPool.sol";
-// TODO: replace these with protocol interfaces
-import "../mocks/compound/CEther.sol";
-import "../mocks/compound/CTokenInterfaces.sol";
+import "../protocols/compound/ICEther.sol";
 
 /// Allows depositing ETH into Compound's CEther contract
 contract CompoundEtherDepositWrapper {
     ITempusPool internal immutable pool;
-    CEther internal immutable token;
+    ICEther internal immutable token;
 
     constructor(ITempusPool _pool) {
         pool = _pool;
 
-        CEther cToken = CEther(_pool.yieldBearingToken());
+        ICEther cToken = ICEther(_pool.yieldBearingToken());
         require(cToken.isCToken(), "token is not a CToken");
         token = cToken;
 
