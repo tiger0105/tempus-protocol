@@ -16,6 +16,8 @@ contract TempusPool is ITempusPool {
 
     uint public constant override version = 1;
 
+    uint256 private constant EXCHANGE_RATE_PRECISION = 1e18;
+
     IPriceOracle public immutable priceOracle;
     address public immutable override yieldBearingToken;
 
@@ -78,7 +80,7 @@ contract TempusPool is ITempusPool {
         IERC20(yieldBearingToken).safeTransferFrom(msg.sender, address(this), yieldTokenAmount);
 
         // Issue appropriate shares
-        uint256 tokensToIssue = (yieldTokenAmount * initialExchangeRate) / currentExchangeRate();
+        uint256 tokensToIssue = (yieldTokenAmount * initialExchangeRate) / EXCHANGE_RATE_PRECISION;
         principalShare.mint(recipient, tokensToIssue);
         yieldShare.mint(recipient, tokensToIssue);
         return tokensToIssue;
