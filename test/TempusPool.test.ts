@@ -333,6 +333,7 @@ describe("Tempus Pool", async () => {
       expect(await pool.contractBalance()).to.equal(100); // all 100 in the pool
       // but user receives 99
       await expectUserState(pool, user, 99, 99, /*yieldBearing:*/400);
+      expect (await pool.totalFees()).to.equal(1); // and 1 as accumulated fees
     });
   });
 });

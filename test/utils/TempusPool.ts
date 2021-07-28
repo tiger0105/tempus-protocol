@@ -150,6 +150,13 @@ export class TempusPool extends ContractBase {
       matureRedeemPercent: this.toBigNum(matureRedeemPercent),
     });
   }
+
+  /**
+   * @returns Total accumulated fees
+   */
+  async totalFees(): Promise<NumberOrString> {
+    return this.fromBigNum(await this.contract.totalFees());
+  }
 }
 
 export async function expectUserState(pool:TempusPool, owner:SignerOrAddress, principalShares:number, yieldShares:number, yieldBearing:number) {
