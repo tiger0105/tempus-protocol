@@ -3,6 +3,7 @@ pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./IPriceOracle.sol";
 import "./ITempusPool.sol";
@@ -11,12 +12,13 @@ import "./token/YieldShare.sol";
 
 /// @author The tempus.finance team
 /// @title Implementation of Tempus Pool
-contract TempusPool is ITempusPool {
+contract TempusPool is ITempusPool, Ownable {
     using SafeERC20 for IERC20;
 
     uint public constant override version = 1;
 
     uint256 private constant EXCHANGE_RATE_PRECISION = 1e18;
+    uint256 private constant FEE_PRECISION = 1e18;
 
     IPriceOracle public immutable priceOracle;
     address public immutable override yieldBearingToken;
@@ -30,6 +32,22 @@ contract TempusPool is ITempusPool {
     YieldShare public immutable yieldShare;
 
     bool public override matured;
+
+    struct FeesConfig {
+        /// @dev Percentage of Yield Bearing Tokens (YBT) taken as fee during deposit()
+        uint256 depositPercent;
+        /// @dev Percentage of Yield Bearing Tokens (YBT)
+        ///      taken as fee during early redeem()
+        uint256 earlyRedeemPercent;
+        /// @dev Percentage of Yield Bearing Tokens (YBT)
+        ///      taken as fee after maturity time during redeem()
+        uint256 matureRedeemPercent;
+    }
+
+    FeesConfig public feesConfig;
+
+    /// total amount of fees accumulated in pool
+    uint256 public totalFees;
 
     /// Constructs Pool with underlying token, start and maturity date
     /// @param token underlying yield bearing token
@@ -68,6 +86,28 @@ contract TempusPool is ITempusPool {
         }
     }
 
+    /// @dev Sets the fees config for this pool. By default all fees are 0
+    function setFeesConfig(FeesConfig calldata newFeesConfig) public onlyOwner {
+        feesConfig = newFeesConfig;
+    }
+
+    /// @dev Transfers accumulated Yield Bearing Token (YBT) fees
+    ///      from this pool contract to `recipient`
+    /// @param recipient Address which will receive the specified amount of YBT
+    /// @param amount Amount of YBT to transfer, cannot be more than contract's `totalFees`
+    ///               If amount is uint256.max, then all accumulated fees are transferred.
+    function transferFees(address recipient, uint256 amount) public onlyOwner {
+        if (amount == type(uint256).max) {
+            amount = totalFees;
+        } else {
+            require(amount <= totalFees, "not enough accumulated fees");
+        }
+        IERC20 token = IERC20(yieldBearingToken);
+        token.approve(address(this), amount);
+        token.safeTransferFrom(address(this), recipient, amount);
+        totalFees -= amount;
+    }
+
     /// @dev Deposits yield bearing tokens (such as cDAI) into TempusPool
     ///      msg.sender must approve `yieldTokenAmount` to this TempusPool
     /// @param yieldTokenAmount Amount of yield bearing tokens to deposit
@@ -79,8 +119,18 @@ contract TempusPool is ITempusPool {
         // Collect the deposit
         IERC20(yieldBearingToken).safeTransferFrom(msg.sender, address(this), yieldTokenAmount);
 
+        // Collect fees if they are set, reducing the number of tokens for the sender
+        // thus leaving more YBT in the TempusPool than there are minted TPS/TYS
+        uint256 tokenAmount = yieldTokenAmount;
+        uint256 depositFees = feesConfig.depositPercent;
+        if (depositFees != 0) {
+            uint256 fee = (tokenAmount * depositFees) / FEE_PRECISION;
+            tokenAmount -= fee;
+            totalFees += fee;
+        }
+
         // Issue appropriate shares
-        uint256 tokensToIssue = (yieldTokenAmount * initialExchangeRate) / EXCHANGE_RATE_PRECISION;
+        uint256 tokensToIssue = (tokenAmount * initialExchangeRate) / EXCHANGE_RATE_PRECISION;
         principalShare.mint(recipient, tokensToIssue);
         yieldShare.mint(recipient, tokensToIssue);
         return tokensToIssue;

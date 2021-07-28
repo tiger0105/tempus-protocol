@@ -5,7 +5,7 @@ import { Aave } from "./utils/Aave";
 import { Lido } from "./utils/Lido";
 import { Comptroller } from "./utils/Comptroller";
 import { TempusPool, expectUserState } from "./utils/TempusPool";
-import { NumberOrString } from "./utils/Decimal";
+import { MAX_UINT256, NumberOrString } from "./utils/Decimal";
 import { expectRevert, blockTimestamp, increaseTime } from "./utils/Utils";
 
 describe("Tempus Pool", async () => {
@@ -318,6 +318,41 @@ describe("Tempus Pool", async () => {
       const wrapper = await ContractBase.deployContract("LidoDepositWrapper", pool.address);
       await wrapper.connect(user).deposit({value: lido.toBigNum(100)});
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/0);
+    });
+  });
+
+  describe("Fees", async () =>
+  {
+    it("Should collect tokens as fees during deposit() if fees != 0", async () =>
+    {
+      await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
+
+      await pool.setFeesConfig(owner, 0.01, 0.0, 0.0);
+      await pool.deposit(user, 100, /*recipient:*/user);
+      expect(await pool.contractBalance()).to.equal(100); // all 100 in the pool
+      // but user receives 99
+      await expectUserState(pool, user, 99, 99, /*yieldBearing:*/400);
+      expect(await pool.totalFees()).to.equal(1); // and 1 as accumulated fees
+    });
+
+    it("Should transfer fees to specified account", async () =>
+    {
+      await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
+
+      await pool.setFeesConfig(owner, 0.10, 0.0, 0.0);
+      await pool.deposit(user, 100, /*recipient:*/user);
+      expect(await pool.contractBalance()).to.equal(100);
+
+      await expectUserState(pool, user, 90, 90, /*yieldBearing:*/400);
+      expect(await pool.totalFees()).to.equal(10);
+
+      await pool.transferFees(owner, user2, 5);
+      expect(await pool.yieldBearing.balanceOf(user2)).to.equal(500 + 5);
+      expect(await pool.totalFees()).to.equal(5);
+
+      await pool.transferFees(owner, user2, MAX_UINT256);
+      expect(await pool.yieldBearing.balanceOf(user2)).to.equal(500 + 10);
+      expect(await pool.totalFees()).to.equal(0);
     });
   });
 });

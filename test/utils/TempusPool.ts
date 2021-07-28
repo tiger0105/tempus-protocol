@@ -27,6 +27,13 @@ export class TempusPool extends ContractBase {
   }
 
   /**
+   * @returns Number of YBT deposited into this TempusPool contract
+   */
+  async contractBalance(): Promise<NumberOrString> {
+    return this.yieldBearing.balanceOf(this.contract.address);
+  }
+
+  /**
    * Deploys TempusPool
    * @param yieldToken The yield bearing token, such as aave.earn (AToken)
    * @param priceOracle Price oracle name which returns the current exchange rate from yieldTokens, such as AavePriceOracle
@@ -126,6 +133,36 @@ export class TempusPool extends ContractBase {
    */
   async maturityExchangeRate(): Promise<NumberOrString> {
     return this.fromBigNum(await this.contract.maturityExchangeRate());
+  }
+
+  /**
+   * @returns Total accumulated fees
+   */
+   async totalFees(): Promise<NumberOrString> {
+    return this.fromBigNum(await this.contract.totalFees());
+  }
+
+  /**
+   * Sets fees config for the pool. Caller must be owner
+   */
+  async setFeesConfig(
+    owner:SignerOrAddress,
+    depositPercent:NumberOrString,
+    earlyRedeemPercent:NumberOrString,
+    matureRedeemPercent:NumberOrString
+  ): Promise<void> {
+    await this.contract.connect(owner).setFeesConfig({
+      depositPercent: this.toBigNum(depositPercent),
+      earlyRedeemPercent: this.toBigNum(earlyRedeemPercent),
+      matureRedeemPercent: this.toBigNum(matureRedeemPercent),
+    });
+  }
+
+  /**
+   * Transfers fees from contract to recipient
+   */
+  async transferFees(owner:SignerOrAddress, recipient:SignerOrAddress, amount:NumberOrString) {
+    await this.contract.connect(owner).transferFees(addressOf(recipient), this.toBigNum(amount));
   }
 }
 
