@@ -83,9 +83,26 @@ contract TempusPool is ITempusPool, Ownable {
         }
     }
 
-    /// @dev Sets the fees for this pool. By default all fees are 0
-    function setFees(FeesConfig calldata newFees) public onlyOwner {
-        fees = newFees;
+    /// @dev Sets the fees config for this pool. By default all fees are 0
+    function setFeesConfig(FeesConfig calldata newFeesConfig) public onlyOwner {
+        fees = newFeesConfig;
+    }
+
+    /// @dev Transfers accumulated Yield Bearing Token (YBT) fees
+    ///      from this pool contract to `recipient`
+    /// @param recipient Address which will receive the specified amount of YBT
+    /// @param amount Amount of YBT to transfer, cannot be more than contract's `totalFees`
+    ///               If amount is uint256.max, then all accumulated fees are transferred.
+    function transferFees(address recipient, uint256 amount) public onlyOwner {
+        if (amount == type(uint256).max) {
+            amount = totalFees;
+        } else {
+            require(amount <= totalFees, "not enough accumulated fees");
+        }
+        IERC20 token = IERC20(yieldBearingToken);
+        token.approve(address(this), amount);
+        token.safeTransferFrom(address(this), recipient, amount);
+        totalFees -= amount;
     }
 
     /// @dev Deposits yield bearing tokens (such as cDAI) into TempusPool
