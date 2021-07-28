@@ -3,6 +3,7 @@ pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./IPriceOracle.sol";
 import "./ITempusPool.sol";
@@ -11,14 +12,13 @@ import "./token/YieldShare.sol";
 
 /// @author The tempus.finance team
 /// @title Implementation of Tempus Pool
-contract TempusPool is ITempusPool {
+contract TempusPool is ITempusPool, Ownable {
     using SafeERC20 for IERC20;
 
     uint public constant override version = 1;
 
     uint256 private constant EXCHANGE_RATE_PRECISION = 1e18;
 
-    address public immutable owner;
     IPriceOracle public immutable priceOracle;
     address public immutable override yieldBearingToken;
 
@@ -56,7 +56,6 @@ contract TempusPool is ITempusPool {
     ) {
         require(maturity > block.timestamp, "maturityTime is after startTime");
 
-        owner = msg.sender;
         yieldBearingToken = token;
         priceOracle = oracle;
         startTime = block.timestamp;
@@ -84,8 +83,7 @@ contract TempusPool is ITempusPool {
     }
 
     /// @dev Sets the fees for this pool. By default all fees are 0
-    function setFees(FeesConfig calldata newFees) public {
-        require(msg.sender == owner, "Only contract owner can set fees");
+    function setFees(FeesConfig calldata newFees) public onlyOwner {
         fees = newFees;
     }
 
