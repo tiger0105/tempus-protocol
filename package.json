@@ -14,7 +14,7 @@
   },
   "homepage": "https://github.com/tempus-finance/tempus-protocol#readme",
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.10",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@typechain/ethers-v5": "^7.0.1",
     "@typechain/hardhat": "^2.2.0",
@@ -23,6 +23,8 @@
     "@types/node": "^15.0.1",
     "chai": "^4.3.4",
     "coveralls": "^3.1.0",
+    "cross-env": "^7.0.3",
+    "dotenv": "^10.0.0",
     "ethereum-waffle": "^3.3.0",
     "ethers": "^5.4.1",
     "hardhat": "^2.2.1",
@@ -34,13 +36,14 @@
     "solhint": "^3.3.4",
     "solhint-plugin-prettier": "^0.0.5",
     "solidity-coverage": "^0.7.16",
-    "ts-node": "^9.1.1",
+    "ts-node": "^10.0.0",
     "typechain": "^5.1.1",
     "typescript": "^4.2.4"
   },
   "scripts": {
-    "test": "npx hardhat test",
-    "coverage": "npx hardhat coverage",
+    "test": "npx hardhat test test/*.ts test/mocks/**/*.ts test/token/*.ts",
+    "test:integration": "cross-env HARDHAT_FORK=mainnet HARDHAT_FORK_NUMBER=12862536 npx hardhat test integration-tests/*",
+    "coverage": "npx hardhat coverage --testfiles \"test/**/*.ts\"",
     "solhint": "solhint \"contracts/**/*.sol\"",
     "lint": "prettier --write \"contracts/**/*.sol\"",
     "lint-check": "prettier --check \"contracts/**/*.sol\"",
@@ -50,6 +53,7 @@
     "increase-time": "npx hardhat run scripts/increaseTime.local.ts --network localhost"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.1.0"
+    "@openzeppelin/contracts": "^4.1.0",
+    "decimal.js": "^10.3.1"
   }
 }

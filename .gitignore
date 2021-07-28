@@ -4,5 +4,7 @@ abi-artifacts/*
 cache/*
 coverage/*
 coverage.json
-deployments/*
+deployments/hardhat
+deployments/localhost
 typechain/*
+.env
