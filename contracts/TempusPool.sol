@@ -18,6 +18,7 @@ contract TempusPool is ITempusPool {
 
     uint256 private constant EXCHANGE_RATE_PRECISION = 1e18;
 
+    address public immutable owner;
     IPriceOracle public immutable priceOracle;
     address public immutable override yieldBearingToken;
 
@@ -31,6 +32,19 @@ contract TempusPool is ITempusPool {
 
     bool public override matured;
 
+    struct FeesConfig {
+        /// @dev Percentage of Yield Bearing Tokens (YBT) taken as fee during deposit()
+        uint256 depositPercent;
+        /// @dev Percentage of Yield Bearing Tokens (YBT)
+        ///      taken as fee during early redeem()
+        uint256 earlyRedeemPercent;
+        /// @dev Percentage of Yield Bearing Tokens (YBT)
+        ///      taken as fee after maturity time during redeem()
+        uint256 matureRedeemPercent;
+    }
+
+    FeesConfig public fees;
+
     /// Constructs Pool with underlying token, start and maturity date
     /// @param token underlying yield bearing token
     /// @param oracle the price oracle correspoding to the token
@@ -42,6 +56,7 @@ contract TempusPool is ITempusPool {
     ) {
         require(maturity > block.timestamp, "maturityTime is after startTime");
 
+        owner = msg.sender;
         yieldBearingToken = token;
         priceOracle = oracle;
         startTime = block.timestamp;
@@ -68,6 +83,12 @@ contract TempusPool is ITempusPool {
         }
     }
 
+    /// @dev Sets the fees for this pool. By default all fees are 0
+    function setFees(FeesConfig calldata newFees) public {
+        require(msg.sender == owner, "Only contract owner can set fees");
+        fees = newFees;
+    }
+
     /// @dev Deposits yield bearing tokens (such as cDAI) into TempusPool
     ///      msg.sender must approve `yieldTokenAmount` to this TempusPool
     /// @param yieldTokenAmount Amount of yield bearing tokens to deposit
@@ -79,8 +100,16 @@ contract TempusPool is ITempusPool {
         // Collect the deposit
         IERC20(yieldBearingToken).safeTransferFrom(msg.sender, address(this), yieldTokenAmount);
 
+        // Collect fees if they are set, reducing the number of tokens for the sender
+        // thus leaving more YBT in the TempusPool than there are minted TPS/TYS
+        uint256 tokenAmount = yieldTokenAmount;
+        uint256 depositFees = fees.depositPercent;
+        if (depositFees != 0) {
+            tokenAmount -= (tokenAmount * depositFees) / 1e18;
+        }
+
         // Issue appropriate shares
-        uint256 tokensToIssue = (yieldTokenAmount * initialExchangeRate) / EXCHANGE_RATE_PRECISION;
+        uint256 tokensToIssue = (tokenAmount * initialExchangeRate) / EXCHANGE_RATE_PRECISION;
         principalShare.mint(recipient, tokensToIssue);
         yieldShare.mint(recipient, tokensToIssue);
         return tokensToIssue;
