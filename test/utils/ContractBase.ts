@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { Contract, BigNumber } from "ethers";
 import { NumberOrString, parseDecimal, formatDecimal, MAX_NUMBER_DIGITS } from "./Decimal";
-import * as signers from "@nomiclabs/hardhat-ethers/signers";
+import * as signers from "@nomiclabs/hardhat-ethers/dist/src/signers";
 
 export type Signer = signers.SignerWithAddress;
 export type SignerOrAddress = Signer|string;
@@ -30,9 +30,9 @@ export abstract class ContractBase
     if (!contractName)
       throw new Error("`contractName` cannot be empty or null");
     this.contractName = contractName;
-    this.contract = contract;
+    this.contract = contract!;
     this.decimals = decimals;
-    this.address = contract ? contract.address : null;
+    this.address = contract ? contract.address : '0x0';
   }
 
   protected initialize(contract:Contract) {

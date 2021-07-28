@@ -1,14 +1,36 @@
+
 # Tempus Protocol
+
 Smart contracts of Tempus Finance
 
+  
+
 ## Compiling and running tests
+
 Installing dependancies `npm run install`
+
 To compile run `npx hardhat compile`
-To run the tests `npm run test`
+
+To run the unit tests `npm run test`
+
+To run the integration tests `npm run test:integration` (check prerequisites [here](#integration-tests))
+
+  
 
 ## Coding style
+
 Please follow suggested coding style from solidity language documentation. It can be found at https://docs.soliditylang.org/en/latest/style-guide.html
 
+  
+  
 
 ## Testing
-For debug logging Solidity, you can use `import "hardhat/console.sol";`
+
+### Unit Tests
+To run unit tests, simply execute `npm test`.
+
+### Integration Tests
+Our integration tests run against a local network that is forked off of the Ethereum Mainnet. Follow these steps to run them:
+
+* Set the `ETH_NODE_URI_MAINNET` environment variable to an archive mainnet Ethereum node URI.
+* Execute `npm run test:integration`. 

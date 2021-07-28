@@ -7,18 +7,37 @@ import 'hardhat-abi-exporter';
 import "@typechain/hardhat";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-ethers";
+import 'dotenv/config';
 
+if (process.env.HARDHAT_FORK) {
+  process.env['HARDHAT_DEPLOY_FORK'] = process.env.HARDHAT_FORK;
+}
+
+function getNodeUrl(networkName: string) : string {
+  if (networkName === 'localhost') {
+    // do not use ETH_NODE_URI
+    return 'http://localhost:8545';
+  }
+  const nodeUriEnvVar = 'ETH_NODE_URI_' + networkName.toUpperCase();
+  
+  const uri = process.env[nodeUriEnvVar];
+  if (!uri) {
+    throw new Error(
+      `network ${networkName} node URI is not configured. Set ${nodeUriEnvVar} environment variables.`
+    );
+  }
+
+  return uri;
+}
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
-task("accounts", "Prints the list of accounts", async (args, hre) => {
+task("accounts", "Prints the list of accounts", async (args: any, hre: any) => {
   const accounts = await hre.ethers.getSigners();
-
   for (const account of accounts) {
     console.log(account.address);
   }
 });
-
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -48,7 +67,15 @@ module.exports = {
       url: "http://127.0.0.1:8545"
     },
     hardhat: {
-      // Add dummy accounts here for local development. Connect account to MetaMask using private key.
+      // process.env.HARDHAT_FORK will specify the network that the fork is made from.
+      forking: process.env.HARDHAT_FORK
+        ? {
+            url: getNodeUrl(process.env.HARDHAT_FORK),
+            blockNumber: process.env.HARDHAT_FORK_NUMBER
+              ? parseInt(process.env.HARDHAT_FORK_NUMBER)
+              : undefined,
+          }
+        : undefined,
       accounts: [{
         balance: "10000000000000000000000",
         privateKey: "0x6c6c264916401a7c067c014c61e8c89dba5525e904a6631fd84ccc6e0829f0b3"
@@ -67,6 +94,9 @@ module.exports = {
   namedAccounts: {
     deployer: {
       default: 0
-    }
+    },
+    daiHolder: '0xf977814e90da44bfa03b6295a0616a897441acec',
+    aDaiHolder: '0x3ddfa8ec3052539b6c9549f12cea2c295cff5296',
+    cDaiHolder: '0x9b4772e59385ec732bccb06018e318b7b3477459'
   },
 };

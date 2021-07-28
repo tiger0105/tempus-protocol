@@ -9,9 +9,9 @@ export class Comptroller extends ContractBase {
   yieldToken:ERC20; // yield token - cDAI or CEther
   priceOracle:IPriceOracle;
   
-  constructor(pool:Contract, asset: ERC20, yieldToken:ERC20, priceOracle:IPriceOracle) {
+  constructor(pool:Contract, asset: ERC20|null, yieldToken:ERC20, priceOracle:IPriceOracle) {
     super("ComptrollerMock", 18, pool);
-    this.asset = asset;
+    this.asset = asset!;
     this.yieldToken = yieldToken;
     this.priceOracle = priceOracle;
   }

@@ -4,6 +4,7 @@ import { NumberOrString, toWei } from "./Decimal";
 import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
 import { IPriceOracle } from "./IPriceOracle";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signers";
 
 /**
  * Type safe wrapper over LidoMock
@@ -55,21 +56,21 @@ export class Lido extends ERC20 {
    *                   This could be different than # of depositBufferedEther(1) calls.
    * @param balance Actual balance in the ETH2 oracle
    */
-  async pushBeacon(owner, validators:number, balance:number) {
+  async pushBeacon(owner: SignerWithAddress, validators:number, balance:number) {
     return await this.connect(owner).pushBeacon(validators, toWei(balance));
   }
   // pushes balance to achieve certain amount of `totalRewards`
-  async pushBeaconRewards(owner, validators:number, rewards:number) {
+  async pushBeaconRewards(owner: SignerWithAddress, validators:number, rewards:number) {
     // push X eth reward, rewards = balance - 32*validators
     const balance = rewards + 32*validators;
     return await this.pushBeacon(owner, validators, balance);
   }
-  async withdraw(signer, shareAmount:Number) {
+  async withdraw(signer: SignerWithAddress, shareAmount:Number) {
     // We ignore the pubKeyHash.
     const hash =  ethers.utils.formatBytes32String("");
     return await this.connect(signer).withdraw(toWei(shareAmount), hash);
   }
-  async printState(title, owner, user) {
+  async printState(title: string, owner: string, user: string) {
     console.log("State:", title);
     console.log("  totalSupply:", await this.totalSupply());
     console.log("  totalShares:", await this.getTotalShares());

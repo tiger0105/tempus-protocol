@@ -4,14 +4,14 @@ import { expect } from "chai";
 /**
  * @returns Latest timestamp of the blockchain
  */
-export async function blockTimestamp() {
+export async function blockTimestamp() : Promise<number> {
   return (await ethers.provider.getBlock('latest')).timestamp;
 }
 
 /**
  * Increase current EVM time by seconds
  */
-export async function increaseTime(addSeconds) {
+export async function increaseTime(addSeconds: number) : Promise<void> {
   await ethers.provider.send("evm_increaseTime", [addSeconds]);
   await ethers.provider.send("evm_mine", []);
 }
