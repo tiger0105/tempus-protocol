@@ -44,6 +44,7 @@ contract TempusPool is ITempusPool, Ownable {
     }
 
     FeesConfig public fees;
+    uint256 public totalFees; // total amount of fees accumulated
 
     /// Constructs Pool with underlying token, start and maturity date
     /// @param token underlying yield bearing token
@@ -103,7 +104,9 @@ contract TempusPool is ITempusPool, Ownable {
         uint256 tokenAmount = yieldTokenAmount;
         uint256 depositFees = fees.depositPercent;
         if (depositFees != 0) {
-            tokenAmount -= (tokenAmount * depositFees) / 1e18;
+            uint256 fee = (tokenAmount * depositFees) / 1e18;
+            tokenAmount -= fee;
+            totalFees += fee;
         }
 
         // Issue appropriate shares
