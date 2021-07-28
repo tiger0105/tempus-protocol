@@ -320,4 +320,19 @@ describe("Tempus Pool", async () => {
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/0);
     });
   });
+
+  describe("Fees", async () =>
+  {
+    it("Should collect tokens as fees during deposit() if fees != 0", async () =>
+    {
+      await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/500);
+
+      await pool.setFees(owner, 0.01, 0.0, 0.0);
+      await pool.deposit(user, 100, /*recipient:*/user);
+      expect(await pool.contractBalance()).to.equal(100); // all 100 in the pool
+      // but user receives 99
+      await expectUserState(pool, user, 99, 99, /*yieldBearing:*/400);
+    });
+  });
 });
