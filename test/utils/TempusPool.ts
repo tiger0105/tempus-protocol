@@ -136,15 +136,22 @@ export class TempusPool extends ContractBase {
   }
 
   /**
-   * Sets fees for the pool. Caller must be owner
+   * @returns Total accumulated fees
    */
-  async setFees(
+   async totalFees(): Promise<NumberOrString> {
+    return this.fromBigNum(await this.contract.totalFees());
+  }
+
+  /**
+   * Sets fees config for the pool. Caller must be owner
+   */
+  async setFeesConfig(
     owner:SignerOrAddress,
     depositPercent:NumberOrString,
     earlyRedeemPercent:NumberOrString,
     matureRedeemPercent:NumberOrString
   ): Promise<void> {
-    await this.contract.connect(owner).setFees({
+    await this.contract.connect(owner).setFeesConfig({
       depositPercent: this.toBigNum(depositPercent),
       earlyRedeemPercent: this.toBigNum(earlyRedeemPercent),
       matureRedeemPercent: this.toBigNum(matureRedeemPercent),
@@ -152,10 +159,10 @@ export class TempusPool extends ContractBase {
   }
 
   /**
-   * @returns Total accumulated fees
+   * Transfers fees from contract to recipient
    */
-  async totalFees(): Promise<NumberOrString> {
-    return this.fromBigNum(await this.contract.totalFees());
+  async transferFees(owner:SignerOrAddress, recipient:SignerOrAddress, amount:NumberOrString) {
+    await this.contract.connect(owner).transferFees(addressOf(recipient), this.toBigNum(amount));
   }
 }
 

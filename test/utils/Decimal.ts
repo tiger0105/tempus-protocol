@@ -13,6 +13,11 @@ export type NumberOrString = Number | string;
 export const MAX_NUMBER_DIGITS = 17;
 
 /**
+ * Maximum value for uint256
+ */
+export const MAX_UINT256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+
+/**
  * Parses a decimal string into specified base precision
  * @example let wei = parseDecimal("0.000001", 18);
  * @param decimalString Decimal string such as "12.1234"
@@ -20,6 +25,10 @@ export const MAX_NUMBER_DIGITS = 17;
  * @returns BigNumber for use in solidity contracts
  */
 export function parseDecimal(decimalString:string, decimalBase:number): BigNumber {
+  // need this special case to support MAX_UINT256, ignoring decimalBase
+  if (decimalString == MAX_UINT256) {
+    return BigNumber.from(MAX_UINT256);
+  }
   return ethers.utils.parseUnits(decimalString, decimalBase);
 }
 
