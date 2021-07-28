@@ -18,6 +18,7 @@ contract TempusPool is ITempusPool, Ownable {
     uint public constant override version = 1;
 
     uint256 private constant EXCHANGE_RATE_PRECISION = 1e18;
+    uint256 private constant FEE_PRECISION = 1e18;
 
     IPriceOracle public immutable priceOracle;
     address public immutable override yieldBearingToken;
@@ -43,8 +44,10 @@ contract TempusPool is ITempusPool, Ownable {
         uint256 matureRedeemPercent;
     }
 
-    FeesConfig public fees;
-    uint256 public totalFees; // total amount of fees accumulated
+    FeesConfig public feesConfig;
+
+    /// total amount of fees accumulated in pool
+    uint256 public totalFees;
 
     /// Constructs Pool with underlying token, start and maturity date
     /// @param token underlying yield bearing token
@@ -85,7 +88,7 @@ contract TempusPool is ITempusPool, Ownable {
 
     /// @dev Sets the fees config for this pool. By default all fees are 0
     function setFeesConfig(FeesConfig calldata newFeesConfig) public onlyOwner {
-        fees = newFeesConfig;
+        feesConfig = newFeesConfig;
     }
 
     /// @dev Transfers accumulated Yield Bearing Token (YBT) fees
@@ -119,9 +122,9 @@ contract TempusPool is ITempusPool, Ownable {
         // Collect fees if they are set, reducing the number of tokens for the sender
         // thus leaving more YBT in the TempusPool than there are minted TPS/TYS
         uint256 tokenAmount = yieldTokenAmount;
-        uint256 depositFees = fees.depositPercent;
+        uint256 depositFees = feesConfig.depositPercent;
         if (depositFees != 0) {
-            uint256 fee = (tokenAmount * depositFees) / 1e18;
+            uint256 fee = (tokenAmount * depositFees) / FEE_PRECISION;
             tokenAmount -= fee;
             totalFees += fee;
         }
