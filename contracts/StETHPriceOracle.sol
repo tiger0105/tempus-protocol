@@ -19,4 +19,8 @@ contract StETHPriceOracle is IPriceOracle {
     function scaledBalance(address, uint256 amount) external pure override returns (uint256) {
         return amount;
     }
+
+    function numYieldTokensPerAsset(address, uint256 amount) external pure override returns (uint256) {
+        return amount;
+    }
 }

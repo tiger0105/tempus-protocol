@@ -1,4 +1,4 @@
-import { Contract } from "ethers";
+import { BigNumber, Contract } from "ethers";
 import { ERC20 } from "./ERC20";
 import { NumberOrString } from "./Decimal";
 import { ContractBase } from "./ContractBase";
@@ -20,4 +20,15 @@ export class IPriceOracle extends ContractBase {
     const address:string = (typeof(token) == 'string') ? token : token.address;
     return this.fromBigNum(await this.contract.currentRate(address));
   }
+
+  async scaledBalance(token:ERC20|string, amount:NumberOrString): Promise<NumberOrString> {
+    const address:string = (typeof(token) == 'string') ? token : token.address;
+    return this.fromBigNum(await this.contract.scaledBalance(address, this.toBigNum(amount)));
+  }
+
+  async numYieldTokensPerAsset(token:ERC20|string, amount:NumberOrString): Promise<NumberOrString> {
+    const address:string = (typeof(token) == 'string') ? token : token.address;
+    return this.fromBigNum(await this.contract.numYieldTokensPerAsset(address, this.toBigNum(amount)));
+  }
+
 }

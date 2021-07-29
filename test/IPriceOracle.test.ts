@@ -24,7 +24,11 @@ describe("Tempus Pool", async () => {
 
       let oracle:IPriceOracle = await IPriceOracle.deploy("AavePriceOracle");
       let exchangeRate = await oracle.currentRate(yieldToken);
+      let scaledBalance = await oracle.scaledBalance(yieldToken, 2);
+      let numYieldTokens = await oracle.numYieldTokensPerAsset(yieldToken, 3);
       expect(exchangeRate).to.equal(1.0);
+      expect(scaledBalance).to.equal(2);
+      expect(numYieldTokens).to.equal(3);
     });
 
     it("Should give correct exchange rate from Lido", async () =>
@@ -32,7 +36,11 @@ describe("Tempus Pool", async () => {
       const pool = await ContractBase.deployContract("LidoMock");
       let oracle:IPriceOracle = await IPriceOracle.deploy("StETHPriceOracle");
       let exchangeRate = await oracle.currentRate(pool.address);
+      let scaledBalance = await oracle.scaledBalance(pool.address, 2);
+      let numYieldTokens = await oracle.numYieldTokensPerAsset(pool.address, 3);
       expect(exchangeRate).to.equal(1.0);
+      expect(scaledBalance).to.equal(2);
+      expect(numYieldTokens).to.equal(3);
     });
     
     it("Should give correct exchange rate from Compound", async () =>
@@ -40,7 +48,11 @@ describe("Tempus Pool", async () => {
       let compound = await Comptroller.create('CErc20', 1000000);
       const yieldToken = compound.yieldToken;
       let exchangeRate = await compound.priceOracle.currentRate(yieldToken);
+      let scaledBalance = await compound.priceOracle.scaledBalance(yieldToken, 2);
+      let numYieldTokens = await compound.priceOracle.numYieldTokensPerAsset(yieldToken, 3);
       expect(exchangeRate).to.equal(1.0);
+      expect(scaledBalance).to.equal(2);
+      expect(numYieldTokens).to.equal(3);
     });
   });
 });
