@@ -48,8 +48,6 @@ contract TempusPool is ITempusPool, Ownable {
 
     /// total amount of fees accumulated in pool
     uint256 public totalFees;
-    uint256 public backingBalance;
-    uint256 public finalSupply;
 
     /// Constructs Pool with underlying token, start and maturity date
     /// @param token underlying yield bearing token
@@ -89,7 +87,6 @@ contract TempusPool is ITempusPool, Ownable {
             // TODO: While this assertion should hold,
             //       if there's some bug somewhere this would prevent finalization.
             assert(principalShare.totalSupply() == yieldShare.totalSupply());
-            finalSupply = principalShare.totalSupply();
         }
     }
 
@@ -135,8 +132,6 @@ contract TempusPool is ITempusPool, Ownable {
             tokenAmount -= fee;
             totalFees += fee;
         }
-        // Increase backing balance
-        backingBalance += tokenAmount;
 
         // Issue appropriate shares
         uint256 backingTokenDepositAmount = priceOracle.scaledBalance(yieldBearingToken, tokenAmount);
