@@ -166,17 +166,15 @@ contract TempusPool is ITempusPool, Ownable {
         uint256 amountPerYieldShareToken = (EXCHANGE_RATE_PRECISION * rateDiff) / initialExchangeRate;
         uint256 redeemAmountFromYieldShares = (yieldAmount * amountPerYieldShareToken) / EXCHANGE_RATE_PRECISION;
 
-        // total amount to redeem, expressed in backing token
-        uint256 amountToRedeem = principalAmount + redeemAmountFromYieldShares;
+        // TODO: Scale based on number of decimals for tokens
+        uint256 redeemableBackingTokens = principalAmount + redeemAmountFromYieldShares;
 
         // Burn the appropriate shares
         principalShare.burn(msg.sender, principalAmount);
         yieldShare.burn(msg.sender, yieldAmount);
 
-        IERC20(yieldBearingToken).safeTransfer(
-            msg.sender,
-            priceOracle.numberOfYieldTokensPerBackingToken(yieldBearingToken, amountToRedeem)
-        );
+        uint256 redeemableYieldTokens = priceOracle.numYieldTokensPerAsset(yieldBearingToken, redeemableBackingTokens);
+        IERC20(yieldBearingToken).safeTransfer(msg.sender, redeemableYieldTokens);
     }
 
     function currentExchangeRate() public view override returns (uint256) {

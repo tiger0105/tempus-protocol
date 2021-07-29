@@ -15,7 +15,7 @@ contract CompoundPriceOracle is IPriceOracle {
         return (amount * this.currentRate(token)) / 1e18;
     }
 
-    function numberOfYieldTokensPerBackingToken(address t, uint256 amount) external view override returns (uint256) {
+    function numYieldTokensPerAsset(address t, uint256 amount) external view override returns (uint256) {
         return (amount * 1e18) / this.currentRate(t);
     }
 }
