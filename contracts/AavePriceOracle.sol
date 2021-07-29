@@ -12,4 +12,8 @@ contract AavePriceOracle is IPriceOracle {
         // convert from RAY 1e27 to WAD 1e18 decimal
         return rateInRay / 1e9;
     }
+
+    function scaledBalance(address, uint256 amount) external pure override returns (uint256) {
+        return amount;
+    }
 }

@@ -15,4 +15,8 @@ contract StETHPriceOracle is IPriceOracle {
             return (steth.getTotalShares() * 1e18) / totalSupply;
         }
     }
+
+    function scaledBalance(address, uint256 amount) external pure override returns (uint256) {
+        return amount;
+    }
 }

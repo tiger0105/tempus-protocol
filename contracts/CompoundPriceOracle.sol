@@ -10,4 +10,8 @@ contract CompoundPriceOracle is IPriceOracle {
         // TODO: change this to use exchangeRateCurrent() to avoid unwanted arbitrage
         return ICToken(token).exchangeRateStored();
     }
+
+    function scaledBalance(address token, uint256 amount) external view override returns (uint256) {
+        return (amount * this.currentRate(token)) / 1e18;
+    }
 }
