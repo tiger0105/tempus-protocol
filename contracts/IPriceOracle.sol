@@ -16,4 +16,10 @@ interface IPriceOracle {
     /// @param amount Amount of yield bearing tokens
     /// @return Scaled balance to express value of @param amount yield tokens in backing token
     function scaledBalance(address token, uint256 amount) external view returns (uint256);
+
+    /// This returns amount of yield bearing tokens that can be converted from @param amount backing tokens
+    /// @param token The address of the appropriate contract for yield token
+    /// @param amount Amount of backing tokens
+    /// @return Amount of yield bearing tokens for specified amount of backing tokens
+    function numberOfYieldTokensPerBackingToken(address token, uint256 amount) external view returns (uint256);
 }

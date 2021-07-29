@@ -258,28 +258,28 @@ describe("Tempus Pool", async () => {
       (await expectRevert(pool.redeem(user, 50, 100))).to.equal("Inequal redemption not allowed before maturity.");
     });
 
-    it("Should work before maturity with equal shares, without yield (unimplemented)", async () =>
+    it("Should work before maturity with equal shares, without yield", async () =>
     {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
 
-      // TODO: implement the underlying
-      (await expectRevert(pool.redeem(user, 100, 100))).to.equal("Unimplemented.");
+      await pool.redeem(user, 100, 100);
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/500);
     });
 
-    it("Should work before maturity with equal shares, with yield (unimplemented)", async () =>
+    it("Should work before maturity with equal shares, with yield", async () =>
     {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
       await setExchangeRate(2.0);
 
-      // TODO: implement the underlying
-      (await expectRevert(pool.redeem(user, 100, 100))).to.equal("Unimplemented.");
+      await pool.redeem(user, 100, 100);
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/1000);
     });
 
-    it("Should work after maturity with unequal shares, without yield (unimplemented)", async () =>
+    it("Should work after maturity with unequal shares, without yield", async () =>
     {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
@@ -288,22 +288,59 @@ describe("Tempus Pool", async () => {
       await increaseTime(60*60);
       await pool.finalize();
 
-      // TODO: implement the underlying
-      (await expectRevert(pool.redeem(user, 50, 100))).to.equal("Unimplemented.");
+      await pool.redeem(user, 50, 100);
+      await expectUserState(pool, user, 50, 0, /*yieldBearing:*/450);
     });
 
-    it("Should work after maturity with unequal shares, with yield (unimplemented)", async () =>
+    it("Should work after maturity with unequal shares, with yield", async () =>
     {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
       await setExchangeRate(2.0);
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/800);
 
       await increaseTime(60*60);
       await pool.finalize();
 
-      // TODO: implement the underlying
-      (await expectRevert(pool.redeem(user, 50, 100))).to.equal("Unimplemented.");
+      await pool.redeem(user, 50, 100);
+      await expectUserState(pool, user, 50, 0, /*yieldBearing:*/950);
+    });
+
+    it("Should redeem correct amount of tokens with multiple users depositing", async () =>
+    {
+      await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
+      await pool.deposit(user, 100, /*recipient:*/user);
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
+
+      await aave.setLiquidityIndex(2.0);
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/800);
+      await pool.deposit(user, 100, /*recipient:*/user);
+      await expectUserState(pool, user, 150, 150, /*yieldBearing:*/700);
+
+      // Now the second user joins.
+      await pool.deposit(user2, 200, /*recipient:*/user2);
+      await expectUserState(pool, user2, 100, 100, /*yieldBearing:*/800);
+
+      expect(await pool.initialExchangeRate()).to.equal(1.0);
+      expect(await pool.currentExchangeRate()).to.equal(2.0);
+
+      await aave.setLiquidityIndex(2.5);
+      await increaseTime(60*60);
+      await pool.finalize();
+      expect(await pool.initialExchangeRate()).to.equal(1.0);
+      expect(await pool.currentExchangeRate()).to.equal(2.5);
+      expect(await pool.maturityExchangeRate()).to.equal(2.5);
+
+      // First user redeems
+      await expectUserState(pool, user, 150, 150, /*yieldBearing:*/875);
+      await pool.redeem(user, 150, 150);
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/ 1250);
+
+      // Second user redeems
+      await expectUserState(pool, user2, 100, 100, /*yieldBearing:*/1000);
+      await pool.redeem(user2, 100, 100);
+      await expectUserState(pool, user2, 0, 0, /*yieldBearing:*/1250);
     });
   });
 

@@ -48,6 +48,8 @@ contract TempusPool is ITempusPool, Ownable {
 
     /// total amount of fees accumulated in pool
     uint256 public totalFees;
+    uint256 public backingBalance;
+    uint256 public finalSupply;
 
     /// Constructs Pool with underlying token, start and maturity date
     /// @param token underlying yield bearing token
@@ -83,6 +85,11 @@ contract TempusPool is ITempusPool, Ownable {
             require(block.timestamp >= maturityTime, "Maturity not been reached yet.");
             maturityExchangeRate = currentExchangeRate();
             matured = true;
+
+            // TODO: While this assertion should hold,
+            //       if there's some bug somewhere this would prevent finalization.
+            assert(principalShare.totalSupply() == yieldShare.totalSupply());
+            finalSupply = principalShare.totalSupply();
         }
     }
 
@@ -128,10 +135,13 @@ contract TempusPool is ITempusPool, Ownable {
             tokenAmount -= fee;
             totalFees += fee;
         }
+        // Increase backing balance
+        backingBalance += tokenAmount;
 
         // Issue appropriate shares
         uint256 backingTokenDepositAmount = priceOracle.scaledBalance(yieldBearingToken, tokenAmount);
         uint256 tokensToIssue = (backingTokenDepositAmount * initialExchangeRate) / currentExchangeRate();
+
         principalShare.mint(recipient, tokensToIssue);
         yieldShare.mint(recipient, tokensToIssue);
         return tokensToIssue;
@@ -144,8 +154,34 @@ contract TempusPool is ITempusPool, Ownable {
         // Redeeming prior to maturity is only allowed in equal amounts.
         require(matured || (principalAmount == yieldAmount), "Inequal redemption not allowed before maturity.");
 
-        // TODO: implement
-        revert("Unimplemented.");
+        _redeem(principalAmount, yieldAmount);
+    }
+
+    function _redeem(uint256 principalAmount, uint256 yieldAmount) internal {
+        // TODO: this whole calcualtion is scaled, should rewrite this using a fixedpoint library.
+
+        // TODO: make reedem work for negative yield
+        require(currentExchangeRate() >= initialExchangeRate, "Negative yield!");
+        require(currentExchangeRate() >= maturityExchangeRate, "Negative yield after maturity!");
+
+        uint256 exchangeRate = matured ? maturityExchangeRate : currentExchangeRate();
+
+        uint256 rateDiff = exchangeRate - initialExchangeRate;
+        // this is expressed in backing token
+        uint256 amountPerYieldShareToken = (EXCHANGE_RATE_PRECISION * rateDiff) / initialExchangeRate;
+        uint256 redeemAmountFromYieldShares = (yieldAmount * amountPerYieldShareToken) / EXCHANGE_RATE_PRECISION;
+
+        // total amount to redeem, expressed in backing token
+        uint256 amountToRedeem = principalAmount + redeemAmountFromYieldShares;
+
+        // Burn the appropriate shares
+        principalShare.burn(msg.sender, principalAmount);
+        yieldShare.burn(msg.sender, yieldAmount);
+
+        IERC20(yieldBearingToken).safeTransfer(
+            msg.sender,
+            priceOracle.numberOfYieldTokensPerBackingToken(yieldBearingToken, amountToRedeem)
+        );
     }
 
     function currentExchangeRate() public view override returns (uint256) {

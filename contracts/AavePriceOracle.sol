@@ -16,4 +16,8 @@ contract AavePriceOracle is IPriceOracle {
     function scaledBalance(address, uint256 amount) external pure override returns (uint256) {
         return amount;
     }
+
+    function numberOfYieldTokensPerBackingToken(address, uint256 amount) external pure override returns (uint256) {
+        return amount;
+    }
 }
