@@ -130,7 +130,8 @@ contract TempusPool is ITempusPool, Ownable {
         }
 
         // Issue appropriate shares
-        uint256 tokensToIssue = (tokenAmount * initialExchangeRate) / EXCHANGE_RATE_PRECISION;
+        uint256 backingTokenDepositAmount = priceOracle.scaledBalance(yieldBearingToken, tokenAmount);
+        uint256 tokensToIssue = (backingTokenDepositAmount * initialExchangeRate) / currentExchangeRate();
         principalShare.mint(recipient, tokensToIssue);
         yieldShare.mint(recipient, tokensToIssue);
         return tokensToIssue;
