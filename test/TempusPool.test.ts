@@ -279,6 +279,33 @@ describe("Tempus Pool", async () => {
       await expectUserState(pool, user, 0, 0, /*yieldBearing:*/1000);
     });
 
+    it("Should fail after maturity with negative yield", async () =>
+    {
+      await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
+      await pool.deposit(user, 100, /*recipient:*/user);
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
+
+      await aave.setLiquidityIndex(0.9);
+      await increaseTime(60*60);
+      await pool.finalize();
+
+      (await expectRevert(pool.redeem(user, 50, 100))).to.equal("Negative yield!");
+    });
+
+    it("Should fail after maturity with negative yield between maturity and redemption", async () =>
+    {
+      await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
+      await pool.deposit(user, 100, /*recipient:*/user);
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
+
+      await aave.setLiquidityIndex(1.2);
+      await increaseTime(60*60);
+      await pool.finalize();
+      await aave.setLiquidityIndex(1.1);
+
+      (await expectRevert(pool.redeem(user, 50, 100))).to.equal("Negative yield after maturity!");
+    });
+
     it("Should work after maturity with unequal shares, without yield", async () =>
     {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
@@ -305,6 +332,23 @@ describe("Tempus Pool", async () => {
 
       await pool.redeem(user, 50, 100);
       await expectUserState(pool, user, 50, 0, /*yieldBearing:*/950);
+    });
+
+    it("Should work after maturity with additional yield after maturity", async () =>
+    {
+      await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
+      await pool.deposit(user, 100, /*recipient:*/user);
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
+      await setExchangeRate(2.0);
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/800);
+
+      await increaseTime(60*60);
+      await pool.finalize();
+      await setExchangeRate(4.0);
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/1600);
+      await pool.redeem(user, 100, 100);
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/1800);
+      expect(await aave.yieldBalance(pool.address)).to.equal(200);
     });
 
     it("Should redeem correct amount of tokens with multiple users depositing", async () =>
