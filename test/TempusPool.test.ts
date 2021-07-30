@@ -421,6 +421,41 @@ describe("Tempus Pool", async () => {
       expect(await pool.totalFees()).to.equal(1); // and 1 as accumulated fees
     });
 
+    it("Should collect tokens as fees during EARLY redeem() if fees != 0", async () =>
+    {
+      await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
+
+      await pool.setFeesConfig(owner, 0.0, 0.01, 0.0);
+      await pool.deposit(user, 100, /*recipient:*/user);
+      expect(await pool.contractBalance()).to.equal(100); // all 100 in the pool
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
+
+      await pool.redeem(user, 100, 100);
+      expect(await pool.totalFees()).to.equal(1); // and 1 as accumulated fees
+      expect(await pool.contractBalance()).to.equal(1); // should have 1 in the pool (this is the fees)
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/499); // receive 99 back
+    });
+
+    it("Should collect tokens as fees during MATURE redeem() if fees != 0", async () =>
+    {
+      await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
+
+      await pool.setFeesConfig(owner, 0.0, 0.0, 0.02);
+      await pool.deposit(user, 100, /*recipient:*/user);
+      expect(await pool.contractBalance()).to.equal(100); // all 100 in the pool
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
+
+      // finalize the pool
+      await increaseTime(60*60);
+      await pool.finalize();
+      expect(await pool.matured()).to.equal(true);
+
+      await pool.redeem(user, 100, 100);
+      expect(await pool.totalFees()).to.equal(2); // 2 as accumulated fees
+      expect(await pool.contractBalance()).to.equal(2); // should have 2 in the pool (this is the fees)
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/498); // receive 98 back
+    });
+
     it("Should transfer fees to specified account", async () =>
     {
       await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
