@@ -174,6 +174,15 @@ contract TempusPool is ITempusPool, Ownable {
         yieldShare.burn(msg.sender, yieldAmount);
 
         uint256 redeemableYieldTokens = priceOracle.numYieldTokensPerAsset(yieldBearingToken, redeemableBackingTokens);
+
+        // Collect fees on redeem
+        uint256 redeemFees = matured ? feesConfig.matureRedeemPercent : feesConfig.earlyRedeemPercent;
+        if (redeemFees != 0) {
+            uint256 fee = (redeemableYieldTokens * redeemFees) / FEE_PRECISION;
+            redeemableYieldTokens -= fee;
+            totalFees += fee;
+        }
+
         IERC20(yieldBearingToken).safeTransfer(msg.sender, redeemableYieldTokens);
     }
 
