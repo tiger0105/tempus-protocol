@@ -38,11 +38,13 @@ interface ITempusPool {
     /// @return Amount of TPS and TYS minted to `recipient`
     function deposit(uint256 yieldTokenAmount, address recipient) external returns (uint256);
 
-    /// Redeem funds from the pool
-    /// @param principalAmount Amount of principal shares to redeem.
-    /// @param yieldAmount Amount of yield shares to redeem.
-    /// Note that before maturity, principalAmount must equal to yieldAmount.
-    function redeem(uint256 principalAmount, uint256 yieldAmount) external;
+    /// @dev Redeem yield bearing tokens from this TempusPool
+    ///      msg.sender will receive the YBT
+    ///      NOTE Before maturity, principalAmount must equal to yieldAmount.
+    /// @param principalAmount Amount of Tempus Principal Shares (TPS) to redeem for YBT
+    /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem for YBT
+    /// @return Amount of Yield Bearing Tokens redeemed to `msg.sender`
+    function redeem(uint256 principalAmount, uint256 yieldAmount) external returns (uint256);
 
     /// The current exchange rate of yield bearing token versus its backing.
     /// @return The rate.
