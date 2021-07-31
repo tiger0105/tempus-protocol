@@ -142,17 +142,23 @@ contract TempusPool is ITempusPool, Ownable {
         return tokensToIssue;
     }
 
-    function redeem(uint256 principalAmount, uint256 yieldAmount) public override {
+    /// @dev Redeem yield bearing tokens from this TempusPool
+    ///      msg.sender will receive the YBT
+    ///      NOTE Before maturity, principalAmount must equal to yieldAmount.
+    /// @param principalAmount Amount of Tempus Principal Shares (TPS) to redeem for YBT
+    /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem for YBT
+    /// @return Amount of Yield Bearing Tokens redeemed to `msg.sender`
+    function redeem(uint256 principalAmount, uint256 yieldAmount) public override returns (uint256) {
         require(principalShare.balanceOf(msg.sender) >= principalAmount, "Insufficient principal balance.");
         require(yieldShare.balanceOf(msg.sender) >= yieldAmount, "Insufficient yield balance.");
 
         // Redeeming prior to maturity is only allowed in equal amounts.
         require(matured || (principalAmount == yieldAmount), "Inequal redemption not allowed before maturity.");
 
-        _redeem(principalAmount, yieldAmount);
+        return _redeem(principalAmount, yieldAmount);
     }
 
-    function _redeem(uint256 principalAmount, uint256 yieldAmount) internal {
+    function _redeem(uint256 principalAmount, uint256 yieldAmount) internal returns (uint256) {
         // TODO: this whole calcualtion is scaled, should rewrite this using a fixedpoint library.
 
         // TODO: make reedem work for negative yield
@@ -184,6 +190,7 @@ contract TempusPool is ITempusPool, Ownable {
         }
 
         IERC20(yieldBearingToken).safeTransfer(msg.sender, redeemableYieldTokens);
+        return redeemableYieldTokens;
     }
 
     function currentExchangeRate() public view override returns (uint256) {
