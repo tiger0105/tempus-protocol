@@ -69,7 +69,16 @@ export class Comptroller extends ContractBase {
   /**
    * Sets the pool exchange rate in 1e18 decimal
    */
-  async setExchangeRate(exchangeRate:NumberOrString) {
+  async setExchangeRate(exchangeRate:NumberOrString, owner:SignerOrAddress = null) {
+    if (owner !== null) {
+      const prevExchangeRate = await this.exchangeRate();
+      const difference = (Number(exchangeRate) / Number(prevExchangeRate)) - 1;
+      if (difference > 0) {
+        const totalSupply = await this.asset.balanceOf(this.yieldToken.address);
+        const increaseBy = Number(totalSupply) * difference;
+        await this.asset.transfer(owner, this.yieldToken.address, increaseBy);
+      }
+    }
     await this.contract.setExchangeRate(toWei(exchangeRate));
   }
 
