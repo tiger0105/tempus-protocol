@@ -159,6 +159,13 @@ describe("Tempus Pool", async () => {
       await expectUserState(pool, user, 120, 120, /*yieldBearing:*/400);
     });
 
+    it("Should revert on negative yield during deposit", async () => 
+    {
+      await createAavePool(1.1, 500);
+      setExchangeRate(1.0);
+      (await expectRevert(pool.deposit(user, 100, /*recipient:*/user))).to.equal("Negative yield!");
+    });
+
     it("Depositing after increase", async () =>
     {
       await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);

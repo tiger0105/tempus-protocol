@@ -119,6 +119,7 @@ contract TempusPool is ITempusPool, Ownable {
     /// @return Amount of TPS and TYS minted to `recipient`
     function deposit(uint256 yieldTokenAmount, address recipient) public override returns (uint256) {
         require(!matured, "Maturity reached.");
+        require(currentExchangeRate() >= initialExchangeRate, "Negative yield!");
 
         // Collect the deposit
         IERC20(yieldBearingToken).safeTransferFrom(msg.sender, address(this), yieldTokenAmount);
