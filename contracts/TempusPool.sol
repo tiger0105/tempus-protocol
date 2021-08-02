@@ -28,8 +28,8 @@ contract TempusPool is ITempusPool, Ownable {
 
     uint256 public immutable override initialExchangeRate;
     uint256 public maturityExchangeRate;
-    PrincipalShare public immutable principalShare;
-    YieldShare public immutable yieldShare;
+    IERC20 public immutable override principalShare;
+    IERC20 public immutable override yieldShare;
 
     bool public override matured;
 
@@ -137,8 +137,8 @@ contract TempusPool is ITempusPool, Ownable {
         uint256 backingTokenDepositAmount = priceOracle.scaledBalance(yieldBearingToken, tokenAmount);
         uint256 tokensToIssue = (backingTokenDepositAmount * initialExchangeRate) / currentExchangeRate();
 
-        principalShare.mint(recipient, tokensToIssue);
-        yieldShare.mint(recipient, tokensToIssue);
+        PrincipalShare(address(principalShare)).mint(recipient, tokensToIssue);
+        YieldShare(address(yieldShare)).mint(recipient, tokensToIssue);
         return tokensToIssue;
     }
 
@@ -176,8 +176,8 @@ contract TempusPool is ITempusPool, Ownable {
         uint256 redeemableBackingTokens = principalAmount + redeemAmountFromYieldShares;
 
         // Burn the appropriate shares
-        principalShare.burn(msg.sender, principalAmount);
-        yieldShare.burn(msg.sender, yieldAmount);
+        PrincipalShare(address(principalShare)).burn(msg.sender, principalAmount);
+        YieldShare(address(yieldShare)).burn(msg.sender, yieldAmount);
 
         uint256 redeemableYieldTokens = priceOracle.numYieldTokensPerAsset(yieldBearingToken, redeemableBackingTokens);
 

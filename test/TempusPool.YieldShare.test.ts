@@ -20,7 +20,7 @@ describe("Tempus Pool (YieldShare)", async () => {
     await aave.asset.transfer(owner, user, 10000); // initial deposit for User
 
     // set starting rate
-    await aave.setLiquidityIndex(liquidityIndex);
+    await aave.setLiquidityIndex(liquidityIndex, owner);
 
     // generate some ATokens by owner depositing, and then transfer some to user
     if (depositToUser > 0) {

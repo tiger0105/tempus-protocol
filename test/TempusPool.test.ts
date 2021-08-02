@@ -21,8 +21,8 @@ describe("Tempus Pool", async () => {
   });
 
   async function setExchangeRate(exchangeRate:NumberOrString) {
-    if (aave) aave.setLiquidityIndex(exchangeRate);
-    else if (compound) compound.setExchangeRate(exchangeRate);
+    if (aave) await aave.setLiquidityIndex(exchangeRate, owner);
+    else if (compound) await compound.setExchangeRate(exchangeRate);
   }
 
   async function createAavePool(liquidityIndex:number = 1.0, depositToUser:number = 0) {
@@ -32,7 +32,7 @@ describe("Tempus Pool", async () => {
     await aave.asset.transfer(owner, user2, 10000);
 
     // set starting rate
-    await aave.setLiquidityIndex(liquidityIndex);
+    await setExchangeRate(liquidityIndex);
 
     // generate some ATokens by owner depositing, and then transfer some to user
     if (depositToUser > 0) {
@@ -184,16 +184,6 @@ describe("Tempus Pool", async () => {
       await expectUserState(pool, user2, 100, 100, /*yieldBearing:*/500);
     });
 
-    it("Should give appropriate shares after ASSET Wrapper deposit", async () =>
-    {
-      await createAavePool();
-      const wrapper = await ContractBase.deployContract("AaveDepositWrapper", pool.address);
-      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/0);
-      await aave.asset.approve(user, wrapper.address, 100);
-      await wrapper.connect(user).deposit(aave.toBigNum(100));
-      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/0);
-    });
-
     it("Should not allow depositing after finalization", async () =>
     {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
@@ -285,7 +275,7 @@ describe("Tempus Pool", async () => {
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
 
-      await aave.setLiquidityIndex(0.9);
+      await setExchangeRate(0.9);
       await increaseTime(60*60);
       await pool.finalize();
 
@@ -298,10 +288,10 @@ describe("Tempus Pool", async () => {
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
 
-      await aave.setLiquidityIndex(1.2);
+      await setExchangeRate(1.2);
       await increaseTime(60*60);
       await pool.finalize();
-      await aave.setLiquidityIndex(1.1);
+      await setExchangeRate(1.1);
 
       (await expectRevert(pool.redeem(user, 50, 100))).to.equal("Negative yield after maturity!");
     });
@@ -357,7 +347,7 @@ describe("Tempus Pool", async () => {
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
 
-      await aave.setLiquidityIndex(2.0);
+      await setExchangeRate(2.0);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/800);
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 150, 150, /*yieldBearing:*/700);
@@ -369,7 +359,7 @@ describe("Tempus Pool", async () => {
       expect(await pool.initialExchangeRate()).to.equal(1.0);
       expect(await pool.currentExchangeRate()).to.equal(2.0);
 
-      await aave.setLiquidityIndex(2.5);
+      await setExchangeRate(2.5);
       await increaseTime(60*60);
       await pool.finalize();
       expect(await pool.initialExchangeRate()).to.equal(1.0);
@@ -385,6 +375,48 @@ describe("Tempus Pool", async () => {
       await expectUserState(pool, user2, 100, 100, /*yieldBearing:*/1000);
       await pool.redeem(user2, 100, 100);
       await expectUserState(pool, user2, 0, 0, /*yieldBearing:*/1250);
+    });
+  });
+
+  describe("DepositWrapper AAVE", () =>
+  {
+    it("Should give appropriate shares after ASSET Wrapper deposit", async () =>
+    {
+      await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/0);
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/0);
+
+      const wrapper = await ContractBase.deployContract("AaveDepositWrapper", pool.address);
+      let wrapperC = wrapper.connect(user);
+      let initialBalance = await aave.asset.balanceOf(user);
+      await aave.asset.approve(user, wrapper.address, 100);
+      await wrapperC.deposit(aave.toBigNum(100));
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/0);
+
+      // withdraw
+      await pool.principalShare.approve(user, wrapper.address, 100);
+      await pool.yieldShare.approve(user, wrapper.address, 100);
+      await wrapperC.redeem(aave.toBigNum(100), aave.toBigNum(100));
+      expect(await aave.asset.balanceOf(user)).to.equal(initialBalance);
+    });
+
+    it("Should redeem correct amount of ASSET with Yield", async () =>
+    {
+      await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/0);
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/0);
+
+      const wrapper = await ContractBase.deployContract("AaveDepositWrapper", pool.address);
+      let wrapperC = wrapper.connect(user);
+      let initialBalance = await aave.asset.balanceOf(user);
+      await aave.asset.approve(user, wrapper.address, 100);
+      await wrapperC.deposit(aave.toBigNum(100));
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/0);
+
+      // withdraw with additional yield
+      await setExchangeRate(1.5);
+      await pool.principalShare.approve(user, wrapper.address, 100);
+      await pool.yieldShare.approve(user, wrapper.address, 100);
+      await wrapperC.redeem(aave.toBigNum(100), aave.toBigNum(100));
+      expect(await aave.asset.balanceOf(user)).to.equal(Number(initialBalance) + 50);
     });
   });
 
