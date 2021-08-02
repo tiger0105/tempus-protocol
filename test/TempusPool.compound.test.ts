@@ -4,6 +4,7 @@ import { ContractBase, Signer } from "./utils/ContractBase";
 import { Comptroller } from "./utils/Comptroller";
 import { TempusPool, expectUserState } from "./utils/TempusPool";
 import { blockTimestamp } from "./utils/Utils";
+import { toWei } from "./utils/Decimal";
 
 describe("Tempus Pool (Compound)", async () => {
   let owner:Signer, user:Signer;
@@ -48,7 +49,7 @@ describe("Tempus Pool (Compound)", async () => {
 
       const wrapper = await ContractBase.deployContract("CompoundEtherDepositWrapper", pool.address);
       await expectUserState(pool, user, 0, 0, /*yieldBearing:*/0);
-      await wrapper.connect(user).depositEther({value: compound.toBigNum(100)});
+      await wrapper.connect(user).depositEther({value: toWei(100)});
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/0);
     });
 
@@ -59,8 +60,50 @@ describe("Tempus Pool (Compound)", async () => {
       const wrapper = await ContractBase.deployContract("CompoundErc20DepositWrapper", pool.address);
       await expectUserState(pool, user, 0, 0, /*yieldBearing:*/0);
       await compound.asset.approve(user, wrapper.address, 100);
-      await wrapper.connect(user).deposit(compound.asset.toBigNum(100));
+      await wrapper.connect(user).deposit(toWei(100));
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/0);
+    });
+  });
+
+  describe("DepositWrapper Compound", () =>
+  {
+    it("Should give appropriate shares after ASSET Wrapper deposit", async () =>
+    {
+      await createCompoundPool('CErc20');
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/0);
+
+      const wrapper = await ContractBase.deployContract("CompoundErc20DepositWrapper", pool.address);
+      let wrapperC = wrapper.connect(user);
+      let initialBalance = await compound.asset.balanceOf(user);
+      await compound.asset.approve(user, wrapper.address, 100);
+      await wrapperC.deposit(toWei(100));
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/0);
+
+      // withdraw
+      await pool.principalShare.approve(user, wrapper.address, 100);
+      await pool.yieldShare.approve(user, wrapper.address, 100);
+      await wrapperC.redeem(toWei(100), toWei(100));
+      expect(await compound.asset.balanceOf(user)).to.equal(initialBalance);
+    });
+
+    it("Should redeem correct amount of ASSET with Yield", async () =>
+    {
+      await createCompoundPool('CErc20');
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/0);
+
+      const wrapper = await ContractBase.deployContract("CompoundErc20DepositWrapper", pool.address);
+      let wrapperC = wrapper.connect(user);
+      let initialBalance = await compound.asset.balanceOf(user);
+      await compound.asset.approve(user, wrapper.address, 100);
+      await wrapperC.deposit(toWei(100));
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/0);
+
+      // withdraw with additional yield
+      await compound.setExchangeRate(1.5, owner);
+      await pool.principalShare.approve(user, wrapper.address, 100);
+      await pool.yieldShare.approve(user, wrapper.address, 100);
+      await wrapperC.redeem(toWei(100), toWei(100));
+      expect(await compound.asset.balanceOf(user)).to.equal(Number(initialBalance) + 50);
     });
   });
 });

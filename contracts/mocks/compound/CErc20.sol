@@ -20,8 +20,6 @@ contract CErc20 is CTokenMock, CErc20Interface {
         underlying = underlyingAsset;
     }
 
-    /// User Interface ///
-
     /// @notice Sender supplies assets into the market and receives cTokens in exchange
     /// @dev Accrues interest whether or not the operation succeeds, unless reverted
     /// @param mintAmount The amount of the underlying asset to supply
@@ -31,22 +29,27 @@ contract CErc20 is CTokenMock, CErc20Interface {
         return err;
     }
 
-    /**
-     * @dev Similar to EIP20 transfer, except it handles a False result from `transferFrom` and reverts in that case.
-     *      This will revert due to insufficient balance or insufficient allowance.
-     *      This function returns the actual amount received,
-     *      which may be less than `amount` if there is a fee attached to the transfer.
-     *
-     *      Note: This wrapper safely handles non-standard ERC-20 tokens that do not return a value.
-     */
+    /// @notice Sender redeems cTokens in exchange for the underlying asset
+    /// @dev Accrues interest whether or not the operation succeeds, unless reverted
+    /// @param redeemTokens The number of cTokens to redeem into underlying
+    /// @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
+    function redeem(uint redeemTokens) external override returns (uint) {
+        // Amount of underlying asset to be redeemed:
+        //  redeemAmount = redeemTokens x exchangeRate
+        uint256 exchangeRate = exchangeRateStored();
+        uint256 redeemAmount = (redeemTokens * exchangeRate) / 1e18;
+
+        // burn the yield tokens
+        _burn(msg.sender, redeemTokens);
+
+        // transfer backing tokens to redeemer
+        IERC20(underlying).transfer(msg.sender, redeemAmount);
+        return 0; // success
+    }
+
     function doTransferIn(address from, uint amount) internal override returns (uint) {
         IERC20 backingToken = IERC20(underlying);
-
-        uint balanceBefore = backingToken.balanceOf(address(this));
-        backingToken.safeTransferFrom(from, address(this), amount);
-        uint balanceAfter = backingToken.balanceOf(address(this));
-
-        require(balanceAfter >= balanceBefore, "TOKEN_TRANSFER_IN_OVERFLOW");
-        return balanceAfter - balanceBefore; // underflow already checked above, just subtract
+        backingToken.transferFrom(from, address(this), amount);
+        return amount;
     }
 }
