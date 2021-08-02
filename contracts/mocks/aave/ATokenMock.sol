@@ -9,7 +9,7 @@ import "./ILendingPool.sol";
 import "./WadRayMath.sol";
 
 /// Yield Bearing Token for AAVE - AToken
-contract ATokenMock is ERC20OwnerMintableToken, IAToken {
+contract ATokenMock is ERC20, IAToken {
     using WadRayMath for uint;
     using SafeERC20 for IERC20;
 
@@ -21,13 +21,20 @@ contract ATokenMock is ERC20OwnerMintableToken, IAToken {
         address underlyingAssetAddress,
         string memory name,
         string memory symbol
-    ) ERC20OwnerMintableToken(name, symbol) {
+    ) ERC20(name, symbol) {
         POOL = pool;
         UNDERLYING_ASSET_ADDRESS = underlyingAssetAddress;
     }
 
     function balanceOf(address account) public view virtual override returns (uint256) {
         return ERC20.balanceOf(account).rayMul(POOL.getReserveNormalizedIncome(address(UNDERLYING_ASSET_ADDRESS)));
+    }
+
+    /// @param account Recipient address to mint tokens to
+    /// @param amount Number of tokens to mint
+    function mint(address account, uint256 amount) public {
+        require(msg.sender == address(POOL), "mint: only manager can mint");
+        _mint(account, amount);
     }
 
     /// @dev Burns aTokens from `user` and sends the equivalent amount of underlying to `receiverOfUnderlying`
@@ -47,7 +54,8 @@ contract ATokenMock is ERC20OwnerMintableToken, IAToken {
         require(amountScaled != 0, "invalid burn amount");
         _burn(user, amountScaled);
 
-        IERC20(UNDERLYING_ASSET_ADDRESS).safeTransfer(receiverOfUnderlying, amount);
+        IERC20(UNDERLYING_ASSET_ADDRESS).transfer(receiverOfUnderlying, amount);
+        //IERC20(UNDERLYING_ASSET_ADDRESS).safeTransfer(receiverOfUnderlying, amount);
     }
 
     function _transfer(

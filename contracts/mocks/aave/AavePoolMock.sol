@@ -56,8 +56,9 @@ contract AavePoolMock is ILendingPool {
     ) public override {
         require(address(assetToken) == asset, "invalid reserve asset");
 
-        address pool = address(this);
-        require(assetToken.transferFrom(msg.sender, pool, amount), "transfer failed");
+        // The AToken holds the asset
+        address assetOwner = address(yieldToken);
+        require(assetToken.transferFrom(msg.sender, assetOwner, amount), "transfer failed");
 
         // liquidity index controls how many additional tokens are minted
         uint amountScaled = (amount).rayDiv(liquidityIndex);
@@ -87,7 +88,7 @@ contract AavePoolMock is ILendingPool {
             amountToWithdraw = userBalance;
         }
 
-        yieldToken.burn(msg.sender, to, amountToWithdraw, liquidityIndex);
+        yieldToken.burn(msg.sender, to, amountToWithdraw, uint256(liquidityIndex));
         return amountToWithdraw;
     }
 
