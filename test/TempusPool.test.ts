@@ -21,7 +21,7 @@ describe("Tempus Pool", async () => {
   });
 
   async function setExchangeRate(exchangeRate:NumberOrString) {
-    if (aave) await aave.setLiquidityIndex(owner, exchangeRate);
+    if (aave) await aave.setLiquidityIndex(exchangeRate, owner);
     else if (compound) await compound.setExchangeRate(exchangeRate);
   }
 

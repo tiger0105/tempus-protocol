@@ -26,7 +26,7 @@ describe("AAVE Mock", async () => {
 
     it("Should receive 0.5x yield tokens if rate is 2.0", async () =>
     {
-      await pool.setLiquidityIndex(owner, 2.0);
+      await pool.setLiquidityIndex(2.0, owner);
       expect(await pool.liquidityIndex()).to.equal(2.0);
 
       // with 2.0 rate, user deposits 4 asset tokens and receives 2 yield tokens
@@ -37,7 +37,7 @@ describe("AAVE Mock", async () => {
 
     it("Should receive same amount of yield tokens if rate is 0.5", async () =>
     {
-      await pool.setLiquidityIndex(owner, 0.5);
+      await pool.setLiquidityIndex(0.5, owner);
       expect(await pool.liquidityIndex()).to.equal(0.5);
 
       await pool.deposit(user, 4);
@@ -52,7 +52,7 @@ describe("AAVE Mock", async () => {
       expect(await pool.yieldBalance(user)).to.equal(4);
       
       // with 2.0 rate, user deposits 4 asset tokens and receives 4 yield tokens
-      await pool.setLiquidityIndex(owner, 2.0);
+      await pool.setLiquidityIndex(2.0, owner);
       expect(await pool.yieldBalance(user)).to.equal(8);
       await pool.deposit(user, 4);
       expect(await pool.yieldBalance(user)).to.equal(12);

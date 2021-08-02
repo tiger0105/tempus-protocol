@@ -54,13 +54,15 @@ export class Aave extends ContractBase {
   /**
    * Sets the AAVE pool's MOCK liquidity index in RAY
    */
-  async setLiquidityIndex(owner:SignerOrAddress, liquidityIndex:NumberOrString) {
-    const prevLiquidityIndex = await this.liquidityIndex();
-    const difference = (Number(liquidityIndex) / Number(prevLiquidityIndex)) - 1;
-    if (difference > 0) {
-      const totalSupply = await this.asset.balanceOf(this.yieldToken.address);
-      const increaseBy = Number(totalSupply) * difference;
-      await this.asset.transfer(owner, this.yieldToken.address, increaseBy);
+  async setLiquidityIndex(liquidityIndex:NumberOrString, owner:SignerOrAddress = null) {
+    if (owner !== null) {
+      const prevLiquidityIndex = await this.liquidityIndex();
+      const difference = (Number(liquidityIndex) / Number(prevLiquidityIndex)) - 1;
+      if (difference > 0) {
+        const totalSupply = await this.asset.balanceOf(this.yieldToken.address);
+        const increaseBy = Number(totalSupply) * difference;
+        await this.asset.transfer(owner, this.yieldToken.address, increaseBy);
+      }
     }
     await this.contract.setLiquidityIndex(toRay(liquidityIndex));
   }
