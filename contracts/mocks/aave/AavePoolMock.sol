@@ -81,15 +81,8 @@ contract AavePoolMock is ILendingPool {
     ) external override returns (uint256) {
         require(address(assetToken) == asset, "invalid reserve asset");
 
-        uint256 userBalance = yieldToken.balanceOf(msg.sender);
-        uint256 amountToWithdraw = amount;
-
-        if (amount == type(uint256).max) {
-            amountToWithdraw = userBalance;
-        }
-
-        yieldToken.burn(msg.sender, to, amountToWithdraw, uint256(liquidityIndex));
-        return amountToWithdraw;
+        yieldToken.burn(msg.sender, to, amount, uint256(liquidityIndex));
+        return amount;
     }
 
     /// @notice MOCK ONLY
