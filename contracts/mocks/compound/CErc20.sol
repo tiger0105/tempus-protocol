@@ -49,21 +49,15 @@ contract CErc20 is CTokenMock, CErc20Interface {
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
     function redeemFresh(address redeemer, uint redeemTokensIn) internal returns (uint) {
-        uint256 exchangeRateMantissa = exchangeRateStored();
-        uint256 redeemTokens;
-        uint256 redeemAmount;
-
-        if (redeemTokensIn > 0) {
-            /*
-             * We calculate the exchange rate and the amount of underlying to be redeemed:
-             *  redeemTokens = redeemTokensIn
-             *  redeemAmount = redeemTokensIn x exchangeRateCurrent
-             */
-            redeemTokens = redeemTokensIn;
-            redeemAmount = (redeemTokensIn * exchangeRateMantissa) / 1e18;
-        } else {
-            revert("redeemTokensIn <= 0 not implemented in mock");
-        }
+        require(redeemTokensIn > 0, "redeemTokens must be positive");
+        /*
+         * We calculate the exchange rate and the amount of underlying to be redeemed:
+         *  redeemTokens = redeemTokensIn
+         *  redeemAmount = redeemTokensIn x exchangeRateCurrent
+         */
+        uint256 redeemTokens = redeemTokensIn;
+        uint256 exchangeRate = exchangeRateStored();
+        uint256 redeemAmount = (redeemTokensIn * exchangeRate) / 1e18;
 
         // burn the yield tokens
         _burn(redeemer, redeemTokens);
