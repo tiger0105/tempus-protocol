@@ -60,7 +60,7 @@ contract AaveDepositWrapper {
         uint256 yieldBearingTokens = pool.redeem(principalAmount, yieldAmount);
         // -- deposit wrapper now owns YBT
         assert(yieldBearingToken.balanceOf(address(this)) >= yieldBearingTokens);
-        
+
         backingToken.approve(msg.sender, yieldBearingTokens);
         return aavePool.withdraw(address(backingToken), yieldBearingTokens, msg.sender);
     }
