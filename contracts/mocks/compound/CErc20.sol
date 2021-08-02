@@ -59,8 +59,8 @@ contract CErc20 is CTokenMock, CErc20Interface {
              *  redeemTokens = redeemTokensIn
              *  redeemAmount = redeemTokensIn x exchangeRateCurrent
              */
-             redeemTokens = redeemTokensIn;
-             redeemAmount = (redeemTokensIn * exchangeRateMantissa) / 1e18;
+            redeemTokens = redeemTokensIn;
+            redeemAmount = (redeemTokensIn * exchangeRateMantissa) / 1e18;
         } else {
             revert("redeemTokensIn <= 0 not implemented in mock");
         }

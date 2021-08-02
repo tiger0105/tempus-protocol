@@ -32,5 +32,6 @@ abstract contract CErc20Interface is CErc20Storage {
      * This is used to deposit into Compound with CErc20 tokens
      */
     function mint(uint mintAmount) external virtual returns (uint);
+
     function redeem(uint redeemTokens) external virtual returns (uint);
 }
