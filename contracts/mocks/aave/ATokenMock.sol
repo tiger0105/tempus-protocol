@@ -55,7 +55,6 @@ contract ATokenMock is ERC20, IAToken {
         _burn(user, amountScaled);
 
         IERC20(UNDERLYING_ASSET_ADDRESS).transfer(receiverOfUnderlying, amount);
-        //IERC20(UNDERLYING_ASSET_ADDRESS).safeTransfer(receiverOfUnderlying, amount);
     }
 
     function _transfer(
