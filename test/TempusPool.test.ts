@@ -276,20 +276,22 @@ describe("Tempus Pool", async () => {
       await expectUserState(pool, user, 0, 0, /*yieldBearing:*/1000);
     });
 
-    it("Should fail after maturity with negative yield", async () =>
+    it("Should work after maturity with negative yield", async () =>
     {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
 
       await setExchangeRate(0.9);
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/360);
       await increaseTime(60*60);
       await pool.finalize();
 
-      (await expectRevert(pool.redeem(user, 50, 100))).to.equal("Negative yield!");
+      await pool.redeem(user, 100, 100);
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/450);
     });
 
-    it("Should fail after maturity with negative yield between maturity and redemption", async () =>
+    it("Should work after maturity with negative yield between maturity and redemption", async () =>
     {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
@@ -299,8 +301,10 @@ describe("Tempus Pool", async () => {
       await increaseTime(60*60);
       await pool.finalize();
       await setExchangeRate(1.1);
+      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/440);
 
-      (await expectRevert(pool.redeem(user, 50, 100))).to.equal("Negative yield after maturity!");
+      await pool.redeem(user, 100, 100);
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/550);
     });
 
     it("Should work after maturity with unequal shares, without yield", async () =>
