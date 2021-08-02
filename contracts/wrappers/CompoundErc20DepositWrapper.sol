@@ -49,4 +49,31 @@ contract CompoundErc20DepositWrapper {
         token.approve(address(pool), yieldBearingAmount);
         return pool.deposit(yieldBearingAmount, msg.sender);
     }
+
+    /// @dev Redeem TPS+TYS held by msg.sender into backing tokens
+    ///      `msg.sender` must approve TPS and TYS amounts to this wrapper.
+    ///      `msg.sender` will receive the backing tokens
+    ///      NOTE Before maturity, principalAmount must equal to yieldAmount.
+    /// @param principalAmount Amount of Tempus Principal Shares (TPS) to redeem
+    /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem
+    /// @return Amount of backing tokens redeemed to `msg.sender`
+    function redeem(uint256 principalAmount, uint256 yieldAmount) external returns (uint256) {
+        // Transfer TPS and TYS to the wrapper
+        pool.principalShare().safeTransferFrom(msg.sender, address(this), principalAmount);
+        pool.yieldShare().safeTransferFrom(msg.sender, address(this), yieldAmount);
+
+        uint256 yieldBearingTokens = pool.redeem(principalAmount, yieldAmount);
+        // -- deposit wrapper now owns YBT
+        assert(token.balanceOf(address(this)) >= yieldBearingTokens);
+
+        backingToken.approve(msg.sender, yieldBearingTokens);
+
+        token.redeem(yieldBearingTokens);
+        // -- deposit wrapper now owns Assets
+
+        uint256 backing = (yieldBearingTokens * token.exchangeRateStored()) / 1e18;
+        backingToken.transfer(msg.sender, backing);
+
+        return backing;
+    }
 }
