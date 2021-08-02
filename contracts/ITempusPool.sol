@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.6;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 /// @author The tempus.finance team
 /// @title The interface of a Tempus Pool
 interface ITempusPool {
@@ -11,6 +13,12 @@ interface ITempusPool {
     /// @dev This token will be used as a token that user can deposit to mint same amounts
     /// of principal and interest shares.
     function yieldBearingToken() external returns (address);
+
+    /// @return This TempusPool's Tempus Principal Share (TPS)
+    function principalShare() external returns (IERC20);
+
+    /// @return This TempusPool's Tempus Yield Share (TYS)
+    function yieldShare() external returns (IERC20);
 
     // TODO: expose principalShare and yieldShare
 

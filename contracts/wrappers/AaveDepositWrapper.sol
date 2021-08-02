@@ -24,8 +24,8 @@ contract AaveDepositWrapper {
         backingToken = IERC20(_yieldBearingToken.UNDERLYING_ASSET_ADDRESS());
     }
 
-    /// Deposits backing token to the appropriate AAVE pool, and then to Tempus Pool.
-    /// `msg.sender` must approve `amount` of backing token to this wrapper.
+    /// @dev Deposits backing token to the appropriate AAVE pool, and then to Tempus Pool.
+    ///      `msg.sender` must approve `amount` of backing token to this wrapper.
     ///
     /// @return Amount of TPS and TYS minted to `msg.sender`
     function deposit(uint256 amount) external returns (uint256) {
@@ -46,14 +46,22 @@ contract AaveDepositWrapper {
     }
 
     /// @dev Redeem TPS+TYS held by msg.sender into backing tokens
-    ///      msg.sender will receive the backing tokens
+    ///      `msg.sender` must approve TPS and TYS amounts to this wrapper.
+    ///      `msg.sender` will receive the backing tokens
     ///      NOTE Before maturity, principalAmount must equal to yieldAmount.
     /// @param principalAmount Amount of Tempus Principal Shares (TPS) to redeem
     /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem
     /// @return Amount of backing tokens redeemed to `msg.sender`
     function redeem(uint256 principalAmount, uint256 yieldAmount) external returns (uint256) {
+        // Transfer TPS and TYS to the wrapper
+        pool.principalShare().safeTransferFrom(msg.sender, address(this), principalAmount);
+        pool.yieldShare().safeTransferFrom(msg.sender, address(this), yieldAmount);
+
         uint256 yieldBearingTokens = pool.redeem(principalAmount, yieldAmount);
-        // TODO: Need to implement aave mock redeem
-        return 0;
+        // -- deposit wrapper now owns YBT
+        assert(yieldBearingToken.balanceOf(address(this)) >= yieldBearingTokens);
+        
+        backingToken.approve(msg.sender, yieldBearingTokens);
+        return aavePool.withdraw(address(backingToken), yieldBearingTokens, msg.sender);
     }
 }
