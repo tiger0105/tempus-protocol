@@ -162,19 +162,26 @@ contract TempusPool is ITempusPool, Ownable {
     function _redeem(uint256 principalAmount, uint256 yieldAmount) internal returns (uint256) {
         // TODO: this whole calcualtion is scaled, should rewrite this using a fixedpoint library.
 
-        // TODO: make reedem work for negative yield
-        require(currentExchangeRate() >= initialExchangeRate, "Negative yield!");
-        require(currentExchangeRate() >= maturityExchangeRate, "Negative yield after maturity!");
+        uint256 currentRate = currentExchangeRate();
+        uint256 exchangeRate = currentRate;
+        // in case of negative yield after maturity, we use lower rate for redemption
+        // so, we need to change from currentRate to maturity rate only if maturity rate is lower
+        if (matured && currentRate > maturityExchangeRate) {
+            exchangeRate = maturityExchangeRate;
+        }
 
-        uint256 exchangeRate = matured ? maturityExchangeRate : currentExchangeRate();
+        uint256 redeemableBackingTokens;
+        if (exchangeRate < initialExchangeRate) {
+            redeemableBackingTokens = (principalAmount * exchangeRate) / initialExchangeRate;
+        } else {
+            uint256 rateDiff = exchangeRate - initialExchangeRate;
+            // this is expressed in backing token
+            uint256 amountPerYieldShareToken = (EXCHANGE_RATE_PRECISION * rateDiff) / initialExchangeRate;
+            uint256 redeemAmountFromYieldShares = (yieldAmount * amountPerYieldShareToken) / EXCHANGE_RATE_PRECISION;
 
-        uint256 rateDiff = exchangeRate - initialExchangeRate;
-        // this is expressed in backing token
-        uint256 amountPerYieldShareToken = (EXCHANGE_RATE_PRECISION * rateDiff) / initialExchangeRate;
-        uint256 redeemAmountFromYieldShares = (yieldAmount * amountPerYieldShareToken) / EXCHANGE_RATE_PRECISION;
-
-        // TODO: Scale based on number of decimals for tokens
-        uint256 redeemableBackingTokens = principalAmount + redeemAmountFromYieldShares;
+            // TODO: Scale based on number of decimals for tokens
+            redeemableBackingTokens = principalAmount + redeemAmountFromYieldShares;
+        }
 
         // Burn the appropriate shares
         PrincipalShare(address(principalShare)).burn(msg.sender, principalAmount);
