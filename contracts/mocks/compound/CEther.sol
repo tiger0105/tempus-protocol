@@ -33,4 +33,9 @@ contract CEther is CTokenMock {
         from;
         return amount;
     }
+
+    function doTransferOut(address to, uint amount) internal override {
+        to; // DERP
+        amount;
+    }
 }
