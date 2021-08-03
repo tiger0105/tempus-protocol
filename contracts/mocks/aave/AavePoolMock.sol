@@ -4,7 +4,7 @@ pragma solidity 0.8.6;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./ATokenMock.sol";
 import "./WadRayMath.sol";
-import "./ILendingPool.sol";
+import "../../protocols/aave/ILendingPool.sol";
 
 contract AavePoolMock is ILendingPool {
     using WadRayMath for uint;
@@ -17,9 +17,7 @@ contract AavePoolMock is ILendingPool {
     /// @dev Initialize AAVE Mock with a single supported reserve.
     /// We only support 1 reserve right now.
     /// @param asset The single ERC20 reserve token, such as DAI
-    constructor(
-        IERC20 asset // DAI
-    ) {
+    constructor(IERC20 asset) {
         assetToken = asset;
         yieldToken = new ATokenMock(ILendingPool(address(this)), address(asset), "AaveAToken", "AAT");
         liquidityIndex = uint128(WadRayMath.ray()); // 1ray

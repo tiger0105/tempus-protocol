@@ -5,21 +5,21 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../ITempusPool.sol";
-import "../mocks/aave/IAToken.sol";
-import "../mocks/aave/ILendingPool.sol";
+import "../protocols/aave/IAToken.sol";
+import "../protocols/aave/ILendingPool.sol";
 
 contract AaveDepositWrapper {
     using SafeERC20 for IERC20;
 
     ITempusPool internal immutable pool;
     IERC20 internal immutable backingToken;
-    IERC20 internal immutable yieldBearingToken;
+    IAToken internal immutable yieldBearingToken;
     ILendingPool internal immutable aavePool;
 
     constructor(ITempusPool _pool) {
         pool = _pool;
         IAToken _yieldBearingToken = IAToken(_pool.yieldBearingToken());
-        yieldBearingToken = IERC20(address(_yieldBearingToken));
+        yieldBearingToken = _yieldBearingToken;
         aavePool = _yieldBearingToken.POOL();
         backingToken = IERC20(_yieldBearingToken.UNDERLYING_ASSET_ADDRESS());
     }
