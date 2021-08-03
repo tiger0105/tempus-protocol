@@ -29,8 +29,11 @@ export async function expectRevert(promise: Promise<any>): Promise<Chai.Assertio
     const expectedErrorMsg = "VM Exception while processing transaction: revert ";
     let idx = e.message.indexOf(expectedErrorMsg);
     if (idx !== -1) {
-      const revertMessage = e.message.substr(idx + expectedErrorMsg.length);
-      return expect(revertMessage);
+      return expect(e.message.substr(idx + expectedErrorMsg.length));
+    }
+    let msgStart = e.message.indexOf('\'');
+    if (msgStart !== -1) {
+      return expect(e.message.substr(msgStart + 1, e.message.length - msgStart - 2));
     }
     return expect(e.message); // something else failed
   }
