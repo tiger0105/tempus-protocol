@@ -6,7 +6,10 @@ import "../ITempusPool.sol";
 
 /// Token representing the principal or yield shares of a pool.
 abstract contract PoolShare is ERC20OwnerMintableToken {
-    enum ShareKind {Principal, Yield}
+    enum ShareKind {
+        Principal,
+        Yield
+    }
 
     /// The kind of the share.
     ShareKind immutable kind;
