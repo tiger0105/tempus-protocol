@@ -6,7 +6,6 @@ import "./ATokenMock.sol";
 import "./WadRayMath.sol";
 import "./ILendingPool.sol";
 
-// TODO: emit events matching with AAVE, these will be useful for frontend development
 contract AavePoolMock is ILendingPool {
     using WadRayMath for uint;
 
