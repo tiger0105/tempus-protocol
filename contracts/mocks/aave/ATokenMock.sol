@@ -4,8 +4,8 @@ pragma solidity 0.8.6;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./../../token/ERC20OwnerMintableToken.sol";
-import "./IAToken.sol";
-import "./ILendingPool.sol";
+import "../../protocols/aave/ILendingPool.sol";
+import "../../protocols/aave/IAToken.sol";
 import "./WadRayMath.sol";
 
 /// Yield Bearing Token for AAVE - AToken
@@ -26,7 +26,7 @@ contract ATokenMock is ERC20, IAToken {
         UNDERLYING_ASSET_ADDRESS = underlyingAssetAddress;
     }
 
-    function balanceOf(address account) public view virtual override returns (uint256) {
+    function balanceOf(address account) public view override(ERC20, IERC20) returns (uint256) {
         return ERC20.balanceOf(account).rayMul(POOL.getReserveNormalizedIncome(address(UNDERLYING_ASSET_ADDRESS)));
     }
 
