@@ -4,7 +4,6 @@ pragma solidity 0.8.6;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-// TODO: maybe more functions will need to be exposed
 interface ILido is IERC20, IERC20Metadata {
     /**
      * @notice Send funds to the pool with optional _referral parameter
