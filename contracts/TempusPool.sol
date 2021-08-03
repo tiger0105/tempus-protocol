@@ -84,8 +84,6 @@ contract TempusPool is ITempusPool, Ownable {
             maturityExchangeRate = currentExchangeRate();
             matured = true;
 
-            // TODO: While this assertion should hold,
-            //       if there's some bug somewhere this would prevent finalization.
             assert(principalShare.totalSupply() == yieldShare.totalSupply());
         }
     }
