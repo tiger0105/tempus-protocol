@@ -20,8 +20,6 @@ interface ITempusPool {
     /// @return This TempusPool's Tempus Yield Share (TYS)
     function yieldShare() external returns (IERC20);
 
-    // TODO: expose principalShare and yieldShare
-
     /// @return Start time of the pool.
     function startTime() external returns (uint256);
 
