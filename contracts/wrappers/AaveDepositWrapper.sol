@@ -35,9 +35,7 @@ contract AaveDepositWrapper {
         // Deposit to AAVE
         backingToken.approve(address(aavePool), amount);
         aavePool.deposit(address(backingToken), amount, address(this), 0);
-        // TODO: Should we record the balance prior to deposit and only transmit the difference?
-        //       In case someone transfers aDAI directly to this wrapper, that would be sent to the
-        //       next random person doing a deposit, or if we do that check, it would be locked up.
+
         uint256 yieldBearingAmount = yieldBearingToken.balanceOf(address(this));
 
         // Deposit to the TempusPool

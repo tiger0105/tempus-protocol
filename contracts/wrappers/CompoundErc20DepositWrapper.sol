@@ -39,9 +39,7 @@ contract CompoundErc20DepositWrapper {
         // Deposit to Compound and receive minted CTokens to this contract
         backingToken.approve(address(token), amount);
         require(token.mint(amount) == 0, "CErc20 mint failed");
-        // TODO: Should we record the balance prior to deposit and only transmit the difference?
-        //       In case someone transfers cDAI directly to this wrapper, that would be sent to the
-        //       next random person doing a deposit, or if we do that check, it would be locked up.
+
         uint256 yieldBearingAmount = token.balanceOf(address(this));
 
         // Deposit from this contract to Tempus Pool

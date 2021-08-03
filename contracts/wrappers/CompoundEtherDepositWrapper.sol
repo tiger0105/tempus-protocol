@@ -27,9 +27,7 @@ contract CompoundEtherDepositWrapper {
     function depositEther() external payable returns (uint256) {
         // Deposit to Compound and receive minted CTokens to this contract
         token.mint{value: msg.value}(); // reverts on failure
-        // TODO: Should we record the balance prior to deposit and only transmit the difference?
-        //       In case someone transfers Ether directly to this wrapper, that would be sent to the
-        //       next random person doing a deposit, or if we do that check, it would be locked up.
+
         uint256 yieldBearingAmount = token.balanceOf(address(this));
 
         // Deposit from this contract to Tempus Pool

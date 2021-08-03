@@ -66,14 +66,10 @@ contract TempusPool is ITempusPool, Ownable {
         maturityTime = maturity;
         initialExchangeRate = oracle.currentRate(token);
 
-        // TODO add maturity
         string memory principalName = string(bytes.concat("TPS-", bytes(ERC20(token).symbol())));
-        // TODO separate name vs. symbol?
         principalShare = new PrincipalShare(this, principalName, principalName);
 
-        // TODO add maturity
         string memory yieldName = string(bytes.concat("TYS-", bytes(ERC20(token).symbol())));
-        // TODO separate name vs. symbol?
         yieldShare = new YieldShare(this, yieldName, yieldName);
     }
 
@@ -84,8 +80,6 @@ contract TempusPool is ITempusPool, Ownable {
             maturityExchangeRate = currentExchangeRate();
             matured = true;
 
-            // TODO: While this assertion should hold,
-            //       if there's some bug somewhere this would prevent finalization.
             assert(principalShare.totalSupply() == yieldShare.totalSupply());
         }
     }
@@ -160,8 +154,6 @@ contract TempusPool is ITempusPool, Ownable {
     }
 
     function _redeem(uint256 principalAmount, uint256 yieldAmount) internal returns (uint256) {
-        // TODO: this whole calcualtion is scaled, should rewrite this using a fixedpoint library.
-
         uint256 currentRate = currentExchangeRate();
         uint256 exchangeRate = currentRate;
         // in case of negative yield after maturity, we use lower rate for redemption
