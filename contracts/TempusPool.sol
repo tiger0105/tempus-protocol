@@ -158,8 +158,6 @@ contract TempusPool is ITempusPool, Ownable {
     }
 
     function _redeem(uint256 principalAmount, uint256 yieldAmount) internal returns (uint256) {
-        // TODO: this whole calcualtion is scaled, should rewrite this using a fixedpoint library.
-
         uint256 currentRate = currentExchangeRate();
         uint256 exchangeRate = currentRate;
         // in case of negative yield after maturity, we use lower rate for redemption
