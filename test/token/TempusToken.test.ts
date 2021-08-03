@@ -55,7 +55,7 @@ describe("Tempus Token", async () => {
 
       // User tries to burn another user's tokens
       // @TODO: add suitable expected error message once it's added to the contract implementation
-      (await expectRevert(token.burn(user2, user1, amount))).to.equal("Transaction reverted without a reason");
+      (await expectRevert(token.burn(user2, user1, amount))).to.equal("Transaction reverted without a reason string");
     });
 
     it("Should not allow owner to burn users' tokens", async () =>
@@ -67,7 +67,7 @@ describe("Tempus Token", async () => {
 
       // Owner burns User, but more than exists
       // @TODO: add suitable expected error message once it's added to the contract implementation
-      (await expectRevert(token.burn(owner, user1, 10))).to.equal("Transaction reverted without a reason");
+      (await expectRevert(token.burn(owner, user1, 10))).to.equal("Transaction reverted without a reason string");
     });
   });
 });
