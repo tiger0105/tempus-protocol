@@ -66,14 +66,10 @@ contract TempusPool is ITempusPool, Ownable {
         maturityTime = maturity;
         initialExchangeRate = oracle.currentRate(token);
 
-        // TODO add maturity
         string memory principalName = string(bytes.concat("TPS-", bytes(ERC20(token).symbol())));
-        // TODO separate name vs. symbol?
         principalShare = new PrincipalShare(this, principalName, principalName);
 
-        // TODO add maturity
         string memory yieldName = string(bytes.concat("TYS-", bytes(ERC20(token).symbol())));
-        // TODO separate name vs. symbol?
         yieldShare = new YieldShare(this, yieldName, yieldName);
     }
 
