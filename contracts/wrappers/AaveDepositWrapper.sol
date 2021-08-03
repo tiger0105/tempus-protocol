@@ -35,7 +35,7 @@ contract AaveDepositWrapper {
         // Deposit to AAVE
         backingToken.approve(address(aavePool), amount);
         aavePool.deposit(address(backingToken), amount, address(this), 0);
-        
+
         uint256 yieldBearingAmount = yieldBearingToken.balanceOf(address(this));
 
         // Deposit to the TempusPool

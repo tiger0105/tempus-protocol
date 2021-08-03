@@ -39,7 +39,7 @@ contract CompoundErc20DepositWrapper {
         // Deposit to Compound and receive minted CTokens to this contract
         backingToken.approve(address(token), amount);
         require(token.mint(amount) == 0, "CErc20 mint failed");
-        
+
         uint256 yieldBearingAmount = token.balanceOf(address(this));
 
         // Deposit from this contract to Tempus Pool
