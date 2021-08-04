@@ -40,6 +40,17 @@ jobs:
       - store_artifacts:
           path: coverage
           prefix: coverage
+  integration_tests:
+    executor:
+      name: node/default
+      tag: '15.11'
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: yarn
+      - run:
+          command:
+            yarn test:integration
   localDeployment:
     executor:
       name: node/default
@@ -56,6 +67,9 @@ workflows:
   unit_tests:
     jobs:
       - unit_tests
+  integration_tests:
+    jobs:
+      - integration_tests
   solhint:
     jobs:
       - solhint
