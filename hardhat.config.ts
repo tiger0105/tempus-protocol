@@ -92,6 +92,7 @@ module.exports = {
     },
     daiHolder: '0xf977814e90da44bfa03b6295a0616a897441acec',
     aDaiHolder: '0x3ddfa8ec3052539b6c9549f12cea2c295cff5296',
+    aWethHolder: '0x3ddfa8ec3052539b6c9549f12cea2c295cff5296',
     cDaiHolder: '0x9b4772e59385ec732bccb06018e318b7b3477459'
   },
 };

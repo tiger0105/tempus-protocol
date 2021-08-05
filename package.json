@@ -24,7 +24,9 @@
     "chai": "^4.3.4",
     "coveralls": "^3.1.0",
     "cross-env": "^7.0.3",
+    "decimal.js": "^10.3.1",
     "dotenv": "^10.0.0",
+    "eth-ens-namehash": "^2.0.8",
     "ethereum-waffle": "^3.3.0",
     "ethers": "^5.4.1",
     "hardhat": "^2.2.1",
@@ -38,12 +40,14 @@
     "solidity-coverage": "^0.7.16",
     "ts-node": "^10.0.0",
     "typechain": "^5.1.1",
-    "typescript": "^4.2.4"
+    "typescript": "^4.2.4",
+    "yahoo-finance": "^0.3.7"
   },
   "scripts": {
     "test": "npx hardhat test test/*.ts test/mocks/**/*.ts test/token/*.ts",
-    "test:integration": "cross-env HARDHAT_FORK=mainnet HARDHAT_FORK_NUMBER=12862536 npx hardhat test integration-tests/*",
+    "test:integration": "cross-env HARDHAT_FORK=mainnet HARDHAT_FORK_NUMBER=12862536 npx hardhat test integration-tests/*.ts integration-tests/**/*.ts",
     "coverage": "npx hardhat coverage --testfiles \"test/**/*.ts\"",
+    "coverage:integration": "cross-env HARDHAT_FORK=mainnet HARDHAT_FORK_NUMBER=12862536 npx hardhat coverage --testfiles \"integration-tests/**/*.ts\"",
     "solhint": "solhint \"contracts/**/*.sol\"",
     "lint": "prettier --write \"contracts/**/*.sol\"",
     "lint-check": "prettier --check \"contracts/**/*.sol\"",
@@ -55,7 +59,6 @@
     "increase-time": "npx hardhat run scripts/increaseTime.local.ts --network localhost"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.1.0",
-    "decimal.js": "^10.3.1"
+    "@openzeppelin/contracts": "^4.1.0"
   }
 }

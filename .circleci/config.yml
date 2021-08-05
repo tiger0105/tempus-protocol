@@ -1,8 +1,34 @@
 version: '2.1'
 orbs:
   node: circleci/node@4.6.0
-  coveralls: coveralls/coveralls@1.0.4
+  coveralls: coveralls/coveralls@1.0.6
 jobs:
+  unit_tests_coverage:
+    executor:
+      name: node/default
+      tag: '15.11'
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: yarn
+      - run:
+          command:
+            yarn coverage
+      - coveralls/upload:
+          parallel: true
+  integration_tests_coverage:
+    executor:
+      name: node/default
+      tag: '15.11'
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: yarn
+      - run:
+          command:
+            yarn coverage:integration
+      - coveralls/upload:
+          parallel: true
   unit_tests:
     executor:
       name: node/default
@@ -51,6 +77,16 @@ jobs:
       - run:
           command:
             yarn test:integration
+  save_and_upload_coverage_artifacts:
+    executor:
+      name: node/default
+      tag: '15.11'
+    steps:
+      - coveralls/upload:
+          parallel_finished: true
+      - store_artifacts:
+          path: coverage
+          prefix: coverage
   localDeployment:
     executor:
       name: node/default
@@ -64,6 +100,20 @@ jobs:
             yarn deploy-ci
 
 workflows:
+  code_coverage:
+    jobs:
+      - unit_tests_coverage:
+          context: 
+            - Coveralls
+      - integration_tests_coverage:
+          context: 
+            - Coveralls
+      - save_and_upload_coverage_artifacts:
+          context: 
+            - Coveralls
+          requires:
+              - unit_tests_coverage
+              - integration_tests_coverage
   unit_tests:
     jobs:
       - unit_tests
@@ -73,11 +123,6 @@ workflows:
   solhint:
     jobs:
       - solhint
-  code_coverage:
-    jobs:
-      - coverage:
-          context: 
-            - Coveralls
   test_local_deployment:
     jobs:
       - localDeployment
