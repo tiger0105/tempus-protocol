@@ -108,4 +108,7 @@ module.exports = {
     aWethHolder: '0x3ddfa8ec3052539b6c9549f12cea2c295cff5296',
     cDaiHolder: '0x9b4772e59385ec732bccb06018e318b7b3477459'
   },
+  mocha: {
+    timeout: 40000
+  }
 };
