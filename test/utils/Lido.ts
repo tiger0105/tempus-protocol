@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
-import { Contract } from "ethers";
-import { NumberOrString, toWei } from "./Decimal";
+import { BigNumber, Contract } from "ethers";
+import { NumberOrString, toWei, ONE_WEI } from "./Decimal";
 import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
 import { IPriceOracle } from "./IPriceOracle";
@@ -32,12 +32,63 @@ export class Lido extends ERC20 {
     return new Lido(pool, asset, priceOracle);
   }
 
-  async sharesOf(signer:SignerOrAddress): Promise<NumberOrString> {
-    return this.fromBigNum(await this.contract.sharesOf(addressOf(signer)));
+  /** @return stETH balance of an user */
+  async sharesOf(user:SignerOrAddress): Promise<NumberOrString> {
+    return this.fromBigNum(await this.contract.sharesOf(addressOf(user)));
   }
+
+  /** @return total stETH shares minted */
   async getTotalShares(): Promise<NumberOrString> {
     return this.fromBigNum(await this.contract.getTotalShares());
   }
+
+  /** @return the amount of Ether that corresponds to `_sharesAmount` token shares. */
+  async getPooledEthByShares(sharesAmount:NumberOrString): Promise<NumberOrString> {
+    return this.fromBigNum(await this.contract.getPooledEthByShares(this.toBigNum(sharesAmount)));
+  }
+
+  /** @return total pooled ETH: beaconBalance + bufferedEther */
+  async totalSupply(): Promise<NumberOrString> {
+    return this.fromBigNum(await this.contract.totalSupply());
+  }
+
+  /** @return Current exchange rate */
+  async exchangeRate(): Promise<NumberOrString> {
+    const totalSupply:BigNumber = await this.contract.totalSupply();
+    if (totalSupply.isZero()) {
+      return 1.0;
+    } else {
+      const totalShares:BigNumber = await this.contract.getTotalShares();
+      return this.fromBigNum(totalShares.mul(ONE_WEI).div(totalSupply));
+    }
+  }
+
+  /**
+   * Sets the pool exchange rate
+   * The only way to do this is to modify the `totalShares` of stETH in the contract
+   * @param exchangeRate New synthetic exchange rate
+   */
+  async setExchangeRate(exchangeRate:NumberOrString) {
+    let totalETHSupply:BigNumber = await this.contract.totalSupply();
+    // total ETH is 0, so we must actually deposit something, otherwise we can't manipulate the rate
+    if (totalETHSupply.isZero()) {
+      totalETHSupply = this.toBigNum(100);
+      await this.contract._setSharesAndEthBalance(this.toBigNum(100), totalETHSupply); // 1.0 rate
+    }
+
+    // figure out if newRate requires a change of stETH
+    const totalShares:BigNumber = await this.contract.getTotalShares();
+    const curRate = (totalShares.mul(ONE_WEI)).div(totalETHSupply);
+    const newRate = this.toBigNum(exchangeRate);
+    const difference = newRate.mul(ONE_WEI).div(curRate).sub(ONE_WEI);
+    if (difference.isZero())
+      return;
+
+    const change = totalShares.mul(difference).div(ONE_WEI);
+    const newShares = totalShares.add(change);
+    await this.contract._setSharesAndEthBalance(newShares, totalETHSupply);
+  }
+
   async submit(signer:SignerOrAddress, amount:NumberOrString) {
     const val = this.toBigNum(amount); // payable call, set value:
     return await this.connect(signer).submit(addressOf(signer), {value: val})

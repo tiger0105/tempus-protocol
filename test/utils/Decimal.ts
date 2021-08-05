@@ -18,6 +18,11 @@ export const MAX_NUMBER_DIGITS = 17;
 export const MAX_UINT256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
 /**
+ * 1.0 expressed as a WEI BigNumber
+ */
+export const ONE_WEI:BigNumber = ethers.utils.parseUnits('1.0', 18);
+
+/**
  * Parses a decimal string into specified base precision
  * @example let wei = parseDecimal("0.000001", 18);
  * @param decimalString Decimal string such as "12.1234"

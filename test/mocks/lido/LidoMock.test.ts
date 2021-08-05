@@ -68,12 +68,6 @@ describe("Lido Mock", async () => {
       const userBalance  = await lido.balanceOf(user);
       expect(ownerBalance).to.equal(10.18);
       expect(userBalance).to.equal(40.72);
-
-      // TODO: Check if owner and user received accurate amount of new balance
-      const added = Number(ownerBalance) + Number(userBalance) - initial;
-      console.log("minted: ", minted);
-      console.log("added balances: ", added);
-      console.log("added + minted: ", added+minted);
     });
   });
 
@@ -101,6 +95,18 @@ describe("Lido Mock", async () => {
 
       (await expectRevert(lido.withdraw(owner, 1.0)))
         .to.equal("BURN_AMOUNT_EXCEEDS_BALANCE");
+    });
+
+    it("Should have different redeemable ETH with exchangeRate 1.25", async () =>
+    {
+      await lido.submit(user, 32.0);
+      expect(await lido.sharesOf(user)).to.equal(32.0);
+      
+      await lido.setExchangeRate(1.25);
+      expect(await lido.exchangeRate()).to.equal(1.25);
+
+      const redeemable = await lido.getPooledEthByShares(10);
+      expect(redeemable).to.equal(8, "redeemable ETH should be reduced by exchangeRate 1.25");
     });
   });
 });

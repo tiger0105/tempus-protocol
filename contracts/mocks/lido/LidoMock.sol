@@ -132,8 +132,15 @@ contract LidoMock is StETH {
         payable(0).transfer(_numDeposits * DEPOSIT_SIZE);
     }
 
-    // Total holdings.
+    // totalSupply() of ETH
     function _getTotalPooledEther() internal view override returns (uint256) {
         return beaconBalance + bufferedEther;
+    }
+
+    // MOCK only, used for manipulating exchange rate
+    function _setSharesAndEthBalance(uint256 stEthBalance, uint256 ethBalance) public {
+        totalShares = stEthBalance;
+        beaconBalance = ethBalance / 2;
+        bufferedEther = ethBalance / 2;
     }
 }
