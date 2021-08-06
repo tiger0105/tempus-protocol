@@ -61,13 +61,26 @@ module.exports = {
     spacing: 2
   },
   solidity: {
-    version: "0.8.6",
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 1000
+    compilers: [
+      {
+        version: "0.8.6",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1000
+          }
+        }
+      },
+      {
+        version: "0.7.6",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 800
+          }
+        }
       }
-    }
+    ]
   },
   networks: {
     localhost: {
@@ -95,4 +108,7 @@ module.exports = {
     aWethHolder: '0x3ddfa8ec3052539b6c9549f12cea2c295cff5296',
     cDaiHolder: '0x9b4772e59385ec732bccb06018e318b7b3477459'
   },
+  mocha: {
+    timeout: 40000
+  }
 };
