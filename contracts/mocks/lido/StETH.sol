@@ -248,7 +248,7 @@ abstract contract StETH is ILido {
      * @dev The sum of all accounts' shares can be an arbitrary number, therefore
      * it is necessary to store it in order to calculate each account's relative share.
      */
-    function getTotalShares() public override view returns (uint256) {
+    function getTotalShares() public view returns (uint256) {
         return _getTotalShares();
     }
 
@@ -262,7 +262,7 @@ abstract contract StETH is ILido {
     /**
      * @return the amount of shares that corresponds to `_ethAmount` protocol-controlled Ether.
      */
-    function getSharesByPooledEth(uint256 _ethAmount) public view returns (uint256) {
+    function getSharesByPooledEth(uint256 _ethAmount) public override view returns (uint256) {
         uint256 totalPooledEther = _getTotalPooledEther();
         if (totalPooledEther == 0) {
             return 0;
@@ -274,7 +274,7 @@ abstract contract StETH is ILido {
     /**
      * @return the amount of Ether that corresponds to `_sharesAmount` token shares.
      */
-    function getPooledEthByShares(uint256 _sharesAmount) public view returns (uint256) {
+    function getPooledEthByShares(uint256 _sharesAmount) public override view returns (uint256) {
         uint256 _totalShares = _getTotalShares();
         if (_totalShares == 0) {
             return 0;

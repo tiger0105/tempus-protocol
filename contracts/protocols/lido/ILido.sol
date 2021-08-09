@@ -13,10 +13,12 @@ interface ILido is IERC20, IERC20Metadata {
     function submit(address _referral) external payable returns (uint256);
 
     /**
-     * @return the total amount of shares in existence.
-     *
-     * @dev The sum of all accounts' shares can be an arbitrary number, therefore
-     * it is necessary to store it in order to calculate each account's relative share.
+     * @return the amount of shares that corresponds to `_ethAmount` protocol-controlled Ether.
      */
-    function getTotalShares() external view returns (uint256);
+    function getSharesByPooledEth(uint256 _ethAmount) external view returns (uint256);
+    
+    /**
+     * @return the amount of Ether that corresponds to `_sharesAmount` token shares.
+     */
+    function getPooledEthByShares(uint256 _sharesAmount) external view returns (uint256);
 }

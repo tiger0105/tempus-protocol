@@ -143,4 +143,9 @@ contract LidoMock is StETH {
         beaconBalance = ethBalance / 2;
         bufferedEther = ethBalance / 2;
     }
+
+    // MOCK only
+    function _currentExchangeRate() external view returns (uint256) {
+        return getSharesByPooledEth(1e18);
+    }
 }
