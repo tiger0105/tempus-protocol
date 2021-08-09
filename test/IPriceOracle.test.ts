@@ -5,6 +5,7 @@ import { ContractBase, Signer } from "./utils/ContractBase";
 import { IPriceOracle } from "./utils/IPriceOracle";
 import { ERC20 } from "./utils/ERC20";
 import { Comptroller } from "./utils/Comptroller";
+import { Lido } from "./utils/Lido";
 
 describe("Tempus Pool", async () => {
   let owner:Signer, user:Signer;
@@ -33,11 +34,12 @@ describe("Tempus Pool", async () => {
 
     it("Should give correct exchange rate from Lido", async () =>
     {
-      const pool = await ContractBase.deployContract("LidoMock");
-      let oracle:IPriceOracle = await IPriceOracle.deploy("StETHPriceOracle");
-      let exchangeRate = await oracle.currentRate(pool.address);
-      let scaledBalance = await oracle.scaledBalance(pool.address, 2);
-      let numYieldTokens = await oracle.numYieldTokensPerAsset(pool.address, 3);
+      const lido = await Lido.create(1000000);
+      await lido.submit(user, 2);
+      const yieldToken = lido.yieldToken;
+      let exchangeRate = await lido.priceOracle.currentRate(yieldToken);
+      let scaledBalance = await lido.priceOracle.scaledBalance(yieldToken, 2);
+      let numYieldTokens = await lido.priceOracle.numYieldTokensPerAsset(yieldToken, 3);
       expect(exchangeRate).to.equal(1.0);
       expect(scaledBalance).to.equal(2);
       expect(numYieldTokens).to.equal(3);
