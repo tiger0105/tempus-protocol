@@ -17,7 +17,7 @@ describeForEachPool("TempusPool Deploy", async (testPool:ITestPool) =>
   beforeEach(async () =>
   {
     [owner, user, user2] = await ethers.getSigners();
-    pool = await testPool.createTempusPool(owner, user);
+    pool = await testPool.createTempusPool(/*initialRate:*/1.0);
   });
   
   it("Version is correct", async () =>

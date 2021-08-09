@@ -6,6 +6,19 @@ import { ERC20 } from "./ERC20";
 import { IPriceOracle } from "./IPriceOracle";
 import { PoolShare } from "./PoolShare";
 
+export class UserState {
+  principalShares:Number;
+  yieldShares:Number;
+  yieldBearing:Number;
+
+  // non-async to give us actual test failure line #
+  public expect(principalShares:number, yieldShares:number, yieldBearing:number) {
+    expect(this.principalShares).to.equal(principalShares, "principalShares did not match expected value");
+    expect(this.yieldShares).to.equal(yieldShares, "yieldShares did not match expected value");
+    expect(this.yieldBearing).to.equal(yieldBearing, "yieldBearing did not match expected value");
+  }
+}
+
 /**
  * Wrapper around TempusPool
  */
@@ -168,8 +181,20 @@ export class TempusPool extends ContractBase {
   async transferFees(owner:SignerOrAddress, recipient:SignerOrAddress, amount:NumberOrString) {
     await this.contract.connect(owner).transferFees(addressOf(recipient), this.toBigNum(amount));
   }
+
+  /**
+   * @returns Balances state for a single user
+   */
+  async userState(user:SignerOrAddress): Promise<UserState> {
+    let state = new UserState();
+    state.principalShares = Number(await this.principalShare.balanceOf(user));
+    state.yieldShares = Number(await this.yieldShare.balanceOf(user));
+    state.yieldBearing = Number(await this.yieldBearing.balanceOf(user));
+    return state;
+  }
 }
 
+// DEPRECATED, use `pool.userState()` and `state.expect()` to get actual test failure line #
 export async function expectUserState(pool:TempusPool, owner:SignerOrAddress, principalShares:number, yieldShares:number, yieldBearing:number) {
   expect(await pool.principalShare.balanceOf(owner)).to.equal(principalShares);
   expect(await pool.yieldShare.balanceOf(owner)).to.equal(yieldShares);
