@@ -5,6 +5,7 @@ import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
 import { IPriceOracle } from "./IPriceOracle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signers";
+import { expect } from "chai";
 
 /**
  * Type safe wrapper over LidoMock
@@ -47,6 +48,11 @@ export class Lido extends ERC20 {
     return this.fromBigNum(await this.contract.getPooledEthByShares(this.toBigNum(sharesAmount)));
   }
 
+  /** @return the amount of shares that corresponds to `_ethAmount` protocol-controlled Ether. */
+  async getSharesByPooledEth(_ethAmount:NumberOrString): Promise<NumberOrString> {
+    return this.fromBigNum(await this.contract.getSharesByPooledEth(this.toBigNum(_ethAmount)));
+  }
+
   /** @return total pooled ETH: beaconBalance + bufferedEther */
   async totalSupply(): Promise<NumberOrString> {
     return this.fromBigNum(await this.contract.totalSupply());
@@ -54,13 +60,7 @@ export class Lido extends ERC20 {
 
   /** @return Current exchange rate */
   async exchangeRate(): Promise<NumberOrString> {
-    const totalSupply:BigNumber = await this.contract.totalSupply();
-    if (totalSupply.isZero()) {
-      return 1.0;
-    } else {
-      const totalShares:BigNumber = await this.contract.getTotalShares();
-      return this.fromBigNum(totalShares.mul(ONE_WEI).div(totalSupply));
-    }
+    return this.priceOracle.currentRate(this);
   }
 
   /**
@@ -68,7 +68,7 @@ export class Lido extends ERC20 {
    * The only way to do this is to modify the `totalShares` of stETH in the contract
    * @param exchangeRate New synthetic exchange rate
    */
-  async setExchangeRate(exchangeRate:NumberOrString) {
+  async setExchangeRate(exchangeRate:NumberOrString): Promise<void> {
     let totalETHSupply:BigNumber = await this.contract.totalSupply();
     // total ETH is 0, so we must actually deposit something, otherwise we can't manipulate the rate
     if (totalETHSupply.isZero()) {

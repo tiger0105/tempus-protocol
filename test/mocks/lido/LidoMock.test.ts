@@ -4,7 +4,8 @@ import { Lido } from "../../utils/Lido";
 import { Signer } from "../../utils/ContractBase";
 import { expectRevert } from "../../utils/Utils";
 
-describe("Lido Mock", async () => {
+describe("Lido Mock", () =>
+{
   let owner:Signer, user:Signer;
   let lido:Lido;
 
@@ -14,7 +15,18 @@ describe("Lido Mock", async () => {
     await lido.asset.transfer(owner, user, 10); // give user 10 asset coins
   });
 
-  describe("Submit", async () =>
+  describe("Deploy", () =>
+  {
+    it("Should have correct initial values", async () =>
+    {
+      expect(await lido.totalSupply()).to.equal(0.0); // alias to getTotalPooledEther()
+      expect(await lido.getTotalShares()).to.equal(0.0);
+      expect(await lido.getPooledEthByShares(1.0)).to.equal(1.0);
+      expect(await lido.getSharesByPooledEth(1.0)).to.equal(1.0);
+    });
+  });
+
+  describe("Submit", () =>
   {
     it("Should store and track balance similar to ERC20 tokens BEFORE buffer deposit", async () =>
     {

@@ -5,22 +5,18 @@ import "./IPriceOracle.sol";
 import "./protocols/lido/ILido.sol";
 
 contract StETHPriceOracle is IPriceOracle {
-    /// @return Current exchange rate as a WAD decimal
+    /// @return Current exchange rate of StETH as a 1e18 decimal
     function currentRate(address token) external view override returns (uint256) {
-        ILido steth = ILido(token);
-        uint totalSupply = steth.totalSupply();
-        if (totalSupply == 0) {
-            return 1e18; // 1 WAD
-        } else {
-            return (steth.getTotalShares() * 1e18) / totalSupply;
-        }
+        // NOTE: if totalSupply() is 0, then rate is also 0,
+        //       but this only happens right after deploy, so we ignore it
+        return ILido(token).getSharesByPooledEth(1e18);
     }
 
-    function scaledBalance(address, uint256 amount) external pure override returns (uint256) {
-        return amount;
+    function scaledBalance(address token, uint256 amount) external view override returns (uint256) {
+        return ILido(token).getPooledEthByShares(amount);
     }
 
-    function numYieldTokensPerAsset(address, uint256 amount) external pure override returns (uint256) {
-        return amount;
+    function numYieldTokensPerAsset(address token, uint256 amount) external view override returns (uint256) {
+        return ILido(token).getSharesByPooledEth(amount);
     }
 }

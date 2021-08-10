@@ -66,7 +66,7 @@ contract LidoMock is StETH {
         uint256 _amount,
         bytes32 /*_pubkeyHash*/
     ) external {
-        uint256 redeemable = getPooledEthByShares(_amount);
+        uint256 redeemable = StETH.getPooledEthByShares(_amount);
 
         // Simplification: only allow withdrawing buffered ether.
         require(redeemable <= bufferedEther, "Can only withdraw up to the buffered ether.");
@@ -95,7 +95,7 @@ contract LidoMock is StETH {
         uint256 deposit = msg.value;
         require(deposit != 0, "ZERO_DEPOSIT");
 
-        uint256 sharesAmount = getSharesByPooledEth(deposit);
+        uint256 sharesAmount = StETH.getSharesByPooledEth(deposit);
         if (sharesAmount == 0) {
             // totalControlledEther is 0: either the first-ever deposit or complete slashing
             // assume that shares correspond to Ether 1-to-1
@@ -142,5 +142,27 @@ contract LidoMock is StETH {
         totalShares = stEthBalance;
         beaconBalance = ethBalance / 2;
         bufferedEther = ethBalance / 2;
+    }
+
+    /**
+     * @return the amount of shares that corresponds to `_ethAmount` protocol-controlled Ether.
+     */
+    function getSharesByPooledEth(uint256 _ethAmount) public view override returns (uint256) {
+        // no deposits yet, return 1:1 rate
+        if (_getTotalPooledEther() == 0) {
+            return _ethAmount;
+        }
+        return StETH.getSharesByPooledEth(_ethAmount);
+    }
+
+    /**
+     * @return the amount of Ether that corresponds to `_sharesAmount` token shares.
+     */
+    function getPooledEthByShares(uint256 _sharesAmount) public view override returns (uint256) {
+        // no deposits yet, return 1:1 rate
+        if (_getTotalShares() == 0) {
+            return _sharesAmount;
+        }
+        return StETH.getPooledEthByShares(_sharesAmount);
     }
 }
