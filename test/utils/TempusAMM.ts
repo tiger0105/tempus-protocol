@@ -2,6 +2,7 @@ import { ethers } from "hardhat";
 import { Contract } from "ethers";
 import { NumberOrString, toWei, fromWei } from "./Decimal";
 import { ContractBase } from "./ContractBase";
+import { ERC20 } from "./ERC20";
 import { MockProvider } from "@ethereum-waffle/provider";
 import { deployMockContract } from "@ethereum-waffle/mock-contract";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signers";
@@ -17,10 +18,10 @@ export const MONTH = DAY * 30;
 
 export class TempusAMM extends ContractBase {
   vault: Contract;
-  principalShare: Contract;
-  yieldShare: Contract;
+  principalShare: ERC20;
+  yieldShare: ERC20;
 
-  constructor(tempusAmmPool: Contract, vault: Contract, principalShare: Contract, yieldShare: Contract) {
+  constructor(tempusAmmPool: Contract, vault: Contract, principalShare: ERC20, yieldShare: ERC20) {
     super("TempusAMM", 18, tempusAmmPool);
     this.vault = vault;
     this.principalShare = principalShare;
@@ -31,13 +32,9 @@ export class TempusAMM extends ContractBase {
     owner: SignerWithAddress,
     amplification: Number,
     swapFeePercentage: Number, 
-    totalSharesSupply: Number
+    principalShare: ERC20,
+    yieldShare:ERC20
   ): Promise<TempusAMM> {
-    const principalShare:Contract = await ContractBase.deployContract("TempusShareMock", "Tempus Principal", "TPS");
-    await principalShare.connect(owner).mint(owner.address, toWei(totalSharesSupply));
-    const yieldShare:Contract = await ContractBase.deployContract("TempusShareMock", "Tempus Yield", "TYS");
-    await yieldShare.connect(owner).mint(owner.address, toWei(totalSharesSupply));
-    
     const [sender] = new MockProvider().getWallets();
     const mockedWETH = await deployMockContract(sender, WETH_ARTIFACTS.abi);
 
@@ -62,11 +59,6 @@ export class TempusAMM extends ContractBase {
 
   async balanceOf(user:SignerWithAddress): Promise<NumberOrString> {
     return fromWei(await this.contract.balanceOf(user.address));
-  }
-
-  async setPricePerShares(principalShareValue: Number, yieldShareValue: Number) {
-    await this.principalShare.setPricePerFullShare(toWei(principalShareValue));
-    await this.yieldShare.setPricePerFullShare(toWei(yieldShareValue));
   }
 
   async provideInitialLiquidity(from: SignerWithAddress, principalShareBalance: Number, yieldShareBalance: Number) {

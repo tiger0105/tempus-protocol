@@ -4,6 +4,7 @@ import { BigNumber } from "ethers";
 import { fromWei, toWei } from "./../utils/Decimal";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signers";
 import { TempusAMM } from "./../utils/TempusAMM"
+import { ERC20 } from "./../utils/ERC20";
 
 interface SwapTestRun {
   amplification:Number;
@@ -17,11 +18,13 @@ interface SwapTestRun {
 
 const SWAP_FEE_PERC:Number = 0.02;
 
+let principalShare:ERC20;
+let yieldShare:ERC20;
+
 async function checkSwap(owner:SignerWithAddress, swapTest:SwapTestRun, principalIn:boolean, givenIn: boolean) {
-  const totalSharesSupply = 1000000;
-  
-  const tempusAMM = await TempusAMM.create(owner, swapTest.amplification, SWAP_FEE_PERC, totalSharesSupply);
-  await tempusAMM.setPricePerShares(swapTest.pricePerPrincipal, swapTest.pricePerYield);
+  const tempusAMM = await TempusAMM.create(owner, swapTest.amplification, SWAP_FEE_PERC, principalShare, yieldShare);
+  await tempusAMM.principalShare.contract.setPricePerFullShare(toWei(swapTest.pricePerPrincipal));
+  await tempusAMM.yieldShare.contract.setPricePerFullShare(toWei(swapTest.pricePerYield));
   await tempusAMM.provideInitialLiquidity(owner, swapTest.balancePrincipal, swapTest.balanceYield);
 
   const [tokenIn, tokenOut] = 
@@ -29,8 +32,8 @@ async function checkSwap(owner:SignerWithAddress, swapTest:SwapTestRun, principa
     [tempusAMM.principalShare, tempusAMM.yieldShare] : 
     [tempusAMM.yieldShare, tempusAMM.principalShare];
       
-  const preSwapTokenInBalance:BigNumber = await tokenIn.balanceOf(owner.address);
-  const preSwapTokenOutBalance:BigNumber = await tokenOut.balanceOf(owner.address);
+  const preSwapTokenInBalance:BigNumber = await tokenIn.contract.balanceOf(owner.address);
+  const preSwapTokenOutBalance:BigNumber = await tokenOut.contract.balanceOf(owner.address);
 
   if (givenIn) {
     await tempusAMM.swapGivenIn(owner, tokenIn.address, tokenOut.address, swapTest.swapAmountIn);
@@ -38,8 +41,8 @@ async function checkSwap(owner:SignerWithAddress, swapTest:SwapTestRun, principa
     await tempusAMM.swapGivenOut(owner, tokenIn.address, tokenOut.address, swapTest.swapAmountOut);
   }
       
-  const postSwapTokenInBalance:BigNumber = await tokenIn.balanceOf(owner.address);
-  const postSwapTokenOutBalance:BigNumber = await tokenOut.balanceOf(owner.address);
+  const postSwapTokenInBalance:BigNumber = await tokenIn.contract.balanceOf(owner.address);
+  const postSwapTokenOutBalance:BigNumber = await tokenOut.contract.balanceOf(owner.address);
 
   expect(+fromWei(preSwapTokenInBalance.sub(postSwapTokenInBalance))).to.equal(swapTest.swapAmountIn);
   expect(+fromWei(postSwapTokenOutBalance.sub(preSwapTokenOutBalance))).to.be.equal(swapTest.swapAmountOut);
@@ -50,11 +53,20 @@ describe("TempusAMM", async () => {
 
   beforeEach(async () => {
     [owner] = await ethers.getSigners();
+
+    const totalSharesSupply = 10000000;
+    principalShare = await ERC20.deploy("TempusShareMock", "Tempus Principal", "TPS");
+    await principalShare.connect(owner).mint(owner.address, toWei(totalSharesSupply));
+    yieldShare = await ERC20.deploy("TempusShareMock", "Tempus Yield", "TYS");
+    await yieldShare.connect(owner).mint(owner.address, toWei(totalSharesSupply));
+    
+    
   });
 
-  it("checks LP's pool token balance", async () => {
-    const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, 1000000 /*total shares supply*/);
-    await tempusAMM.setPricePerShares(1, 0.1);
+  it("checks LP's pool token balance", async () => {    
+    const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, principalShare, yieldShare);
+    await tempusAMM.principalShare.contract.setPricePerFullShare(toWei(1.0));
+    await tempusAMM.yieldShare.contract.setPricePerFullShare(toWei(0.1));
     await tempusAMM.provideInitialLiquidity(owner, 100, 1000);
     const poolTokensBalance = await tempusAMM.balanceOf(owner);
     expect(poolTokensBalance).to.be.equal(199.999999999999);
