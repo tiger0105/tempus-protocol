@@ -20,15 +20,6 @@ contract LidoMock is StETH {
     uint256 internal constant DEPOSIT_SIZE = 32 ether;
     uint256 internal constant DEFAULT_MAX_DEPOSITS_PER_CALL = 16;
 
-    // Mock exchange rate workaround to add an additional ether supply
-    // before any deposits are made. So that this pool returns exchangeRate 1.0
-    // and PriceOracle does not need additional checks
-    uint256 internal mockRateEther = 1e18;
-
-    constructor() {
-        _mintShares(address(this), mockRateEther); // set totalShares, now exchangeRate is 1.0
-    }
-
     /// @notice Send funds to the pool
     /// @dev Users are able to submit their funds by transacting to the fallback function.
     /// Unlike vanilla Eth2.0 Deposit contract, accepting only 32-Ether transactions, Lido
@@ -75,7 +66,7 @@ contract LidoMock is StETH {
         uint256 _amount,
         bytes32 /*_pubkeyHash*/
     ) external {
-        uint256 redeemable = getPooledEthByShares(_amount);
+        uint256 redeemable = StETH.getPooledEthByShares(_amount);
 
         // Simplification: only allow withdrawing buffered ether.
         require(redeemable <= bufferedEther, "Can only withdraw up to the buffered ether.");
@@ -104,13 +95,7 @@ contract LidoMock is StETH {
         uint256 deposit = msg.value;
         require(deposit != 0, "ZERO_DEPOSIT");
 
-        // HACK: remove the invisible ether supply, because we no longer need it
-        if (mockRateEther != 0) {
-            _burnShares(address(this), mockRateEther);
-            mockRateEther = 0;
-        }
-
-        uint256 sharesAmount = getSharesByPooledEth(deposit);
+        uint256 sharesAmount = StETH.getSharesByPooledEth(deposit);
         if (sharesAmount == 0) {
             // totalControlledEther is 0: either the first-ever deposit or complete slashing
             // assume that shares correspond to Ether 1-to-1
@@ -149,7 +134,7 @@ contract LidoMock is StETH {
 
     // totalSupply() of ETH
     function _getTotalPooledEther() internal view override returns (uint256) {
-        return beaconBalance + bufferedEther + mockRateEther;
+        return beaconBalance + bufferedEther;
     }
 
     // MOCK only, used for manipulating exchange rate
@@ -157,6 +142,27 @@ contract LidoMock is StETH {
         totalShares = stEthBalance;
         beaconBalance = ethBalance / 2;
         bufferedEther = ethBalance / 2;
-        mockRateEther = 0;
+    }
+
+    /**
+     * @return the amount of shares that corresponds to `_ethAmount` protocol-controlled Ether.
+     */
+    function getSharesByPooledEth(uint256 _ethAmount) public view override returns (uint256) {
+        // no deposits yet, return 1:1 rate
+        if (_getTotalPooledEther() == 0) {
+            return _ethAmount;
+        }
+        return StETH.getSharesByPooledEth(_ethAmount);
+    }
+
+    /**
+     * @return the amount of Ether that corresponds to `_sharesAmount` token shares.
+     */
+    function getPooledEthByShares(uint256 _sharesAmount) public view override returns (uint256) {
+        // no deposits yet, return 1:1 rate
+        if (_getTotalShares() == 0) {
+            return _sharesAmount;
+        }
+        return StETH.getPooledEthByShares(_sharesAmount);
     }
 }
