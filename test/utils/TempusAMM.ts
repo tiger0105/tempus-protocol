@@ -61,13 +61,13 @@ export class TempusAMM extends ContractBase {
     return fromWei(await this.contract.balanceOf(user.address));
   }
 
-  async provideInitialLiquidity(from: SignerWithAddress, principalShareBalance: Number, yieldShareBalance: Number) {
+  async provideLiquidity(from: SignerWithAddress, principalShareBalance: Number, yieldShareBalance: Number, initial: boolean) {
     const principalBalance = toWei(principalShareBalance);
     const yieldBalance = toWei(yieldShareBalance);
     await this.principalShare.connect(from).approve(this.vault.address, principalBalance);
     await this.yieldShare.connect(from).approve(this.vault.address, yieldBalance);
     
-    const JOIN_KIND_INIT = 0;
+    const JOIN_KIND = initial ? 0 : 1;
     const poolId = await this.contract.getPoolId();
     const assets = [
       { address: this.principalShare.address, amount: principalBalance },
@@ -76,7 +76,7 @@ export class TempusAMM extends ContractBase {
     
     const initialBalances = assets.map(({ amount }) => amount);
     const initUserData = ethers.utils.defaultAbiCoder.encode(
-      ['uint256', 'uint256[]'], [JOIN_KIND_INIT, initialBalances]
+      ['uint256', 'uint256[]'], [JOIN_KIND, initialBalances]
     );
     const joinPoolRequest = {
       assets: assets.map(({ address }) => address),

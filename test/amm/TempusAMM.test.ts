@@ -25,7 +25,7 @@ async function checkSwap(owner:SignerWithAddress, swapTest:SwapTestRun, principa
   const tempusAMM = await TempusAMM.create(owner, swapTest.amplification, SWAP_FEE_PERC, principalShare, yieldShare);
   await tempusAMM.principalShare.contract.setPricePerFullShare(toWei(swapTest.pricePerPrincipal));
   await tempusAMM.yieldShare.contract.setPricePerFullShare(toWei(swapTest.pricePerYield));
-  await tempusAMM.provideInitialLiquidity(owner, swapTest.balancePrincipal, swapTest.balanceYield);
+  await tempusAMM.provideLiquidity(owner, swapTest.balancePrincipal, swapTest.balanceYield, true);
 
   const [tokenIn, tokenOut] = 
     principalIn ? 
@@ -50,26 +50,76 @@ async function checkSwap(owner:SignerWithAddress, swapTest:SwapTestRun, principa
 
 describe("TempusAMM", async () => {
   let owner:SignerWithAddress;
+  let user:SignerWithAddress;
+  let user1:SignerWithAddress;
 
   beforeEach(async () => {
-    [owner] = await ethers.getSigners();
+    [owner, user, user1] = await ethers.getSigners();
 
     const totalSharesSupply = 10000000;
     principalShare = await ERC20.deploy("TempusShareMock", "Tempus Principal", "TPS");
     await principalShare.connect(owner).mint(owner.address, toWei(totalSharesSupply));
     yieldShare = await ERC20.deploy("TempusShareMock", "Tempus Yield", "TYS");
     await yieldShare.connect(owner).mint(owner.address, toWei(totalSharesSupply));
-    
-    
   });
 
   it("checks LP's pool token balance", async () => {    
     const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, principalShare, yieldShare);
     await tempusAMM.principalShare.contract.setPricePerFullShare(toWei(1.0));
     await tempusAMM.yieldShare.contract.setPricePerFullShare(toWei(0.1));
-    await tempusAMM.provideInitialLiquidity(owner, 100, 1000);
+    await tempusAMM.provideLiquidity(owner, 100, 1000, true);
     const poolTokensBalance = await tempusAMM.balanceOf(owner);
     expect(poolTokensBalance).to.be.equal(199.999999999999);
+  });
+
+  it("checks second LP's pool token balance without swaps between", async () => {
+    const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, principalShare, yieldShare);
+    await tempusAMM.principalShare.contract.setPricePerFullShare(toWei(1.0));
+    await tempusAMM.yieldShare.contract.setPricePerFullShare(toWei(0.1));
+    await tempusAMM.provideLiquidity(owner, 100, 1000, true);
+
+    await tempusAMM.principalShare.transfer(owner, user.address, 1000);
+    await tempusAMM.yieldShare.transfer(owner, user.address, 1000);
+    await tempusAMM.provideLiquidity(user, 100, 1000, false);
+
+    let balanceUser = await tempusAMM.balanceOf(user);
+    let balanceOwner = await tempusAMM.balanceOf(owner);
+    expect(balanceOwner).to.be.within(+balanceUser * 0.99999, +balanceUser * 1.000001);
+  });
+
+  it("checks second LP's pool token balance with swaps between", async () => {
+    const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, principalShare, yieldShare);
+    await tempusAMM.principalShare.contract.setPricePerFullShare(toWei(1.0));
+    await tempusAMM.yieldShare.contract.setPricePerFullShare(toWei(0.1));
+    await tempusAMM.provideLiquidity(owner, 100, 1000, true);
+
+    expect(await tempusAMM.balanceOf(owner)).to.be.equal(199.999999999999);
+
+    await tempusAMM.swapGivenIn(owner, tempusAMM.yieldShare.address, tempusAMM.principalShare.address, 100);
+    await tempusAMM.swapGivenOut(owner, tempusAMM.principalShare.address, tempusAMM.yieldShare.address, 100);
+
+    await tempusAMM.principalShare.transfer(owner, user.address, 1000);
+    await tempusAMM.yieldShare.transfer(owner, user.address, 1000);
+    await tempusAMM.provideLiquidity(user, 100, 1000, false);
+
+    expect(+await tempusAMM.balanceOf(user)).to.be.equal(199.59926562946222);
+
+    // do more swaps
+    await tempusAMM.swapGivenIn(owner, tempusAMM.yieldShare.address, tempusAMM.principalShare.address, 100);
+    await tempusAMM.swapGivenOut(owner, tempusAMM.principalShare.address, tempusAMM.yieldShare.address, 100);
+    await tempusAMM.swapGivenIn(owner, tempusAMM.yieldShare.address, tempusAMM.principalShare.address, 100);
+    await tempusAMM.swapGivenOut(owner, tempusAMM.principalShare.address, tempusAMM.yieldShare.address, 100);
+    await tempusAMM.swapGivenIn(owner, tempusAMM.yieldShare.address, tempusAMM.principalShare.address, 100);
+    await tempusAMM.swapGivenOut(owner, tempusAMM.principalShare.address, tempusAMM.yieldShare.address, 100);
+    await tempusAMM.swapGivenIn(owner, tempusAMM.yieldShare.address, tempusAMM.principalShare.address, 100);
+    await tempusAMM.swapGivenOut(owner, tempusAMM.principalShare.address, tempusAMM.yieldShare.address, 100);
+
+    // provide more liquidity with different user
+    await tempusAMM.principalShare.transfer(owner, user1.address, 1000);
+    await tempusAMM.yieldShare.transfer(owner, user1.address, 1000);
+    await tempusAMM.provideLiquidity(user1, 100, 1000, false);
+    
+    expect(+await tempusAMM.balanceOf(user1)).to.be.equal(198.795221425031305545);
   });
 
   it("test swaps principal in with balances aligned with exchange rate", async () => {
