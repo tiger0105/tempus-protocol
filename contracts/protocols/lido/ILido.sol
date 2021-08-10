@@ -16,7 +16,7 @@ interface ILido is IERC20, IERC20Metadata {
      * @return the amount of shares that corresponds to `_ethAmount` protocol-controlled Ether.
      */
     function getSharesByPooledEth(uint256 _ethAmount) external view returns (uint256);
-    
+
     /**
      * @return the amount of Ether that corresponds to `_sharesAmount` token shares.
      */

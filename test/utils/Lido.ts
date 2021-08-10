@@ -60,7 +60,7 @@ export class Lido extends ERC20 {
 
   /** @return Current exchange rate */
   async exchangeRate(): Promise<NumberOrString> {
-    return this.fromBigNum(await this.contract._currentExchangeRate());
+    return this.priceOracle.currentRate(this);
   }
 
   /**
@@ -68,7 +68,7 @@ export class Lido extends ERC20 {
    * The only way to do this is to modify the `totalShares` of stETH in the contract
    * @param exchangeRate New synthetic exchange rate
    */
-  async setExchangeRate(exchangeRate:NumberOrString) {
+  async setExchangeRate(exchangeRate:NumberOrString): Promise<void> {
     let totalETHSupply:BigNumber = await this.contract.totalSupply();
     // total ETH is 0, so we must actually deposit something, otherwise we can't manipulate the rate
     if (totalETHSupply.isZero()) {
