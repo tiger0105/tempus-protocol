@@ -12,14 +12,14 @@ export function createTestPool(type:PoolType): ITestPool {
     }
   }
   
-  export function describeForEachPool(title:string, fn:(testPool:ITestPool) => void)
+  export function describeForEachPool(title:string, fn:(pool:ITestPool) => void)
   {
     for (let type of [PoolType.Aave, PoolType.Lido, PoolType.Compound])
     {
         describe(title + " <> " + type.toString(), () =>
         {
-          const testPool = createTestPool(type);
-          fn(testPool);
+          const pool = createTestPool(type);
+          fn(pool);
         });
     }
   }

@@ -6,19 +6,6 @@ import { ERC20 } from "./ERC20";
 import { IPriceOracle } from "./IPriceOracle";
 import { PoolShare } from "./PoolShare";
 
-export class UserState {
-  principalShares:Number;
-  yieldShares:Number;
-  yieldBearing:Number;
-
-  // non-async to give us actual test failure line #
-  public expect(principalShares:number, yieldShares:number, yieldBearing:number) {
-    expect(this.principalShares).to.equal(principalShares, "principalShares did not match expected value");
-    expect(this.yieldShares).to.equal(yieldShares, "yieldShares did not match expected value");
-    expect(this.yieldBearing).to.equal(yieldBearing, "yieldBearing did not match expected value");
-  }
-}
-
 /**
  * Wrapper around TempusPool
  */
@@ -63,13 +50,13 @@ export class TempusPool extends ContractBase {
   /**
    * Deposits backing asset tokens into Tempus Pool on behalf of user
    * @param user User who is depositing
-   * @param assetAmount How much to deposit
+   * @param yieldBearingAmount Amount of Yield Bearing Tokens to deposit
    * @param recipient Address or User who will receive the minted shares
    */
-  async deposit(user:SignerOrAddress, assetAmount:NumberOrString, recipient:SignerOrAddress): Promise<Transaction> {
+  async deposit(user:SignerOrAddress, yieldBearingAmount:NumberOrString, recipient:SignerOrAddress): Promise<Transaction> {
     try {
-      await this.yieldBearing.approve(user, this.contract.address, assetAmount);
-      return this.connect(user).deposit(this.toBigNum(assetAmount), addressOf(recipient));
+      await this.yieldBearing.approve(user, this.contract.address, yieldBearingAmount);
+      return this.connect(user).deposit(this.toBigNum(yieldBearingAmount), addressOf(recipient));
       // NOTE: we can't easily test the return value of a transaction, so it's omitted
     } catch(e) {
       throw new Error("TempusPool.deposit failed: " + e.message);
@@ -181,22 +168,12 @@ export class TempusPool extends ContractBase {
   async transferFees(owner:SignerOrAddress, recipient:SignerOrAddress, amount:NumberOrString) {
     await this.contract.connect(owner).transferFees(addressOf(recipient), this.toBigNum(amount));
   }
-
-  /**
-   * @returns Balances state for a single user
-   */
-  async userState(user:SignerOrAddress): Promise<UserState> {
-    let state = new UserState();
-    state.principalShares = Number(await this.principalShare.balanceOf(user));
-    state.yieldShares = Number(await this.yieldShare.balanceOf(user));
-    state.yieldBearing = Number(await this.yieldBearing.balanceOf(user));
-    return state;
-  }
 }
 
-// DEPRECATED, use `pool.userState()` and `state.expect()` to get actual test failure line #
+// DEPRECATED, use `ITestPool.userState()` and `state.expect()` to get actual test failure line #
 export async function expectUserState(pool:TempusPool, owner:SignerOrAddress, principalShares:number, yieldShares:number, yieldBearing:number) {
   expect(await pool.principalShare.balanceOf(owner)).to.equal(principalShares);
   expect(await pool.yieldShare.balanceOf(owner)).to.equal(yieldShares);
+  // BUG: this is wrong for Lido, which requires sharesOf() to get the YBT
   expect(await pool.yieldBearing.balanceOf(owner)).to.equal(yieldBearing);
 }
