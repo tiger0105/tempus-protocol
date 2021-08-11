@@ -173,6 +173,19 @@ describe("Tempus Pool", async () => {
 
   describe("Redeem AAVE", async () =>
   {
+    it("Should emit correct event on redemption", async () => {
+      await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/500);
+      await pool.deposit(user, 100, user);
+      
+      await expect(pool.redeem(user, 100, 100)).to.emit(pool.contract, 'Redeemed').withArgs(
+        user.address, // redeemer
+        toWei(100), // principal amount
+        toWei(100), // yield amount
+        toWei(100), // yield bearing token amount
+        toWei(1.0)  // rate
+      );
+    });
     it("Should fail with insufficient share balances", async () =>
     {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);

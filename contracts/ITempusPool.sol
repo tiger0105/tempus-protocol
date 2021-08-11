@@ -20,8 +20,9 @@ interface ITempusPool {
     ///                 and Tempus Yield Shares (TYS) to Yield Bearing Tokens (YBT).
     /// @param principalAmount Number of Tempus Principal Shares (TPS) to redeem into the Yield Bearing Token (YBT)
     /// @param yieldAmount Number of Tempus Yield Shares (TYS) to redeem into the Yield Bearing Token (YBT)
+    /// @param yieldBearingAmount Number of Yield bearing tokens redeemed from the pool
     /// @param rate Exchange rate of the underlying pool from Yield Bearing Tokens to the underlying asset
-    event Redeemed(address redeemer, uint256 principalAmount, uint256 yieldAmount, uint256 rate);
+    event Redeemed(address redeemer, uint principalAmount, uint yieldAmount, uint yieldBearingAmount, uint rate);
 
     /// @return The version of the pool.
     function version() external returns (uint);

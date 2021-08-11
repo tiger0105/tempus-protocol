@@ -194,6 +194,9 @@ contract TempusPool is ITempusPool, Ownable {
         }
 
         IERC20(yieldBearingToken).safeTransfer(msg.sender, redeemableYieldTokens);
+
+        emit Redeemed(msg.sender, principalAmount, yieldAmount, redeemableYieldTokens, exchangeRate);
+
         return redeemableYieldTokens;
     }
 
