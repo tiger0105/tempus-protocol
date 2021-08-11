@@ -17,10 +17,11 @@ export class UserState {
   yieldBearing:Number;
 
   // non-async to give us actual test failure line #
-  public expect(principalShares:number, yieldShares:number, yieldBearing:number) {
-    expect(this.principalShares).to.equal(principalShares, "principalShares did not match expected value");
-    expect(this.yieldShares).to.equal(yieldShares, "yieldShares did not match expected value");
-    expect(this.yieldBearing).to.equal(yieldBearing, "yieldBearing did not match expected value");
+  public expect(principalShares:number, yieldShares:number, yieldBearing:number, message:string = null) {
+    const msg = message === null ? "" : ": expected" + message;
+    expect(this.principalShares).to.equal(principalShares, "principalShares did not match expected value"+msg);
+    expect(this.yieldShares).to.equal(yieldShares, "yieldShares did not match expected value"+msg);
+    expect(this.yieldBearing).to.equal(yieldBearing, "yieldBearing did not match expected value"+msg);
   }
 }
 

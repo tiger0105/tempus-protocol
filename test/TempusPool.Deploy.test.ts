@@ -9,7 +9,7 @@ import { Signer } from "./utils/ContractBase";
 import { TempusPool } from "./utils/TempusPool";
 import { expectRevert, blockTimestamp, increaseTime } from "./utils/Utils";
 
-describeForEachPool("TempusPool Deploy", async (testPool:ITestPool) =>
+describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
 {
   let owner:Signer, user:Signer, user2:Signer;
   let pool:TempusPool;
