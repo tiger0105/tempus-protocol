@@ -16,14 +16,14 @@ export class IPriceOracle extends ContractBase {
    * @param token An ERC20 token which belongs to a POOL
    * @returns Current exchange rate of that Token in the pool
    */
-  async currentRate(token:ERC20|string): Promise<NumberOrString> {
+  async currentInterestRate(token:ERC20|string): Promise<NumberOrString> {
     const address:string = (typeof(token) == 'string') ? token : token.address;
     return this.fromBigNum(await this.contract.currentInterestRate(address));
   }
 
-  async scaledBalance(token:ERC20|string, amount:NumberOrString): Promise<NumberOrString> {
+  async numAssetsPerYieldToken(token:ERC20|string, amount:NumberOrString): Promise<NumberOrString> {
     const address:string = (typeof(token) == 'string') ? token : token.address;
-    return this.fromBigNum(await this.contract.scaledBalance(address, this.toBigNum(amount)));
+    return this.fromBigNum(await this.contract.numAssetsPerYieldToken(address, this.toBigNum(amount)));
   }
 
   async numYieldTokensPerAsset(token:ERC20|string, amount:NumberOrString): Promise<NumberOrString> {
