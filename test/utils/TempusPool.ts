@@ -69,9 +69,9 @@ export class TempusPool extends ContractBase {
    * @param principalAmount How many principal shares to redeem
    * @param yieldAmount How many yield shares to redeem
    */
-  async redeem(user:SignerOrAddress, principalAmount:NumberOrString, yieldAmount:NumberOrString) {
+  async redeem(user:SignerOrAddress, principalAmount:NumberOrString, yieldAmount:NumberOrString): Promise<Transaction> {
     try {
-      await this.contract.connect(user).redeem(this.toBigNum(principalAmount), this.toBigNum(yieldAmount));
+      return this.contract.connect(user).redeem(this.toBigNum(principalAmount), this.toBigNum(yieldAmount));
     } catch(e) {
       throw new Error("TempusPool.redeem failed: " + e.message);
     }
