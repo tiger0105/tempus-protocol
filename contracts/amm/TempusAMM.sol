@@ -51,6 +51,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
     event AmpUpdateStopped(uint256 currentValue);
 
     event SwapExecuted(address user, ITempusShare tokenIn, ITempusShare tokenOut, uint256 amountIn, uint256 amountOut);
+    event JoinExecuted(address sender, address recipient, uint256[] amountsIn, uint256 amountLPTokensOut);
 
     uint256 private immutable _totalTokens;
 
@@ -247,8 +248,8 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
     function _onInitializePool(
         bytes32,
-        address,
-        address,
+        address sender,
+        address recipient,
         uint256[] memory scalingFactors,
         bytes memory userData
     ) internal virtual override whenNotPaused returns (uint256, uint256[] memory) {
@@ -273,6 +274,8 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
         _updateLastInvariant(invariantAfterJoin, currentAmp);
 
+        emit JoinExecuted(sender, recipient, amountsIn, bptAmountOut);
+
         return (bptAmountOut, amountsIn);
     }
 
@@ -280,8 +283,8 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
     function _onJoinPool(
         bytes32,
-        address,
-        address,
+        address sender,
+        address recipient,
         uint256[] memory balances,
         uint256,
         uint256 protocolSwapFeePercentage,
@@ -310,6 +313,8 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         // Update the invariant with the balances the Pool will have after the join, in order to compute the
         // protocol swap fee amounts due in future joins and exits.
         _updateInvariantAfterJoin(balances, amountsIn);
+
+        emit JoinExecuted(sender, recipient, amountsIn, bptAmountOut);
 
         return (bptAmountOut, amountsIn, dueProtocolFeeAmounts);
     }

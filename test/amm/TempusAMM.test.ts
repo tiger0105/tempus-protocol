@@ -122,11 +122,16 @@ describe("TempusAMM", async () => {
     expect(+await tempusAMM.balanceOf(user1)).to.be.equal(198.795221425031305545);
   });
 
-  it("checks that swaps emit correct events", async () => {
+  it("checks that swaps and joins emit correct events", async () => {
     const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, principalShare, yieldShare);
     await tempusAMM.principalShare.contract.setPricePerFullShare(toWei(1.0));
     await tempusAMM.yieldShare.contract.setPricePerFullShare(toWei(0.1));
-    await tempusAMM.provideLiquidity(owner, 100, 1000, true);
+    await expect(tempusAMM.provideLiquidity(owner, 100, 1000, true)).to.emit(tempusAMM.contract, "JoinExecuted").withArgs(
+      owner.address,
+      owner.address,
+      [toWei(100), toWei(1000)],
+      toWei(200)
+    );
 
     const swapTransactionGivenIn:Promise<Transaction> = tempusAMM.swapGivenIn(owner, tempusAMM.yieldShare.address, tempusAMM.principalShare.address, 100);
     await expect(swapTransactionGivenIn).to.emit(tempusAMM.contract, "SwapExecuted").withArgs(
@@ -143,6 +148,12 @@ describe("TempusAMM", async () => {
       tempusAMM.yieldShare.address,
       "9838361063748782396",  // 9.8383...
       toWei(100) 
+    );
+    await expect(tempusAMM.provideLiquidity(owner, 100, 1000, false)).to.emit(tempusAMM.contract, "JoinExecuted").withArgs(
+      owner.address,
+      owner.address,
+      [toWei(100), toWei(1000)],
+      "199599265629462211200"
     );
   });
 

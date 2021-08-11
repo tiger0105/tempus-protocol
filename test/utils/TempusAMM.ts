@@ -61,7 +61,7 @@ export class TempusAMM extends ContractBase {
     return fromWei(await this.contract.balanceOf(user.address));
   }
 
-  async provideLiquidity(from: SignerWithAddress, principalShareBalance: Number, yieldShareBalance: Number, initial: boolean) {
+  async provideLiquidity(from: SignerWithAddress, principalShareBalance: Number, yieldShareBalance: Number, initial: boolean):Promise<Transaction> {
     const principalBalance = toWei(principalShareBalance);
     const yieldBalance = toWei(yieldShareBalance);
     await this.principalShare.connect(from).approve(this.vault.address, principalBalance);
@@ -85,7 +85,7 @@ export class TempusAMM extends ContractBase {
       fromInternalBalance: false
     };
   
-    await this.vault.connect(from).joinPool(poolId, from.address, from.address, joinPoolRequest);
+    return this.vault.connect(from).joinPool(poolId, from.address, from.address, joinPoolRequest);
   }
 
   async swapGivenIn(from: SignerWithAddress, assetIn: string, assetOut: string, amount: Number): Promise<Transaction> {
