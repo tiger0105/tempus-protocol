@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { BigNumber } from "ethers";
+import { BigNumber, Transaction } from "ethers";
 import { fromWei, toWei } from "./../utils/Decimal";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signers";
 import { TempusAMM } from "./../utils/TempusAMM"
@@ -120,6 +120,30 @@ describe("TempusAMM", async () => {
     await tempusAMM.provideLiquidity(user1, 100, 1000, false);
     
     expect(+await tempusAMM.balanceOf(user1)).to.be.equal(198.795221425031305545);
+  });
+
+  it("checks that swaps emit correct events", async () => {
+    const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, principalShare, yieldShare);
+    await tempusAMM.principalShare.contract.setPricePerFullShare(toWei(1.0));
+    await tempusAMM.yieldShare.contract.setPricePerFullShare(toWei(0.1));
+    await tempusAMM.provideLiquidity(owner, 100, 1000, true);
+
+    const swapTransactionGivenIn:Promise<Transaction> = tempusAMM.swapGivenIn(owner, tempusAMM.yieldShare.address, tempusAMM.principalShare.address, 100);
+    await expect(swapTransactionGivenIn).to.emit(tempusAMM.contract, "SwapExecuted").withArgs(
+      owner.address,
+      tempusAMM.yieldShare.address,
+      tempusAMM.principalShare.address,
+      toWei(98), // 100 - 2% fee
+      "9641483690092499008"  // 9.641...
+    );
+    const swapTransactionGivenOut:Promise<Transaction> = tempusAMM.swapGivenOut(owner, tempusAMM.principalShare.address, tempusAMM.yieldShare.address, 100);
+    await expect(swapTransactionGivenOut).to.emit(tempusAMM.contract, "SwapExecuted").withArgs(
+      owner.address,
+      tempusAMM.principalShare.address,
+      tempusAMM.yieldShare.address,
+      "9838361063748782396",  // 9.8383...
+      toWei(100) 
+    );
   });
 
   it("test swaps principal in with balances aligned with exchange rate", async () => {

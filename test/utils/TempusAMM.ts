@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { Contract } from "ethers";
+import { Contract, Transaction } from "ethers";
 import { NumberOrString, toWei, fromWei } from "./Decimal";
 import { ContractBase } from "./ContractBase";
 import { ERC20 } from "./ERC20";
@@ -88,7 +88,7 @@ export class TempusAMM extends ContractBase {
     await this.vault.connect(from).joinPool(poolId, from.address, from.address, joinPoolRequest);
   }
 
-  async swapGivenIn(from: SignerWithAddress, assetIn: string, assetOut: string, amount: Number) {
+  async swapGivenIn(from: SignerWithAddress, assetIn: string, assetOut: string, amount: Number): Promise<Transaction> {
     this.yieldShare.connect(from).approve(this.vault.address, toWei(amount));
     this.principalShare.connect(from).approve(this.vault.address, toWei(amount));
     const SWAP_KIND_GIVEN_IN = 0;
@@ -111,10 +111,10 @@ export class TempusAMM extends ContractBase {
     };
     const minimumReturn = 1;
     const deadline = Math.floor(new Date().getTime() / 1000) * 2; // current_unix_timestamp * 2
-    await this.vault.connect(from).swap(singleSwap, fundManagement, minimumReturn, deadline);
+    return this.vault.connect(from).swap(singleSwap, fundManagement, minimumReturn, deadline);
   }
 
-  async swapGivenOut(from: SignerWithAddress, assetIn: string, assetOut: string, amount: Number) {
+  async swapGivenOut(from: SignerWithAddress, assetIn: string, assetOut: string, amount: Number): Promise<Transaction> {
     this.yieldShare.connect(from).approve(this.vault.address, toWei(amount));
     this.principalShare.connect(from).approve(this.vault.address, toWei(amount));
     
@@ -138,6 +138,6 @@ export class TempusAMM extends ContractBase {
     };
     const maximumIn = toWei(1000);
     const deadline = Math.floor(new Date().getTime() / 1000) * 2; // current_unix_timestamp * 2
-    await this.vault.connect(from).swap(singleSwap, fundManagement, maximumIn, deadline);
+    return this.vault.connect(from).swap(singleSwap, fundManagement, maximumIn, deadline);
   }
 }

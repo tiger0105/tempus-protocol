@@ -27,8 +27,6 @@ import "./interfaces/ITempusShare.sol";
 import "./StableMath.sol";
 import "./TempusAMMUserDataHelpers.sol";
 
-import "hardhat/console.sol";
-
 contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRateProvider {
     using WordCodec for bytes32;
     using FixedPoint for uint256;
@@ -51,6 +49,8 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
     event AmpUpdateStarted(uint256 startValue, uint256 endValue, uint256 startTime, uint256 endTime);
     event AmpUpdateStopped(uint256 currentValue);
+
+    event SwapExecuted(address user, ITempusShare tokenIn, ITempusShare tokenOut, uint256 amountIn, uint256 amountOut);
 
     uint256 private immutable _totalTokens;
 
@@ -153,6 +153,8 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         uint256 amountOut = StableMath._calcOutGivenIn(currentAmp, balances, indexIn, indexOut, rateAdjustedSwapAmount);
         amountOut = (amountOut * _TEMPUS_SHARE_PRECISION) / tokenOut.getPricePerFullShare();
 
+        emit SwapExecuted(swapRequest.from, tokenIn, tokenOut, swapRequest.amount, amountOut);
+
         return amountOut;
     }
 
@@ -171,6 +173,8 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
         uint256 amountIn = StableMath._calcInGivenOut(currentAmp, balances, indexIn, indexOut, rateAdjustedSwapAmount);
         amountIn = (amountIn * _TEMPUS_SHARE_PRECISION) / tokenIn.getPricePerFullShare();
+
+        emit SwapExecuted(swapRequest.from, tokenIn, tokenOut, amountIn, swapRequest.amount);
 
         return amountIn;
     }
