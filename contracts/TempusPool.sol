@@ -17,6 +17,8 @@ contract TempusPool is ITempusPool, Ownable {
 
     uint public constant override version = 1;
 
+    bytes32 public immutable override underlyingProtocol;
+
     uint256 private constant EXCHANGE_RATE_PRECISION = 1e18;
     uint256 private constant FEE_PRECISION = 1e18;
 
@@ -60,6 +62,7 @@ contract TempusPool is ITempusPool, Ownable {
     ) {
         require(maturity > block.timestamp, "maturityTime is after startTime");
 
+        underlyingProtocol = oracle.underlyingProtocol();
         yieldBearingToken = token;
         priceOracle = oracle;
         startTime = block.timestamp;

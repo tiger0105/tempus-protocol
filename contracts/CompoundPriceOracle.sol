@@ -5,6 +5,10 @@ import "./IPriceOracle.sol";
 import "./protocols/compound/ICToken.sol";
 
 contract CompoundPriceOracle is IPriceOracle {
+    function underlyingProtocol() external pure override returns (bytes32) {
+        return "Compound";
+    }
+
     /// @return Current Interest Rate as a 1e18 decimal
     function currentInterestRate(address token) external view override returns (uint256) {
         return ICToken(token).exchangeRateStored();
