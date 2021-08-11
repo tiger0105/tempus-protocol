@@ -5,18 +5,20 @@ import "./IPriceOracle.sol";
 import "./protocols/aave/IAToken.sol";
 
 contract AavePriceOracle is IPriceOracle {
-    /// @return Current exchange rate as a WAD decimal
-    function currentRate(address token) external view override returns (uint256) {
+    /// @return Current Interest Rate as a 1e18 decimal
+    function currentInterestRate(address token) external view override returns (uint256) {
         IAToken atoken = IAToken(token);
         uint rateInRay = atoken.POOL().getReserveNormalizedIncome(atoken.UNDERLYING_ASSET_ADDRESS());
         // convert from RAY 1e27 to WAD 1e18 decimal
         return rateInRay / 1e9;
     }
 
-    function scaledBalance(address, uint256 amount) external pure override returns (uint256) {
+    /// NOTE: Aave AToken is pegged 1:1 with backing token
+    function numAssetsPerYieldToken(address, uint256 amount) external pure override returns (uint256) {
         return amount;
     }
 
+    /// NOTE: Aave AToken is pegged 1:1 with backing token
     function numYieldTokensPerAsset(address, uint256 amount) external pure override returns (uint256) {
         return amount;
     }

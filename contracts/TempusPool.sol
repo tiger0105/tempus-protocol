@@ -64,7 +64,7 @@ contract TempusPool is ITempusPool, Ownable {
         priceOracle = oracle;
         startTime = block.timestamp;
         maturityTime = maturity;
-        initialExchangeRate = oracle.currentRate(token);
+        initialExchangeRate = oracle.currentInterestRate(token);
 
         string memory principalName = string(bytes.concat("TPS-", bytes(ERC20(token).symbol())));
         principalShare = new PrincipalShare(this, principalName, principalName);
@@ -130,7 +130,7 @@ contract TempusPool is ITempusPool, Ownable {
 
         // Issue appropriate shares
         uint256 rate = currentExchangeRate();
-        uint256 backingTokenDepositAmount = priceOracle.scaledBalance(yieldBearingToken, tokenAmount);
+        uint256 backingTokenDepositAmount = priceOracle.numAssetsPerYieldToken(yieldBearingToken, tokenAmount);
         uint256 tokensToIssue = (backingTokenDepositAmount * initialExchangeRate) / rate;
 
         PrincipalShare(address(principalShare)).mint(recipient, tokensToIssue);
@@ -201,7 +201,7 @@ contract TempusPool is ITempusPool, Ownable {
     }
 
     function currentExchangeRate() public view override returns (uint256) {
-        return priceOracle.currentRate(yieldBearingToken);
+        return priceOracle.currentInterestRate(yieldBearingToken);
     }
 
     function pricePerYieldShare() public view override returns (uint256) {

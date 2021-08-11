@@ -60,7 +60,7 @@ export class Lido extends ERC20 {
 
   /** @return Current exchange rate */
   async exchangeRate(): Promise<NumberOrString> {
-    return this.priceOracle.currentRate(this);
+    return this.priceOracle.currentInterestRate(this);
   }
 
   /**

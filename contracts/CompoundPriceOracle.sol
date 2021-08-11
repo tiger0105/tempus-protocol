@@ -5,16 +5,16 @@ import "./IPriceOracle.sol";
 import "./protocols/compound/ICToken.sol";
 
 contract CompoundPriceOracle is IPriceOracle {
-    /// @return Current exchange rate as a WAD decimal
-    function currentRate(address token) external view override returns (uint256) {
+    /// @return Current Interest Rate as a 1e18 decimal
+    function currentInterestRate(address token) external view override returns (uint256) {
         return ICToken(token).exchangeRateStored();
     }
 
-    function scaledBalance(address token, uint256 amount) external view override returns (uint256) {
-        return (amount * this.currentRate(token)) / 1e18;
+    function numAssetsPerYieldToken(address token, uint256 amount) external view override returns (uint256) {
+        return (amount * this.currentInterestRate(token)) / 1e18;
     }
 
     function numYieldTokensPerAsset(address t, uint256 amount) external view override returns (uint256) {
-        return (amount * 1e18) / this.currentRate(t);
+        return (amount * 1e18) / this.currentInterestRate(t);
     }
 }
