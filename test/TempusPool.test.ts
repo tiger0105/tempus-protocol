@@ -5,7 +5,7 @@ import { Aave } from "./utils/Aave";
 import { Lido } from "./utils/Lido";
 import { Comptroller } from "./utils/Comptroller";
 import { TempusPool, expectUserState } from "./utils/TempusPool";
-import { MAX_UINT256, NumberOrString } from "./utils/Decimal";
+import { MAX_UINT256, NumberOrString, toWei } from "./utils/Decimal";
 import { expectRevert, blockTimestamp, increaseTime } from "./utils/Utils";
 
 describe("Tempus Pool", async () => {
@@ -61,6 +61,18 @@ describe("Tempus Pool", async () => {
 
   describe("Deposit AAVE", async () =>
   {
+    it("Should emit correct event on deposit", async () => {
+      await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
+      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/500);
+      await expect(pool.deposit(user, 100, user)).to.emit(pool.contract, 'Deposited').withArgs(
+        user.address,
+        user.address,
+        toWei(100),
+        toWei(100),
+        toWei(1.0)
+      );
+    });
+
     it("Should allow depositing 100 (starting rate 1.0)", async () =>
     {
       await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
