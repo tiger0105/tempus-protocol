@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { BigNumber, Contract, Transaction } from "ethers";
+import { BigNumber, BytesLike, Contract, Transaction } from "ethers";
 import { NumberOrString } from "./Decimal";
 import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
@@ -96,6 +96,10 @@ export class TempusPool extends ContractBase {
    */
   async version(): Promise<NumberOrString> {
     return await this.contract.version();
+  }
+
+  async underlyingProtocol(): Promise<BytesLike> {
+    return await this.contract.underlyingProtocol();
   }
 
   /**

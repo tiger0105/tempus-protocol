@@ -2,6 +2,10 @@
 pragma solidity 0.8.6;
 
 interface IPriceOracle {
+    /// @dev This returns the name of the underlying protocol
+    /// @return The name of underlying protocol, for example "Aave" for Aave protocol
+    function underlyingProtocol() external pure returns (bytes32);
+
     /// @dev This returns the current Interest Rate of the YBT (Yield Bearing Token) pool
     /// @param token The address of the YBT protocol
     /// e.g it is an AToken in case of Aave, CToken in case of Compound, StETH in case of Lido

@@ -27,6 +27,9 @@ interface ITempusPool {
     /// @return The version of the pool.
     function version() external returns (uint);
 
+    /// @return The name of the underlying protocol
+    function underlyingProtocol() external returns (bytes32);
+
     /// @return The underlying yield bearing token.
     /// @dev This token will be used as a token that user can deposit to mint same amounts
     /// of principal and interest shares.

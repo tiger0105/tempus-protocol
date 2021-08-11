@@ -5,6 +5,10 @@ import "./IPriceOracle.sol";
 import "./protocols/lido/ILido.sol";
 
 contract StETHPriceOracle is IPriceOracle {
+    function underlyingProtocol() external pure override returns (bytes32) {
+        return "Lido";
+    }
+
     /// @return Current interest rate of the StETH contract
     function currentInterestRate(address token) external view override returns (uint256) {
         // NOTE: if totalSupply() is 0, then rate is also 0,

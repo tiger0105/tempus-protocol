@@ -5,6 +5,10 @@ import "./IPriceOracle.sol";
 import "./protocols/aave/IAToken.sol";
 
 contract AavePriceOracle is IPriceOracle {
+    function underlyingProtocol() external pure override returns (bytes32) {
+        return "Aave";
+    }
+
     /// @return Current Interest Rate as a 1e18 decimal
     function currentInterestRate(address token) external view override returns (uint256) {
         IAToken atoken = IAToken(token);

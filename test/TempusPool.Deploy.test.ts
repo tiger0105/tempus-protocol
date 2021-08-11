@@ -1,5 +1,6 @@
 
 import { ethers } from "hardhat";
+import { utils } from "ethers";
 import { expect } from "chai";
 import { ITestPool } from "./pool-utils/ITestPool";
 import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
@@ -22,6 +23,12 @@ describeForEachPool("TempusPool Deploy", async (testPool:ITestPool) =>
   it("Version is correct", async () =>
   {
     expect(await pool.version()).to.equal(1);
+  });
+
+  it("undelying protocol name is correct", async () => 
+  {
+    const protocol:string = utils.parseBytes32String(await pool.underlyingProtocol());
+    expect(protocol).to.equal(testPool.type);
   });
 
   it("Start and maturity time", async () =>
