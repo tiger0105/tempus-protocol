@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { Transaction } from "ethers";
 import { Signer } from "../utils/ContractBase";
 import { TempusPool } from "../utils/TempusPool";
 import { ERC20 } from "../utils/ERC20";
@@ -30,20 +31,21 @@ export abstract class ITestPool {
   type:PoolType;
   principalName:string; // TPS
   yieldName:string; // TYS
-  // if true, minting scales with exchangeRate,
-  // ex true: deposit(100) with rate 1.2 will yield 120 TPS and TYS
-  // ex false: deposit(100) with rate 1.0 will yield 100 TPS and TYS
-  mintScalesWithRate:boolean;
+
+  // if true, underlying pool pegs YieldToken 1:1 to BackingToken
+  // ex true: deposit(100) with rate 1.0 will yield 100 TPS and TYS
+  // ex false: deposit(100) with rate 1.2 will yield 120 TPS and TYS
+  yieldPeggedToAsset:boolean;
 
   // initialized by createTempusPool()
   tempus:TempusPool;
   maturityTime:number;
 
-  constructor(type:PoolType, principalName:string, yieldName:string, mintScalesWithRate:boolean) { 
+  constructor(type:PoolType, principalName:string, yieldName:string, yieldPeggedToAsset:boolean) { 
     this.type = type;
     this.principalName = principalName;
     this.yieldName = yieldName;
-    this.mintScalesWithRate = mintScalesWithRate;
+    this.yieldPeggedToAsset = yieldPeggedToAsset;
   }
 
   /**
@@ -74,7 +76,7 @@ export abstract class ITestPool {
   /**
    * Deposit YieldBearingTokens into TempusPool
    */
-  async depositYBT(user:Signer, yieldBearingAmount:number, recipient:Signer = null): Promise<void> {
+  async depositYBT(user:Signer, yieldBearingAmount:number, recipient:Signer = null): Promise<Transaction> {
     return this.tempus.deposit(user, yieldBearingAmount, (recipient !== null ? recipient : user));
   }
 

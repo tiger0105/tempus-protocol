@@ -65,7 +65,6 @@ export class Lido extends ERC20 {
 
   /**
    * Sets the pool exchange rate
-   * The only way to do this is to modify the `totalShares` of stETH in the contract
    * @param exchangeRate New synthetic exchange rate
    */
   async setExchangeRate(exchangeRate:NumberOrString): Promise<void> {
@@ -84,9 +83,11 @@ export class Lido extends ERC20 {
     if (difference.isZero())
       return;
 
-    const change = totalShares.mul(difference).div(ONE_WEI);
-    const newShares = totalShares.add(change);
-    await this.contract._setSharesAndEthBalance(newShares, totalETHSupply);
+    const change = totalETHSupply.mul(difference).div(ONE_WEI);
+    const newETHSupply = totalETHSupply.sub(change);
+    await this.contract._setSharesAndEthBalance(totalShares, newETHSupply);
+
+    expect(await this.exchangeRate()).to.equal(exchangeRate);
   }
 
   async submit(signer:SignerOrAddress, amount:NumberOrString) {

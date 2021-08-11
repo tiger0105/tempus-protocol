@@ -11,7 +11,7 @@ export class CompoundTestPool extends ITestPool
 {
   compound:Comptroller;
   constructor() {
-    super(PoolType.Compound, 'TPS-cDAI', 'TYS-cDAI', /*mintScalesWithRate:*/true);
+    super(PoolType.Compound, 'TPS-cDAI', 'TYS-cDAI', /*yieldPeggedToAsset:*/false);
   }
   public asset(): ERC20 {
     return this.compound.asset;

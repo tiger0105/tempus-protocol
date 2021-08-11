@@ -10,13 +10,13 @@ export class LidoTestPool extends ITestPool
 {
   lido:Lido;
   constructor() {
-    super(PoolType.Lido, 'TPS-stETH', 'TYS-stETH', /*mintScalesWithRate:*/true);
+    super(PoolType.Lido, 'TPS-stETH', 'TYS-stETH', /*yieldPeggedToAsset:*/true);
   }
   public asset(): ERC20 {
     return this.lido.asset;
   }
   async yieldTokenBalance(user:Signer): Promise<NumberOrString> {
-    return this.lido.sharesOf(user);
+    return this.lido.balanceOf(user);
   }
   async createTempusPool(initialRate:number): Promise<TempusPool> {
     this.lido = await Lido.create(1000000);

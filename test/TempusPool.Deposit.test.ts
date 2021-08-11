@@ -42,23 +42,17 @@ describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
   {
     await pool.createTempusPool(/*initialRate*/1.25);
     await pool.setupAccounts(owner, [[user, 100]]);
-    switch (pool.type)
+
+    (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/100);
+    (await pool.expectDepositYBT(user, 100)).to.equal('success');
+
+    if (pool.yieldPeggedToAsset) // Aave & Lido
     {
-      case PoolType.Aave:
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/100);
-        (await pool.expectDepositYBT(user, 100)).to.equal('success');
-        (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/0);
-        break;
-      case PoolType.Lido:
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/125);
-        (await pool.expectDepositYBT(user, 100)).to.equal('success');
-        (await pool.userState(user)).expect(80, 80, /*yieldBearing:*/0);
-        break;
-      case PoolType.Compound:
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/100);
-        (await pool.expectDepositYBT(user, 100)).to.equal('success');
-        (await pool.userState(user)).expect(125, 125, /*yieldBearing:*/0);
-        break;
+      (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/0);
+    }
+    else // Compound
+    {
+      (await pool.userState(user)).expect(125, 125, /*yieldBearing:*/0);
     }
   });
 

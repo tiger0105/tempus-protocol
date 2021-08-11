@@ -10,7 +10,7 @@ export class AaveTestPool extends ITestPool
 {
   aave:Aave;
   constructor() {
-    super(PoolType.Aave, 'TPS-AAT', 'TYS-AAT', /*mintScalesWithRate:*/false);
+    super(PoolType.Aave, 'TPS-AAT', 'TYS-AAT', /*yieldPeggedToAsset:*/true);
   }
   public asset(): ERC20 {
     return this.aave.asset;
