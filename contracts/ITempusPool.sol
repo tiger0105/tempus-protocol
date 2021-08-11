@@ -6,10 +6,21 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @author The tempus.finance team
 /// @title The interface of a Tempus Pool
 interface ITempusPool {
-    /// Event emitted on deposit.
+    /// @dev Event emitted on successful TempusPool deposit().
+    /// @param depositor Address of user who deposits Yield Bearing Tokens to mint
+    ///                  Tempus Principal Share (TPS) and Tempus Yield Shares
+    /// @param recipient Address of the recipient who will receive TPS and TYS tokens
+    /// @param yieldTokenAmount Amount of yield tokens received from underlying pool
+    /// @param shareAmounts Number of Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS) granted to `recipient`
+    /// @param rate Exchange rate of the underlying pool from Yield Bearing Tokens to the underlying asset
     event Deposited(address depositor, address recipient, uint256 yieldTokenAmount, uint256 shareAmounts, uint256 rate);
 
-    /// Event emitted on redemption.
+    /// @dev Event emitted on successful TempusPool redeem().
+    /// @param redeemer Address of the user who wants to redeem Tempus Principal Shares (TPS)
+    ///                 and Tempus Yield Shares (TYS) to Yield Bearing Tokens (YBT).
+    /// @param principalAmount Number of Tempus Principal Shares (TPS) to redeem into the Yield Bearing Token (YBT)
+    /// @param yieldAmount Number of Tempus Yield Shares (TYS) to redeem into the Yield Bearing Token (YBT)
+    /// @param rate Exchange rate of the underlying pool from Yield Bearing Tokens to the underlying asset
     event Redeemed(address redeemer, uint256 principalAmount, uint256 yieldAmount, uint256 rate);
 
     /// @return The version of the pool.

@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { BigNumber, Contract } from "ethers";
+import { BigNumber, Contract, Transaction } from "ethers";
 import { NumberOrString } from "./Decimal";
 import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
@@ -53,10 +53,10 @@ export class TempusPool extends ContractBase {
    * @param assetAmount How much to deposit
    * @param recipient Address or User who will receive the minted shares
    */
-  async deposit(user:SignerOrAddress, assetAmount:NumberOrString, recipient:SignerOrAddress) {
+  async deposit(user:SignerOrAddress, assetAmount:NumberOrString, recipient:SignerOrAddress): Promise<Transaction> {
     try {
       await this.yieldBearing.approve(user, this.contract.address, assetAmount);
-      await this.connect(user).deposit(this.toBigNum(assetAmount), addressOf(recipient));
+      return this.connect(user).deposit(this.toBigNum(assetAmount), addressOf(recipient));
       // NOTE: we can't easily test the return value of a transaction, so it's omitted
     } catch(e) {
       throw new Error("TempusPool.deposit failed: " + e.message);
