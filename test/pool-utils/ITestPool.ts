@@ -2,7 +2,8 @@ import { expect } from "chai";
 import { Signer } from "../utils/ContractBase";
 import { TempusPool } from "../utils/TempusPool";
 import { ERC20 } from "../utils/ERC20";
-import { NumberOrString } from "test/utils/Decimal";
+import { NumberOrString } from "../utils/Decimal";
+import { getRevertMessage } from "../utils/Utils";
 
 export enum PoolType
 {
@@ -75,6 +76,21 @@ export abstract class ITestPool {
    */
   async depositYBT(user:Signer, yieldBearingAmount:number, recipient:Signer = null): Promise<void> {
     return this.tempus.deposit(user, yieldBearingAmount, (recipient !== null ? recipient : user));
+  }
+
+  /**
+   * Deposit YieldBearingTokens into TempusPool, and return a testable `expect()` object.
+   * This is set up so we are able to report TEST failure File and Line:
+   * @example (await pool.expectDepositYBT(user, 100)).to.equal('success');
+   * @returns ERROR message, or FALSE on success
+   */
+  async expectDepositYBT(user:Signer, yieldBearingAmount:number, recipient:Signer = null): Promise<Chai.Assertion> {
+    try {
+      await this.depositYBT(user, yieldBearingAmount, recipient);
+      return expect('success');
+    } catch(e) {
+      return expect(getRevertMessage(e));
+    }
   }
 
   /**
