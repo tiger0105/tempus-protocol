@@ -18,7 +18,7 @@ export class IPriceOracle extends ContractBase {
    */
   async currentRate(token:ERC20|string): Promise<NumberOrString> {
     const address:string = (typeof(token) == 'string') ? token : token.address;
-    return this.fromBigNum(await this.contract.currentRate(address));
+    return this.fromBigNum(await this.contract.currentInterestRate(address));
   }
 
   async scaledBalance(token:ERC20|string, amount:NumberOrString): Promise<NumberOrString> {
