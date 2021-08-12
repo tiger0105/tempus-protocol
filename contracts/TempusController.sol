@@ -5,9 +5,10 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./amm/interfaces/ITempusAMM.sol";
 import "./amm/interfaces/IVault.sol";
 import "./ITempusPool.sol";
+import "./math/FixedPoint18.sol";
 
 contract TempusController {
-    uint256 private constant _TEMPUS_SHARE_PRECISION = 1e18;
+    using FixedPoint18 for uint256;
 
     // TODO: we need to add a reference to ITempusPool in TempusAMM... This would also mean the we can remove the ITempusPool argument
 
@@ -34,8 +35,8 @@ contract TempusController {
         uint256[] memory ammLiquidityProvisionAmounts = new uint256[](2);
 
         (ammLiquidityProvisionAmounts[0], ammLiquidityProvisionAmounts[1]) = (
-            (ammTokens[0].balanceOf(address(this)) * ammDepositPercentages[0]) / _TEMPUS_SHARE_PRECISION,
-            (ammTokens[1].balanceOf(address(this)) * ammDepositPercentages[1]) / _TEMPUS_SHARE_PRECISION
+            ammTokens[0].balanceOf(address(this)).mul(ammDepositPercentages[0]),
+            ammTokens[1].balanceOf(address(this)).mul(ammDepositPercentages[1])
         );
 
         ammTokens[0].approve(address(vault), ammLiquidityProvisionAmounts[0]);
@@ -55,10 +56,10 @@ contract TempusController {
         vault.joinPool(poolId, address(this), msg.sender, request);
 
         // Send remaining Shares to user
-        if (ammDepositPercentages[0] < _TEMPUS_SHARE_PRECISION) {
+        if (ammDepositPercentages[0] < FixedPoint18.ONE) {
             ammTokens[0].transfer(msg.sender, ammTokens[0].balanceOf(address(this)));
         }
-        if (ammDepositPercentages[1] < _TEMPUS_SHARE_PRECISION) {
+        if (ammDepositPercentages[1] < FixedPoint18.ONE) {
             ammTokens[1].transfer(msg.sender, ammTokens[1].balanceOf(address(this)));
         }
     }
@@ -104,7 +105,7 @@ contract TempusController {
             toInternalBalance: false
         });
 
-        uint256 minReturn = (minTYSRate * swapAmount) / _TEMPUS_SHARE_PRECISION;
+        uint256 minReturn = minTYSRate.mul(swapAmount);
         vault.swap(singleSwap, fundManagement, minReturn, block.timestamp);
 
         uint256 TPSBalance = principalShares.balanceOf(address(this));
@@ -140,10 +141,10 @@ contract TempusController {
     }
 
     function getAMMBalancesRatio(uint256[] memory ammBalances) private pure returns (uint256[2] memory balancesRatio) {
-        uint256 rate = (_TEMPUS_SHARE_PRECISION * ammBalances[0]) / ammBalances[1];
+        uint256 rate = ammBalances[0].div(ammBalances[1]);
 
-        (balancesRatio[0], balancesRatio[1]) = rate > _TEMPUS_SHARE_PRECISION
-            ? (_TEMPUS_SHARE_PRECISION, ((_TEMPUS_SHARE_PRECISION * _TEMPUS_SHARE_PRECISION) / rate))
-            : (rate, _TEMPUS_SHARE_PRECISION);
+        (balancesRatio[0], balancesRatio[1]) = rate > FixedPoint18.ONE
+            ? (FixedPoint18.ONE, FixedPoint18.ONE.div(rate))
+            : (rate, FixedPoint18.ONE);
     }
 }
