@@ -4,12 +4,25 @@ pragma solidity >=0.7.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IVault {
-    function joinPool(
-        bytes32 poolId,
-        address sender,
-        address recipient,
-        JoinPoolRequest memory request
-    ) external payable;
+    enum SwapKind {
+        GIVEN_IN,
+        GIVEN_OUT
+    }
+
+    struct SingleSwap {
+        bytes32 poolId;
+        SwapKind kind;
+        IERC20 assetIn;
+        IERC20 assetOut;
+        uint256 amount;
+        bytes userData;
+    }
+    struct FundManagement {
+        address sender;
+        bool fromInternalBalance;
+        address payable recipient;
+        bool toInternalBalance;
+    }
 
     struct JoinPoolRequest {
         IERC20[] assets;
@@ -17,6 +30,20 @@ interface IVault {
         bytes userData;
         bool fromInternalBalance;
     }
+
+    function swap(
+        SingleSwap memory singleSwap,
+        FundManagement memory funds,
+        uint256 limit,
+        uint256 deadline
+    ) external payable returns (uint256);
+
+    function joinPool(
+        bytes32 poolId,
+        address sender,
+        address recipient,
+        JoinPoolRequest memory request
+    ) external payable;
 
     function getPoolTokens(bytes32 poolId)
         external

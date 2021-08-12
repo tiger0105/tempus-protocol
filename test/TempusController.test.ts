@@ -7,6 +7,8 @@ import { blockTimestamp, expectRevert } from "./utils/Utils";
 import { Aave } from "./utils/Aave";
 import { TempusPool } from "./utils/TempusPool";
 
+const SWAP_LIMIT_ERROR_MESSAGE = "BAL#507";
+
 const setup = deployments.createFixture(async () => {
     await deployments.fixture(undefined, {
       keepExistingDeployments: true, // global option to test network like that
@@ -51,7 +53,8 @@ const setup = deployments.createFixture(async () => {
 
 describe("TempusController", async () => {
     // TODO: refactor math (minimize toWei, fromWei, Number etc...). I think we should just use Decimal.js
-    it("deposit YBT and provide liquidity to a pre-initialized AMM", async () => {
+    describe("depositYBTAndProvideLiquidity", async () => {
+      it("deposit YBT and provide liquidity to a pre-initialized AMM", async () => {
         const { contracts: { aavePool, tempusAMM, tempusController, tempusPool }, signers: { owner, user } } = await setup();
 
         const userPoolTokensBalancePreDeposit = await tempusAMM.balanceOf(user);
@@ -93,9 +96,9 @@ describe("TempusController", async () => {
         // makes sure no funds are left in the controller
         expect(controllerPrincpialShareBalancePostDeposit).to.be.equal(0);
         expect(controllerYieldShareBalancePostDeposit).to.be.equal(0);
-    });
+      });
 
-    it("verifies depositing YBT and providing liquidity to a non initialized AMM reverts", async () => {
+      it("verifies depositing YBT and providing liquidity to a non initialized AMM reverts", async () => {
         const { contracts: { aavePool, tempusAMM, tempusController, tempusPool }, signers: { owner, user } } = await setup();
         
         const invalidAction = tempusController.connect(user).depositYBTAndProvideLiquidity(
@@ -104,6 +107,52 @@ describe("TempusController", async () => {
             toWei(123)
         );
         (await expectRevert(invalidAction)).to.equal("AMM not initialized");
+      });
+    });
+
+    describe("depositYBTAndFix", async () => {
+      it("verifies tx reverts if provided minimum TYS rate requirement is not met", async () => {
+        const { contracts: { aavePool, tempusAMM, tempusController, tempusPool }, signers: { owner, user } } = await setup();
+        const minTYSRate = toWei("0.10000001"); // 10.000001%
+
+        // pre-initialize AMM liquidity
+        await tempusPool.deposit(owner, 10000, owner);
+        await tempusAMM.provideLiquidity(owner, 200, 2000, true); // 10% rate
+  
+        const invalidAction = tempusController.connect(user).depositYBTAndFix(
+            tempusPool.address,
+            tempusAMM.address,
+            toWei(5.456789),
+            minTYSRate
+        ); 
+  
+        (await expectRevert(invalidAction)).to.equal(SWAP_LIMIT_ERROR_MESSAGE);
+      });
+
+      it("verifies tx succeeds if provided minimum TYS rate requirement is met", async () => {
+        const { contracts: { aavePool, tempusAMM, tempusController, tempusPool }, signers: { owner, user } } = await setup();
+        const minTYSRate = toWei("0.097"); // 9.7% (fee + slippage)
+        
+        const userPrincpialShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(user);
+        const userYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(user);
+        expect(Number(userPrincpialShareBalancePreDeposit)).to.be.equal(0);
+        expect(Number(userYieldShareBalancePreDeposit)).to.be.equal(0);
+        
+        // pre-initialize AMM liquidity
+        await tempusPool.deposit(owner, 10000, owner);
+        await tempusAMM.provideLiquidity(owner, 200, 2000, true); // 10% rate
+  
+        await tempusController.connect(user).depositYBTAndFix(
+            tempusPool.address,
+            tempusAMM.address,
+            toWei(5.456789),
+            minTYSRate
+        ); 
+
+        const userPrincpialShareBalancePostDeposit = await tempusPool.principalShare.balanceOf(user);
+        const userYieldShareBalancePostDeposit = await tempusPool.yieldShare.balanceOf(user);
+        expect(Number(userPrincpialShareBalancePostDeposit)).to.be.greaterThan(0);
+        expect(Number(userYieldShareBalancePostDeposit)).to.be.equal(0);
+      });
     });
 });
-
