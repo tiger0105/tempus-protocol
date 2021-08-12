@@ -24,7 +24,13 @@ export class CompoundTestPool extends ITestPool
     await this.compound.setExchangeRate(initialRate);
 
     this.maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
-    this.tempus = await TempusPool.deploy(this.compound.yieldToken, this.compound.priceOracle, this.maturityTime);
+    const names = {
+      principalName: this.principalName,
+      principalSymbol: this.principalName,
+      yieldName: this.yieldName, 
+      yieldSymbol: this.yieldName
+    };
+    this.tempus = await TempusPool.deploy(this.compound.yieldToken, this.compound.priceOracle, this.maturityTime, names);
     return this.tempus;
   }
   async setExchangeRate(rate:number): Promise<void> {

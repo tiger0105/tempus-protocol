@@ -5,7 +5,7 @@ import { TempusAMM } from "./utils/TempusAMM"
 import { ContractBase } from "./utils/ContractBase";
 import { blockTimestamp, expectRevert } from "./utils/Utils";
 import { Aave } from "./utils/Aave";
-import { TempusPool } from "./utils/TempusPool";
+import { generateTempusSharesNames, TempusPool } from "./utils/TempusPool";
 
 const SWAP_LIMIT_ERROR_MESSAGE = "BAL#507";
 
@@ -27,7 +27,9 @@ const setup = deployments.createFixture(async () => {
     await aavePool.deposit(user, 10000);
 
     const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
-    const tempusPool = await TempusPool.deploy(aavePool.yieldToken, aavePool.priceOracle, maturityTime);
+
+    const names = generateTempusSharesNames("aToken", "aTKN", maturityTime);
+    const tempusPool = await TempusPool.deploy(aavePool.yieldToken, aavePool.priceOracle, maturityTime, names);
 
     const tempusAMM = await TempusAMM.create(owner, ammAmplification, ammFee, tempusPool.principalShare, tempusPool.yieldShare);
     

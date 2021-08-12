@@ -6,6 +6,30 @@ import { ERC20 } from "./ERC20";
 import { IPriceOracle } from "./IPriceOracle";
 import { PoolShare } from "./PoolShare";
 
+export interface TempusSharesNames {
+  principalName: string;
+  principalSymbol: string;
+  yieldName: string;
+  yieldSymbol: string;
+}
+
+export function generateTempusSharesNames(ybtName:string, ybtSymbol:string, maturityTime:number): TempusSharesNames {
+  const date:Date = new Date(maturityTime * 1000);
+  
+  const year:number = date.getFullYear();
+  const month:number = date.getMonth();
+  const day:number = date.getDate();
+
+  const nameSuffix:string = "-" + day + "-" + month + "-" + year;
+
+  return {
+    principalName: "TPS-" + ybtName + nameSuffix,
+    principalSymbol: "TPS-" + ybtSymbol + nameSuffix,
+    yieldName: "TYS-" + ybtName + nameSuffix,
+    yieldSymbol: "TYS-" + ybtSymbol + nameSuffix
+  };
+}
+
 /**
  * Wrapper around TempusPool
  */
@@ -40,8 +64,17 @@ export class TempusPool extends ContractBase {
    * @param startTime Starting time of the pool
    * @param maturityTime Maturity time of the pool
    */
-  static async deploy(yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number): Promise<TempusPool> {
-    const pool = await ContractBase.deployContract("TempusPool", yieldToken.address, priceOracle.address, maturityTime);
+  static async deploy(yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number, tempusShareNames: TempusSharesNames): Promise<TempusPool> {
+    const pool = await ContractBase.deployContract(
+      "TempusPool", 
+      yieldToken.address, 
+      priceOracle.address, 
+      maturityTime,
+      tempusShareNames.principalName,
+      tempusShareNames.principalSymbol,
+      tempusShareNames.yieldName,
+      tempusShareNames.yieldSymbol
+    );
     const principalShare = await PoolShare.attach("principal", await pool.principalShare());
     const yieldShare = await PoolShare.attach("yield", await pool.yieldShare());
     return new TempusPool(pool, yieldToken, principalShare, yieldShare, priceOracle);

@@ -5,7 +5,7 @@ import {
   getNamedAccounts
 } from 'hardhat';
 import { blockTimestamp } from '../test/utils/Utils';
-import { TempusPool } from "../test/utils/TempusPool";
+import { generateTempusSharesNames, TempusPool } from "../test/utils/TempusPool";
 import { IPriceOracle } from "../test/utils/IPriceOracle";
 import { ERC20 } from "../test/utils/ERC20";
 import { ContractBase } from "../test/utils/ContractBase";
@@ -27,7 +27,8 @@ const setup = deployments.createFixture(async () => {
   
   const priceOracle = await IPriceOracle.deploy("AavePriceOracle");
   const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
-  const tempusPool = await TempusPool.deploy(aDaiYieldToken, priceOracle, maturityTime);
+  const names = generateTempusSharesNames("aDai aave token", "aDai", maturityTime);
+  const tempusPool = await TempusPool.deploy(aDaiYieldToken, priceOracle, maturityTime, names);
   
   const aaveDepositWrapper = await ContractBase.deployContract("AaveDepositWrapper", tempusPool.address);
 

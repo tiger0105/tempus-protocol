@@ -2,7 +2,7 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import { Aave } from "./utils/Aave";
 import { Signer } from "./utils/ContractBase";
-import { TempusPool } from "./utils/TempusPool";
+import { generateTempusSharesNames, TempusPool } from "./utils/TempusPool";
 import { blockTimestamp } from "./utils/Utils";
 
 describe("Tempus Pool (YieldShare)", async () => {
@@ -29,7 +29,8 @@ describe("Tempus Pool (YieldShare)", async () => {
     }
 
     let maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
-    pool = await TempusPool.deploy(aave.yieldToken, aave.priceOracle, maturityTime);
+    const names = generateTempusSharesNames("aToken", "aTKN", maturityTime);
+    pool = await TempusPool.deploy(aave.yieldToken, aave.priceOracle, maturityTime, names);
   }
 
   describe("Deploy", async () =>

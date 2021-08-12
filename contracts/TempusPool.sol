@@ -58,7 +58,11 @@ contract TempusPool is ITempusPool, Ownable {
     constructor(
         address token,
         IPriceOracle oracle,
-        uint256 maturity
+        uint256 maturity,
+        string memory principalName,
+        string memory principalSymbol,
+        string memory yieldName,
+        string memory yieldSymbol
     ) {
         require(maturity > block.timestamp, "maturityTime is after startTime");
 
@@ -69,11 +73,8 @@ contract TempusPool is ITempusPool, Ownable {
         maturityTime = maturity;
         initialExchangeRate = oracle.currentInterestRate(token);
 
-        string memory principalName = string(bytes.concat("TPS-", bytes(ERC20(token).symbol())));
-        principalShare = new PrincipalShare(this, principalName, principalName);
-
-        string memory yieldName = string(bytes.concat("TYS-", bytes(ERC20(token).symbol())));
-        yieldShare = new YieldShare(this, yieldName, yieldName);
+        principalShare = new PrincipalShare(this, principalName, principalSymbol);
+        yieldShare = new YieldShare(this, yieldName, yieldSymbol);
     }
 
     /// Finalize the pool after maturity.

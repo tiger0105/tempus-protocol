@@ -3,7 +3,7 @@ import { ethers, network, getNamedAccounts } from 'hardhat';
 
 // Test Utils
 import { ERC20 } from '../test/utils/ERC20';
-import { TempusPool } from '../test/utils/TempusPool';
+import { generateTempusSharesNames, TempusPool } from '../test/utils/TempusPool';
 import { IPriceOracle } from '../test/utils/IPriceOracle';
 import { ContractBase } from '../test/utils/ContractBase';
 
@@ -18,9 +18,12 @@ class DeployLocalForked {
   
     // Deploy Aave price oracle contract
     const priceOracle = await IPriceOracle.deploy("AavePriceOracle");
-  
+
+    const maturityTime = latestBlock.timestamp + this.SECONDS_IN_A_DAY * 365;
+    
     // Deploy Tempus pool backed by Aave (aDAI Token)
-    const tempusPool = await TempusPool.deploy(aDaiToken, priceOracle, latestBlock.timestamp + this.SECONDS_IN_A_DAY * 365);
+    const names = generateTempusSharesNames("aDai aave token", "aDai", maturityTime);
+    const tempusPool = await TempusPool.deploy(aDaiToken, priceOracle, maturityTime, names);
 
     // Deploy stats contract
     const statistics = await ContractBase.deployContract("Stats");

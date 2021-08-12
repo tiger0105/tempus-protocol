@@ -7,7 +7,7 @@ import {
 import { BigNumber } from '@ethersproject/bignumber';
 import * as NameHash from 'eth-ens-namehash';
 import { blockTimestamp } from '../../test/utils/Utils';
-import { TempusPool } from "../../test/utils/TempusPool";
+import { generateTempusSharesNames, TempusPool } from "../../test/utils/TempusPool";
 import { IPriceOracle } from "../../test/utils/IPriceOracle";
 import { ERC20 } from "../../test/utils/ERC20";
 import { ContractBase } from "../../test/utils/ContractBase";
@@ -32,7 +32,9 @@ const setup = deployments.createFixture(async () => {
   
   const priceOracle = await IPriceOracle.deploy("AavePriceOracle");
   const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
-  const tempusPool = await TempusPool.deploy(aWethYieldToken, priceOracle, maturityTime);
+
+  const names = generateTempusSharesNames("Aave wrapped ether", "aWETH", maturityTime);
+  const tempusPool = await TempusPool.deploy(aWethYieldToken, priceOracle, maturityTime, names);
   
   const aaveDepositWrapper = await ContractBase.deployContract("AaveDepositWrapper", tempusPool.address);
   const stats = await ContractBase.deployContract("Stats");
