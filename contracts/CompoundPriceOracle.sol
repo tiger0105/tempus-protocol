@@ -18,10 +18,10 @@ contract CompoundPriceOracle is IPriceOracle {
     }
 
     function numAssetsPerYieldToken(address token, uint256 amount) external view override returns (uint256) {
-        return this.currentInterestRate(token).mul(amount);
+        return this.currentInterestRate(token).mulf18(amount);
     }
 
     function numYieldTokensPerAsset(address t, uint256 amount) external view override returns (uint256) {
-        return amount.div(this.currentInterestRate(t));
+        return amount.divf18(this.currentInterestRate(t));
     }
 }

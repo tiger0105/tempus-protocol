@@ -126,7 +126,7 @@ contract TempusPool is ITempusPool, Ownable {
         uint256 tokenAmount = yieldTokenAmount;
         uint256 depositFees = feesConfig.depositPercent;
         if (depositFees != 0) {
-            uint256 fee = tokenAmount.mul(depositFees);
+            uint256 fee = tokenAmount.mulf18(depositFees);
             tokenAmount -= fee;
             totalFees += fee;
         }
@@ -175,8 +175,8 @@ contract TempusPool is ITempusPool, Ownable {
         } else {
             uint256 rateDiff = exchangeRate - initialExchangeRate;
             // this is expressed in backing token
-            uint256 amountPerYieldShareToken = rateDiff.div(initialExchangeRate);
-            uint256 redeemAmountFromYieldShares = yieldAmount.mul(amountPerYieldShareToken);
+            uint256 amountPerYieldShareToken = rateDiff.divf18(initialExchangeRate);
+            uint256 redeemAmountFromYieldShares = yieldAmount.mulf18(amountPerYieldShareToken);
 
             // TODO: Scale based on number of decimals for tokens
             redeemableBackingTokens = principalAmount + redeemAmountFromYieldShares;
@@ -191,7 +191,7 @@ contract TempusPool is ITempusPool, Ownable {
         // Collect fees on redeem
         uint256 redeemFees = matured ? feesConfig.matureRedeemPercent : feesConfig.earlyRedeemPercent;
         if (redeemFees != 0) {
-            uint256 fee = redeemableYieldTokens.mul(redeemFees);
+            uint256 fee = redeemableYieldTokens.mulf18(redeemFees);
             redeemableYieldTokens -= fee;
             totalFees += fee;
         }
@@ -212,7 +212,7 @@ contract TempusPool is ITempusPool, Ownable {
         uint256 initialRate = initialExchangeRate;
 
         // TODO: Not finished, needs additional testing later
-        uint256 rate = (currentRate - initialRate).div(initialRate);
+        uint256 rate = (currentRate - initialRate).divf18(initialRate);
         return rate;
     }
 }

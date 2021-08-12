@@ -11,14 +11,14 @@ library FixedPoint18 {
 
     /// @dev Multiplies two 1e18 fixed point decimal numbers
     /// @return result = a * b
-    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    function mulf18(uint256 a, uint256 b) internal pure returns (uint256) {
         // TODO: should we add rounding rules?
         return (a * b) / PRECISION;
     }
 
     /// @dev Divides two 1e18 fixed point decimal numbers
     /// @return result = a / b
-    function div(uint256 a, uint256 b) internal pure returns (uint256) {
+    function divf18(uint256 a, uint256 b) internal pure returns (uint256) {
         // TODO: should we add rounding rules?
         return (a * PRECISION) / b;
     }

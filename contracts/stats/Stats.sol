@@ -44,6 +44,6 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
         uint256 pricePerPrincipalShare,
         uint256 pricePerYieldShare
     ) internal pure returns (uint256) {
-        return totalSupplyTPS.mul(pricePerPrincipalShare) + totalSupplyTYS.mul(pricePerYieldShare);
+        return totalSupplyTPS.mulf18(pricePerPrincipalShare) + totalSupplyTYS.mulf18(pricePerYieldShare);
     }
 }

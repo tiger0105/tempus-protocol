@@ -71,7 +71,7 @@ contract CompoundErc20DepositWrapper {
         token.redeem(yieldBearingTokens);
         // -- deposit wrapper now owns Assets
 
-        uint256 backing = yieldBearingTokens.mul(token.exchangeRateStored());
+        uint256 backing = yieldBearingTokens.mulf18(token.exchangeRateStored());
         backingToken.transfer(msg.sender, backing);
 
         return backing;

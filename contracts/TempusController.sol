@@ -35,8 +35,8 @@ contract TempusController {
         uint256[] memory ammLiquidityProvisionAmounts = new uint256[](2);
 
         (ammLiquidityProvisionAmounts[0], ammLiquidityProvisionAmounts[1]) = (
-            ammTokens[0].balanceOf(address(this)).mul(ammDepositPercentages[0]),
-            ammTokens[1].balanceOf(address(this)).mul(ammDepositPercentages[1])
+            ammTokens[0].balanceOf(address(this)).mulf18(ammDepositPercentages[0]),
+            ammTokens[1].balanceOf(address(this)).mulf18(ammDepositPercentages[1])
         );
 
         ammTokens[0].approve(address(vault), ammLiquidityProvisionAmounts[0]);
@@ -105,7 +105,7 @@ contract TempusController {
             toInternalBalance: false
         });
 
-        uint256 minReturn = minTYSRate.mul(swapAmount);
+        uint256 minReturn = minTYSRate.mulf18(swapAmount);
         vault.swap(singleSwap, fundManagement, minReturn, block.timestamp);
 
         uint256 TPSBalance = principalShares.balanceOf(address(this));
@@ -141,10 +141,10 @@ contract TempusController {
     }
 
     function getAMMBalancesRatio(uint256[] memory ammBalances) private pure returns (uint256[2] memory balancesRatio) {
-        uint256 rate = ammBalances[0].div(ammBalances[1]);
+        uint256 rate = ammBalances[0].divf18(ammBalances[1]);
 
         (balancesRatio[0], balancesRatio[1]) = rate > FixedPoint18.ONE
-            ? (FixedPoint18.ONE, FixedPoint18.ONE.div(rate))
+            ? (FixedPoint18.ONE, FixedPoint18.ONE.divf18(rate))
             : (rate, FixedPoint18.ONE);
     }
 }
