@@ -4,7 +4,7 @@ import { ContractBase, Signer } from "./utils/ContractBase";
 import { Aave } from "./utils/Aave";
 import { Lido } from "./utils/Lido";
 import { Comptroller } from "./utils/Comptroller";
-import { TempusPool, expectUserState } from "./utils/TempusPool";
+import { TempusPool, expectUserState, generateTempusSharesNames } from "./utils/TempusPool";
 import { MAX_UINT256, NumberOrString, toWei } from "./utils/Decimal";
 import { expectRevert, blockTimestamp, increaseTime } from "./utils/Utils";
 
@@ -42,7 +42,8 @@ describe("Tempus Pool", async () => {
     }
 
     maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
-    pool = await TempusPool.deploy(aave.yieldToken, aave.priceOracle, maturityTime);
+    const names = generateTempusSharesNames("aToken", "aTKN", maturityTime);
+    pool = await TempusPool.deploy(aave.yieldToken, aave.priceOracle, maturityTime, names);
   }
 
   async function createLidoPool(depositToUser:number = 0) {
@@ -56,7 +57,8 @@ describe("Tempus Pool", async () => {
     }
 
     maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
-    pool = await TempusPool.deploy(lido.yieldToken, lido.priceOracle, maturityTime);
+    const names = generateTempusSharesNames("Lido staked token", "stTKN", maturityTime);
+    pool = await TempusPool.deploy(lido.yieldToken, lido.priceOracle, maturityTime, names);
   }
 
   describe("Deposit AAVE", async () =>

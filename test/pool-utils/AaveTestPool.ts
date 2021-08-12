@@ -23,7 +23,13 @@ export class AaveTestPool extends ITestPool
     await this.aave.setLiquidityIndex(initialRate);
 
     this.maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
-    this.tempus = await TempusPool.deploy(this.aave.yieldToken, this.aave.priceOracle, this.maturityTime);
+    const names = {
+      principalName: this.principalName,
+      principalSymbol: this.principalName,
+      yieldName: this.yieldName, 
+      yieldSymbol: this.yieldName
+    };
+    this.tempus = await TempusPool.deploy(this.aave.yieldToken, this.aave.priceOracle, this.maturityTime, names);
     return this.tempus;
   }
   async setExchangeRate(rate:number): Promise<void> {

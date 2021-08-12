@@ -2,7 +2,7 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import { ContractBase, Signer } from "./utils/ContractBase";
 import { Comptroller } from "./utils/Comptroller";
-import { TempusPool, expectUserState } from "./utils/TempusPool";
+import { TempusPool, expectUserState, generateTempusSharesNames } from "./utils/TempusPool";
 import { blockTimestamp } from "./utils/Utils";
 import { toWei } from "./utils/Decimal";
 
@@ -30,7 +30,8 @@ describe("Tempus Pool (Compound)", async () => {
     }
 
     maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
-    pool = await TempusPool.deploy(compound.yieldToken, compound.priceOracle, maturityTime);
+    const names = generateTempusSharesNames("cToken", "cTKN", maturityTime);
+    pool = await TempusPool.deploy(compound.yieldToken, compound.priceOracle, maturityTime, names);
   }
 
   describe("Deposit Compound", async () =>
