@@ -65,28 +65,28 @@ export class Lido extends ERC20 {
 
   /**
    * Sets the pool exchange rate
-   * The only way to do this is to modify the `totalShares` of stETH in the contract
    * @param exchangeRate New synthetic exchange rate
    */
   async setExchangeRate(exchangeRate:NumberOrString): Promise<void> {
     let totalETHSupply:BigNumber = await this.contract.totalSupply();
     // total ETH is 0, so we must actually deposit something, otherwise we can't manipulate the rate
     if (totalETHSupply.isZero()) {
-      totalETHSupply = this.toBigNum(100);
-      await this.contract._setSharesAndEthBalance(this.toBigNum(100), totalETHSupply); // 1.0 rate
+      totalETHSupply = this.toBigNum(1000);
+      await this.contract._setSharesAndEthBalance(this.toBigNum(1000), totalETHSupply); // 1.0 rate
     }
 
     // figure out if newRate requires a change of stETH
     const totalShares:BigNumber = await this.contract.getTotalShares();
-    const curRate = (totalShares.mul(ONE_WEI)).div(totalETHSupply);
+    const curRate = await this.priceOracle.contract.currentInterestRate(this.address);// (totalShares.mul(ONE_WEI)).div(totalETHSupply);
     const newRate = this.toBigNum(exchangeRate);
+    // TODO: there's a precision issue here
     const difference = newRate.mul(ONE_WEI).div(curRate).sub(ONE_WEI);
     if (difference.isZero())
       return;
 
-    const change = totalShares.mul(difference).div(ONE_WEI);
-    const newShares = totalShares.add(change);
-    await this.contract._setSharesAndEthBalance(newShares, totalETHSupply);
+    const change = totalETHSupply.mul(difference).div(ONE_WEI);
+    const newETHSupply = totalETHSupply.add(change);
+    await this.contract._setSharesAndEthBalance(totalShares, newETHSupply);
   }
 
   async submit(signer:SignerOrAddress, amount:NumberOrString) {

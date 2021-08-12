@@ -140,8 +140,8 @@ contract LidoMock is StETH {
     // MOCK only, used for manipulating exchange rate
     function _setSharesAndEthBalance(uint256 stEthBalance, uint256 ethBalance) public {
         totalShares = stEthBalance;
-        beaconBalance = ethBalance / 2;
-        bufferedEther = ethBalance / 2;
+        beaconBalance = ethBalance;
+        bufferedEther = 0;
     }
 
     /**

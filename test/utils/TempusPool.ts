@@ -50,13 +50,13 @@ export class TempusPool extends ContractBase {
   /**
    * Deposits backing asset tokens into Tempus Pool on behalf of user
    * @param user User who is depositing
-   * @param assetAmount How much to deposit
+   * @param yieldBearingAmount Amount of Yield Bearing Tokens to deposit
    * @param recipient Address or User who will receive the minted shares
    */
-  async deposit(user:SignerOrAddress, assetAmount:NumberOrString, recipient:SignerOrAddress): Promise<Transaction> {
+  async deposit(user:SignerOrAddress, yieldBearingAmount:NumberOrString, recipient:SignerOrAddress): Promise<Transaction> {
     try {
-      await this.yieldBearing.approve(user, this.contract.address, assetAmount);
-      return this.connect(user).deposit(this.toBigNum(assetAmount), addressOf(recipient));
+      await this.yieldBearing.approve(user, this.contract.address, yieldBearingAmount);
+      return this.connect(user).deposit(this.toBigNum(yieldBearingAmount), addressOf(recipient));
       // NOTE: we can't easily test the return value of a transaction, so it's omitted
     } catch(e) {
       throw new Error("TempusPool.deposit failed: " + e.message);
@@ -170,8 +170,10 @@ export class TempusPool extends ContractBase {
   }
 }
 
+// DEPRECATED, use `ITestPool.userState()` and `state.expect()` to get actual test failure line #
 export async function expectUserState(pool:TempusPool, owner:SignerOrAddress, principalShares:number, yieldShares:number, yieldBearing:number) {
   expect(await pool.principalShare.balanceOf(owner)).to.equal(principalShares);
   expect(await pool.yieldShare.balanceOf(owner)).to.equal(yieldShares);
+  // BUG: this is wrong for Lido, which requires sharesOf() to get the YBT
   expect(await pool.yieldBearing.balanceOf(owner)).to.equal(yieldBearing);
 }

@@ -11,9 +11,9 @@ contract StETHPriceOracle is IPriceOracle {
 
     /// @return Current interest rate of the StETH contract
     function currentInterestRate(address token) external view override returns (uint256) {
-        // NOTE: if totalSupply() is 0, then rate is also 0,
+        // NOTE: if totalShares() is 0, then rate is also 0,
         //       but this only happens right after deploy, so we ignore it
-        return ILido(token).getSharesByPooledEth(1e18);
+        return ILido(token).getPooledEthByShares(1e18);
     }
 
     /// NOTE: Lido StETH is pegged 1:1 to ETH
