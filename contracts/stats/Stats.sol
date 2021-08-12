@@ -4,8 +4,11 @@ pragma solidity 0.8.6;
 import "./ITokenPairPriceFeed.sol";
 import "../TempusPool.sol";
 import "./ChainlinkTokenPairPriceFeed/ChainlinkTokenPairPriceFeed.sol";
+import "../math/FixedPoint18.sol";
 
 contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
+    using FixedPoint18 for uint256;
+
     // TODO: use ITempusPool interface instead of TempusPool when the 'principalShare' property is added to the interface
     /// @param pool The TempusPool to fetch its TVL (total value locked)
     /// @return total value locked of a TempusPool (denominated in BackingTokens)
@@ -41,6 +44,6 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
         uint256 pricePerPrincipalShare,
         uint256 pricePerYieldShare
     ) internal pure returns (uint256) {
-        return ((totalSupplyTPS * pricePerPrincipalShare) + (totalSupplyTYS * pricePerYieldShare)) / 1e18;
+        return totalSupplyTPS.mul(pricePerPrincipalShare) + totalSupplyTYS.mul(pricePerYieldShare);
     }
 }
