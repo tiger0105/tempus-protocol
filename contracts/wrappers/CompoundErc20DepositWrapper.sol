@@ -6,10 +6,12 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../ITempusPool.sol";
 import "../protocols/compound/ICErc20.sol";
+import "../math/FixedPoint18.sol";
 
 /// Allows depositing ERC20 into Compound's CErc20 contracts
 contract CompoundErc20DepositWrapper {
     using SafeERC20 for IERC20;
+    using FixedPoint18 for uint256;
 
     ITempusPool internal immutable pool;
     ICErc20 internal immutable token;
@@ -69,7 +71,7 @@ contract CompoundErc20DepositWrapper {
         token.redeem(yieldBearingTokens);
         // -- deposit wrapper now owns Assets
 
-        uint256 backing = (yieldBearingTokens * token.exchangeRateStored()) / 1e18;
+        uint256 backing = yieldBearingTokens.mul(token.exchangeRateStored());
         backingToken.transfer(msg.sender, backing);
 
         return backing;
