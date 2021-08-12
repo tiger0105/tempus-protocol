@@ -383,16 +383,8 @@ describe("Tempus Pool", async () => {
     });
   });
 
-  describe("Deposit Lido", async () =>
+  describe("Deposit ASSET Lido", async () =>
   {
-    it("Should give appropriate shares after pool deposit", async () =>
-    {
-      await createLidoPool(/*depositToUser:*/500);
-      await expectUserState(pool, user, 0, 0, /*yieldBearing:*/500);
-      await pool.deposit(user, 100, /*recipient:*/user);
-      await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
-    });
-
     it("Should give appropriate shares after ASSET Wrapper deposit", async () =>
     {
       await createLidoPool();

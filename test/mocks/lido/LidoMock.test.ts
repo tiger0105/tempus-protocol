@@ -118,7 +118,7 @@ describe("Lido Mock", () =>
       expect(await lido.exchangeRate()).to.equal(1.25);
 
       const redeemable = await lido.getPooledEthByShares(10);
-      expect(redeemable).to.equal(8, "redeemable ETH should be reduced by exchangeRate 1.25");
+      expect(redeemable).to.equal(12.5, "redeemable ETH should increase by 1.25x with interestRate 1.25x");
     });
   });
 });
