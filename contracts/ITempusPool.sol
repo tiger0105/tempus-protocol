@@ -25,30 +25,30 @@ interface ITempusPool {
     event Redeemed(address redeemer, uint principalAmount, uint yieldAmount, uint yieldBearingAmount, uint rate);
 
     /// @return The version of the pool.
-    function version() external returns (uint);
+    function version() external view returns (uint);
 
     /// @return The name of the underlying protocol
-    function underlyingProtocol() external returns (bytes32);
+    function underlyingProtocol() external view returns (bytes32);
 
     /// @return The underlying yield bearing token.
     /// @dev This token will be used as a token that user can deposit to mint same amounts
     /// of principal and interest shares.
-    function yieldBearingToken() external returns (address);
+    function yieldBearingToken() external view returns (address);
 
     /// @return This TempusPool's Tempus Principal Share (TPS)
-    function principalShare() external returns (IERC20);
+    function principalShare() external view returns (IERC20);
 
     /// @return This TempusPool's Tempus Yield Share (TYS)
-    function yieldShare() external returns (IERC20);
+    function yieldShare() external view returns (IERC20);
 
     /// @return Start time of the pool.
-    function startTime() external returns (uint256);
+    function startTime() external view returns (uint256);
 
     /// @return Maturity time of the pool.
-    function maturityTime() external returns (uint256);
+    function maturityTime() external view returns (uint256);
 
     /// @return True if maturity has been reached and the pool was finalized.
-    function matured() external returns (bool);
+    function matured() external view returns (bool);
 
     /// Finalize the pool. This can only happen on or after `maturityTime`.
     /// Once finalized depositing is not possible anymore, and the behaviour
