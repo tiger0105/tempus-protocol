@@ -57,7 +57,10 @@
     "deploy-local:fork:mainnet": "cross-env HARDHAT_FORK=mainnet npx hardhat run scripts/deploy.local.fork.ts --network localhost",
     "deploy-local": "npx hardhat run scripts/deploy.local.ts --network localhost",
     "deploy-ci": "npx hardhat run scripts/deploy.local.ts",
-    "increase-time": "npx hardhat run scripts/increaseTime.local.ts --network localhost"
+    "increase-time": "npx hardhat run scripts/increaseTime.local.ts --network localhost",
+    "mythx-install": "pip install mythx-cli",
+    "mythx-amm": "yes y | mythx analyze --async --solc-version 0.7.6 contracts/amm/TempusAMM.sol",
+    "mythx-pool": "yes y | mythx analyze --async --solc-version 0.8.6 contracts/TempusPool.sol"
   },
   "dependencies": {
     "@balancer-labs/v2-asset-manager-utils": "https://gitpkg.now.sh/balancer-labs/balancer-v2-monorepo/pkg/asset-manager-utils?ccb2d594a893cd4b7ce79698e373cb100b28aaa2",
