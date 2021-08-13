@@ -3,16 +3,16 @@ pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 import "./amm/interfaces/ITempusAMM.sol";
 import "./amm/interfaces/IVault.sol";
 import "./ITempusPool.sol";
 import "./math/Fixed256x18.sol";
 
-contract TempusController {
+contract TempusController is Ownable {
     using Fixed256x18 for uint256;
     using SafeERC20 for IERC20;
-
-    // TODO: we need to add a reference to ITempusPool in TempusAMM... This would also mean the we can remove the ITempusPool argument
 
     /// @dev Atomically deposits YBT/BT to TempusPool and provides liquidity
     ///      to the corresponding Tempus AMM with the issued TYS & TPS

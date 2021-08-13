@@ -68,5 +68,5 @@ describe('Stats <> Chainlink', function () {
     const maxExpectedTotalValueLockedInUSD = Number(toWei(depositAmount).mul(toWei(ethPriceQuote.high)).div(toWei(1)));
 
     expect(Number(totalValueLockedInUSD)).to.be.within(minExpectedTotalValueLockedInUSD, maxExpectedTotalValueLockedInUSD);
-  }).timeout(60000);
+  }).timeout(120000);
 })
