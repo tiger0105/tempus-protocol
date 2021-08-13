@@ -18,11 +18,11 @@ export class AaveTestPool extends ITestPool
   async yieldTokenBalance(user:Signer): Promise<NumberOrString> {
     return this.aave.yieldToken.balanceOf(user);
   }
-  async createTempusPool(initialRate:number): Promise<TempusPool> {
+  async createTempusPool(initialRate:number, poolDurationSeconds:number): Promise<TempusPool> {
     this.aave = await Aave.create(1000000);
     await this.aave.setLiquidityIndex(initialRate);
 
-    this.maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
+    this.maturityTime = await blockTimestamp() + poolDurationSeconds;
     const names = {
       principalName: this.principalName,
       principalSymbol: this.principalName,

@@ -17,7 +17,12 @@ describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
   beforeEach(async () =>
   {
     [owner, user, user2] = await ethers.getSigners();
-    pool = await testPool.createTempusPool(/*initialRate:*/1.0);
+    pool = await testPool.createTempusPool(/*initialRate:*/1.0, 60 * 60);
+  });
+
+  it("Should revert if maturity is less than current time", async () =>
+  {
+    (await expectRevert(testPool.createTempusPool(/*initialRate:*/1.0, -60))).to.equal("maturityTime is after startTime");
   });
   
   it("Version is correct", async () =>
@@ -85,5 +90,10 @@ describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
     expect(await pool.yieldShare.totalSupply()).to.equal(0);
     expect(await pool.yieldShare.name()).to.equal(testPool.yieldName);
     expect(await pool.yieldShare.symbol()).to.equal(testPool.yieldName);
+  });
+
+  it("Should revert on collecting fees as there is no fees", async () => 
+  {
+    (await expectRevert(pool.transferFees(owner, owner, 1))).to.equal("not enough accumulated fees");
   });
 });

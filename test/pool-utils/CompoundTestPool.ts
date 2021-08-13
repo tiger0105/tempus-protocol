@@ -19,11 +19,11 @@ export class CompoundTestPool extends ITestPool
   async yieldTokenBalance(user:Signer): Promise<NumberOrString> {
     return this.compound.yieldToken.balanceOf(user);
   }
-  async createTempusPool(initialRate:number): Promise<TempusPool> {
+  async createTempusPool(initialRate:number, poolDurationSeconds:number): Promise<TempusPool> {
     this.compound = await Comptroller.create('CErc20', 1000000);
     await this.compound.setExchangeRate(initialRate);
 
-    this.maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
+    this.maturityTime = await blockTimestamp() + poolDurationSeconds;
     const names = {
       principalName: this.principalName,
       principalSymbol: this.principalName,
