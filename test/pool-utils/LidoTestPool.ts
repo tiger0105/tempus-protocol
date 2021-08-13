@@ -18,11 +18,11 @@ export class LidoTestPool extends ITestPool
   async yieldTokenBalance(user:Signer): Promise<NumberOrString> {
     return this.lido.balanceOf(user);
   }
-  async createTempusPool(initialRate:number): Promise<TempusPool> {
+  async createTempusPool(initialRate:number, poolDurationSeconds:number): Promise<TempusPool> {
     this.lido = await Lido.create(1000000);
     await this.setExchangeRate(initialRate);
 
-    this.maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
+    this.maturityTime = await blockTimestamp() + poolDurationSeconds;
     const names = {
       principalName: this.principalName,
       principalSymbol: this.principalName,

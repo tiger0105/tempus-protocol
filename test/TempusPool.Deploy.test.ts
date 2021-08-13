@@ -17,7 +17,12 @@ describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
   beforeEach(async () =>
   {
     [owner, user, user2] = await ethers.getSigners();
-    pool = await testPool.createTempusPool(/*initialRate:*/1.0);
+    pool = await testPool.createTempusPool(/*initialRate:*/1.0, 60 * 60);
+  });
+
+  it("Should revert if maturity is less than current time", async () =>
+  {
+    (await expectRevert(testPool.createTempusPool(/*initialRate:*/1.0, -60))).to.equal("maturityTime is after startTime");
   });
   
   it("Version is correct", async () =>
