@@ -12,7 +12,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-pragma solidity ^0.7.0;
+pragma solidity 0.7.6;
 pragma experimental ABIEncoderV2;
 
 import "@balancer-labs/v2-solidity-utils/contracts/math/FixedPoint.sol";
@@ -312,7 +312,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         uint256[] memory balances,
         uint256[] memory scalingFactors,
         bytes memory userData
-    ) private view returns (uint256, uint256[] memory) {
+    ) private view returns (uint256 bptAmountOut, uint256[] memory amountsIn) {
         JoinKind kind = userData.joinKind();
 
         if (kind == JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT) {
@@ -776,7 +776,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         return _totalTokens;
     }
 
-    function _scalingFactor(IERC20 token) internal view virtual override returns (uint256) {
+    function _scalingFactor(IERC20 token) internal view virtual override returns (uint256 scalingFactor) {
         // prettier-ignore
         if (_isToken0(token)) { return _scalingFactor0; }
         else if (_isToken1(token)) { return _scalingFactor1; }
