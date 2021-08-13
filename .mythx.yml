@@ -2,7 +2,8 @@ output: mythxOutput.json
 format: json
 
 analyze:
-    mode: quick
+    mode: standard
+    min-severity: low
     remappings:
         - "@openzeppelin/=./node_modules/@openzeppelin/"
         - "@balancer-labs/=./node_modules/@balancer-labs/"
