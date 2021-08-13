@@ -103,10 +103,11 @@ contract TempusPool is ITempusPool, Ownable {
         } else {
             require(amount <= totalFees, "not enough accumulated fees");
         }
+        totalFees -= amount;
+
         IERC20 token = IERC20(yieldBearingToken);
         token.approve(address(this), amount);
         token.safeTransferFrom(address(this), recipient, amount);
-        totalFees -= amount;
     }
 
     /// @dev Deposits yield bearing tokens (such as cDAI) into TempusPool
