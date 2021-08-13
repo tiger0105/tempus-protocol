@@ -68,7 +68,7 @@ contract CompoundErc20DepositWrapper {
 
         backingToken.approve(msg.sender, yieldBearingTokens);
 
-        token.redeem(yieldBearingTokens);
+        require(token.redeem(yieldBearingTokens) == 0, "CErc20 redemption failed");
         // -- deposit wrapper now owns Assets
 
         uint256 backing = yieldBearingTokens.mulf18(token.exchangeRateStored());
