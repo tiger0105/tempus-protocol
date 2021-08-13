@@ -50,7 +50,7 @@ contract StableMath {
         uint256 amplificationParameter,
         uint256[] memory balances,
         bool roundUp
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint256 newInvariant) {
         /**********************************************************************************************
         // invariant                                                                                 //
         // D = invariant                                                  D^(n+1)                    //
@@ -467,7 +467,7 @@ contract StableMath {
         uint256[] memory balances,
         uint256 invariant,
         uint256 tokenIndex
-    ) internal pure returns (uint256) {
+    ) internal pure returns (uint256 balance) {
         // Rounds result up overall
 
         uint256 ampTimesTotal = amplificationParameter * balances.length;
