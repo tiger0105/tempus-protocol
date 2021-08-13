@@ -91,4 +91,9 @@ describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
     expect(await pool.yieldShare.name()).to.equal(testPool.yieldName);
     expect(await pool.yieldShare.symbol()).to.equal(testPool.yieldName);
   });
+
+  it("Should revert on collecting fees as there is no fees", async () => 
+  {
+    (await expectRevert(pool.transferFees(owner, owner, 1))).to.equal("not enough accumulated fees");
+  });
 });
