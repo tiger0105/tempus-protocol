@@ -9,18 +9,17 @@ import "./IPriceOracle.sol";
 import "./ITempusPool.sol";
 import "./token/PrincipalShare.sol";
 import "./token/YieldShare.sol";
+import "./math/Fixed256x18.sol";
 
 /// @author The tempus.finance team
 /// @title Implementation of Tempus Pool
 contract TempusPool is ITempusPool, Ownable {
     using SafeERC20 for IERC20;
+    using Fixed256x18 for uint256;
 
     uint public constant override version = 1;
 
     bytes32 public immutable override underlyingProtocol;
-
-    uint256 private constant EXCHANGE_RATE_PRECISION = 1e18;
-    uint256 private constant FEE_PRECISION = 1e18;
 
     IPriceOracle public immutable priceOracle;
     address public immutable override yieldBearingToken;
@@ -127,7 +126,7 @@ contract TempusPool is ITempusPool, Ownable {
         uint256 tokenAmount = yieldTokenAmount;
         uint256 depositFees = feesConfig.depositPercent;
         if (depositFees != 0) {
-            uint256 fee = (tokenAmount * depositFees) / FEE_PRECISION;
+            uint256 fee = tokenAmount.mulf18(depositFees);
             tokenAmount -= fee;
             totalFees += fee;
         }
@@ -176,8 +175,8 @@ contract TempusPool is ITempusPool, Ownable {
         } else {
             uint256 rateDiff = exchangeRate - initialExchangeRate;
             // this is expressed in backing token
-            uint256 amountPerYieldShareToken = (EXCHANGE_RATE_PRECISION * rateDiff) / initialExchangeRate;
-            uint256 redeemAmountFromYieldShares = (yieldAmount * amountPerYieldShareToken) / EXCHANGE_RATE_PRECISION;
+            uint256 amountPerYieldShareToken = rateDiff.divf18(initialExchangeRate);
+            uint256 redeemAmountFromYieldShares = yieldAmount.mulf18(amountPerYieldShareToken);
 
             // TODO: Scale based on number of decimals for tokens
             redeemableBackingTokens = principalAmount + redeemAmountFromYieldShares;
@@ -192,7 +191,7 @@ contract TempusPool is ITempusPool, Ownable {
         // Collect fees on redeem
         uint256 redeemFees = matured ? feesConfig.matureRedeemPercent : feesConfig.earlyRedeemPercent;
         if (redeemFees != 0) {
-            uint256 fee = (redeemableYieldTokens * redeemFees) / FEE_PRECISION;
+            uint256 fee = redeemableYieldTokens.mulf18(redeemFees);
             redeemableYieldTokens -= fee;
             totalFees += fee;
         }
@@ -213,7 +212,7 @@ contract TempusPool is ITempusPool, Ownable {
         uint256 initialRate = initialExchangeRate;
 
         // TODO: Not finished, needs additional testing later
-        uint256 rate = (1e18 * (currentRate - initialRate)) / initialRate;
+        uint256 rate = (currentRate - initialRate).divf18(initialRate);
         return rate;
     }
 }

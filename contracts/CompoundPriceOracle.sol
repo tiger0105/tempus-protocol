@@ -3,8 +3,11 @@ pragma solidity 0.8.6;
 
 import "./IPriceOracle.sol";
 import "./protocols/compound/ICToken.sol";
+import "./math/Fixed256x18.sol";
 
 contract CompoundPriceOracle is IPriceOracle {
+    using Fixed256x18 for uint256;
+
     function underlyingProtocol() external pure override returns (bytes32) {
         return "Compound";
     }
@@ -15,10 +18,10 @@ contract CompoundPriceOracle is IPriceOracle {
     }
 
     function numAssetsPerYieldToken(address token, uint256 amount) external view override returns (uint256) {
-        return (amount * this.currentInterestRate(token)) / 1e18;
+        return this.currentInterestRate(token).mulf18(amount);
     }
 
     function numYieldTokensPerAsset(address t, uint256 amount) external view override returns (uint256) {
-        return (amount * 1e18) / this.currentInterestRate(t);
+        return amount.divf18(this.currentInterestRate(t));
     }
 }
