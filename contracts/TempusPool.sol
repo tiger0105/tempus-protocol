@@ -9,13 +9,13 @@ import "./IPriceOracle.sol";
 import "./ITempusPool.sol";
 import "./token/PrincipalShare.sol";
 import "./token/YieldShare.sol";
-import "./math/FixedPoint18.sol";
+import "./math/Fixed256x18.sol";
 
 /// @author The tempus.finance team
 /// @title Implementation of Tempus Pool
 contract TempusPool is ITempusPool, Ownable {
     using SafeERC20 for IERC20;
-    using FixedPoint18 for uint256;
+    using Fixed256x18 for uint256;
 
     uint public constant override version = 1;
 

@@ -5,10 +5,10 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./amm/interfaces/ITempusAMM.sol";
 import "./amm/interfaces/IVault.sol";
 import "./ITempusPool.sol";
-import "./math/FixedPoint18.sol";
+import "./math/Fixed256x18.sol";
 
 contract TempusController {
-    using FixedPoint18 for uint256;
+    using Fixed256x18 for uint256;
 
     // TODO: we need to add a reference to ITempusPool in TempusAMM... This would also mean the we can remove the ITempusPool argument
 
@@ -56,10 +56,10 @@ contract TempusController {
         vault.joinPool(poolId, address(this), msg.sender, request);
 
         // Send remaining Shares to user
-        if (ammDepositPercentages[0] < FixedPoint18.ONE) {
+        if (ammDepositPercentages[0] < Fixed256x18.ONE) {
             ammTokens[0].transfer(msg.sender, ammTokens[0].balanceOf(address(this)));
         }
-        if (ammDepositPercentages[1] < FixedPoint18.ONE) {
+        if (ammDepositPercentages[1] < Fixed256x18.ONE) {
             ammTokens[1].transfer(msg.sender, ammTokens[1].balanceOf(address(this)));
         }
     }
@@ -143,8 +143,8 @@ contract TempusController {
     function getAMMBalancesRatio(uint256[] memory ammBalances) private pure returns (uint256[2] memory balancesRatio) {
         uint256 rate = ammBalances[0].divf18(ammBalances[1]);
 
-        (balancesRatio[0], balancesRatio[1]) = rate > FixedPoint18.ONE
-            ? (FixedPoint18.ONE, FixedPoint18.ONE.divf18(rate))
-            : (rate, FixedPoint18.ONE);
+        (balancesRatio[0], balancesRatio[1]) = rate > Fixed256x18.ONE
+            ? (Fixed256x18.ONE, Fixed256x18.ONE.divf18(rate))
+            : (rate, Fixed256x18.ONE);
     }
 }

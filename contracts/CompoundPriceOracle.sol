@@ -3,10 +3,10 @@ pragma solidity 0.8.6;
 
 import "./IPriceOracle.sol";
 import "./protocols/compound/ICToken.sol";
-import "./math/FixedPoint18.sol";
+import "./math/Fixed256x18.sol";
 
 contract CompoundPriceOracle is IPriceOracle {
-    using FixedPoint18 for uint256;
+    using Fixed256x18 for uint256;
 
     function underlyingProtocol() external pure override returns (bytes32) {
         return "Compound";

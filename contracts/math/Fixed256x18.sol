@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: agpl-3.0
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.6;
 
 /// @dev Fixed Point decimal math utils for 18-decimal point precision
-library FixedPoint18 {
+///      on 256-bit wide numbers
+library Fixed256x18 {
     /// @dev 1.0 expressed as an 1e18 decimal
     uint256 internal constant ONE = 1e18;
 
