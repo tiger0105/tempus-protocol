@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { Contract } from "ethers";
+import { Contract, Transaction } from "ethers";
 import { NumberOrString, toWei, fromWei } from "./Decimal";
 import { ContractBase } from "./ContractBase";
 import { ERC20 } from "./ERC20";
@@ -55,6 +55,10 @@ export class TempusAMM extends ContractBase {
     );
 
     return new TempusAMM(tempusAMM, vault, principalShare, yieldShare);
+  }
+
+  async getLastInvariant(): Promise<[NumberOrString, NumberOrString]> {
+    return this.contract.getLastInvariant();
   }
 
   async balanceOf(user:SignerWithAddress): Promise<NumberOrString> {
@@ -139,5 +143,13 @@ export class TempusAMM extends ContractBase {
     const maximumIn = toWei(1000);
     const deadline = Math.floor(new Date().getTime() / 1000) * 2; // current_unix_timestamp * 2
     await this.vault.connect(from).swap(singleSwap, fundManagement, maximumIn, deadline);
+  }
+
+  async startAmplificationUpdate(ampTarget: number, endTime: number): Promise<Transaction> {
+    return this.contract.startAmplificationParameterUpdate(ampTarget, endTime);
+  }
+
+  async stopAmplificationUpdate(): Promise<Transaction> {
+    return this.contract.stopAmplificationParameterUpdate();
   }
 }
