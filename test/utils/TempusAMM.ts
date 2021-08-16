@@ -77,6 +77,10 @@ export class TempusAMM extends ContractBase {
     return fromWei(await this.contract.balanceOf(user.address));
   }
 
+  async getRate(): Promise<NumberOrString> {
+    return fromWei(await this.contract.getRate());
+  }
+
   async provideLiquidity(from: SignerWithAddress, principalShareBalance: Number, yieldShareBalance: Number, joinKind: TempusAMMJoinKind) {
     const principalBalance = toWei(principalShareBalance);
     const yieldBalance = toWei(yieldShareBalance);
