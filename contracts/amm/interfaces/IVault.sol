@@ -31,6 +31,13 @@ interface IVault {
         bool fromInternalBalance;
     }
 
+    struct ExitPoolRequest {
+        IERC20[] assets;
+        uint256[] minAmountsOut;
+        bytes userData;
+        bool toInternalBalance;
+    }
+
     function swap(
         SingleSwap memory singleSwap,
         FundManagement memory funds,
@@ -44,6 +51,13 @@ interface IVault {
         address recipient,
         JoinPoolRequest memory request
     ) external payable;
+
+    function exitPool(
+        bytes32 poolId,
+        address sender,
+        address payable recipient,
+        ExitPoolRequest memory request
+    ) external;
 
     function getPoolTokens(bytes32 poolId)
         external
