@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { Contract, Transaction } from "ethers";
+import { BigNumber, Contract, Transaction } from "ethers";
 import { NumberOrString, toWei, fromWei } from "./Decimal";
 import { ContractBase } from "./ContractBase";
 import { ERC20 } from "./ERC20";
@@ -111,6 +111,29 @@ export class TempusAMM extends ContractBase {
       singleToken ? 
         [TempusAMMExitKind.EXACT_BPT_IN_FOR_ONE_TOKEN_OUT, toWei(lpTokensAmount), singleTokenIndex] :
         [TempusAMMExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT, toWei(lpTokensAmount)]
+    );
+    
+    const exitPoolRequest = {
+      assets: assets.map(({ address }) => address),
+      minAmountsOut: [1000000, 100000],
+      userData: exitUserData,
+      toInternalBalance: false
+    };
+  
+    await this.vault.connect(from).exitPool(poolId, from.address, from.address, exitPoolRequest);
+  }
+
+  async exitPoolExactAmountOut(from:SignerWithAddress, amountsOut:Number[], maxAmountLpIn:Number) {
+    const poolId = await this.contract.getPoolId();
+    
+    const assets = [
+      { address: this.principalShare.address, amountOut: toWei(amountsOut[0]) },
+      { address: this.yieldShare.address, amountOut: toWei(amountsOut[1]) }
+    ].sort(( asset1, asset2 ) => parseInt(asset1.address) - parseInt(asset2.address));
+
+    const exitUserData = ethers.utils.defaultAbiCoder.encode(
+      ['uint256', 'uint256[]', 'uint256'], 
+      [TempusAMMExitKind.BPT_IN_FOR_EXACT_TOKENS_OUT, assets.map(({ amountOut }) => amountOut), toWei(maxAmountLpIn)],
     );
     
     const exitPoolRequest = {

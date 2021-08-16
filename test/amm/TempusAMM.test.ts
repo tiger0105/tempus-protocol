@@ -161,6 +161,22 @@ describe("TempusAMM", async () => {
     expect(postYieldBalance - preYieldBalance).to.equal(500);
   });
 
+  it("checks LP exiting pool with exact tokens out", async () => {    
+    const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, principalShare, yieldShare);
+    await tempusAMM.principalShare.contract.setPricePerFullShare(toWei(1.0));
+    await tempusAMM.yieldShare.contract.setPricePerFullShare(toWei(0.1));
+    await tempusAMM.provideLiquidity(owner, 100, 1000, true);
+    const preYieldBalance = +await tempusAMM.yieldShare.balanceOf(owner);
+    const prePrincipalBalance = +await tempusAMM.principalShare.balanceOf(owner);
+    expect(await tempusAMM.balanceOf(owner)).to.be.equal(199.999999999999);
+    await tempusAMM.exitPoolExactAmountOut(owner, [50, 500], 101);
+    expect(await tempusAMM.balanceOf(owner)).to.be.equal(99.999999999999);
+    const postYieldBalance = +await tempusAMM.yieldShare.balanceOf(owner);
+    const postPrincipalBalance = +await tempusAMM.principalShare.balanceOf(owner);
+    expect(postPrincipalBalance - prePrincipalBalance).to.equal(50);
+    expect(postYieldBalance - preYieldBalance).to.equal(500);
+  });
+
   it("checks LP exiting pool for one token reverts", async () => {    
     const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, principalShare, yieldShare);
     await tempusAMM.principalShare.contract.setPricePerFullShare(toWei(1.0));
