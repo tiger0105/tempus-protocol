@@ -27,8 +27,6 @@ import "./interfaces/ITempusShare.sol";
 import "./StableMath.sol";
 import "./TempusAMMUserDataHelpers.sol";
 
-import "hardhat/console.sol";
-
 contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRateProvider {
     using WordCodec for bytes32;
     using FixedPoint for uint256;

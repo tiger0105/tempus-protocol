@@ -7,6 +7,7 @@ import { TempusAMM } from "./../utils/TempusAMM"
 import { ERC20 } from "./../utils/ERC20";
 import { blockTimestamp, expectRevert, increaseTime } from "./../utils/Utils";
 import exp = require("constants");
+import { TempusPool } from "test/utils/TempusPool";
 
 interface SwapTestRun {
   amplification:Number;
@@ -142,6 +143,22 @@ describe("TempusAMM", async () => {
     await tempusAMM.provideLiquidity(owner, 100, 1000, true);
     const poolTokensBalance = await tempusAMM.balanceOf(owner);
     expect(poolTokensBalance).to.be.equal(199.999999999999);
+  });
+
+  it("checks LP exiting pool", async () => {    
+    const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, principalShare, yieldShare);
+    await tempusAMM.principalShare.contract.setPricePerFullShare(toWei(1.0));
+    await tempusAMM.yieldShare.contract.setPricePerFullShare(toWei(0.1));
+    await tempusAMM.provideLiquidity(owner, 100, 1000, true);
+    const preYieldBalance = +await tempusAMM.yieldShare.balanceOf(owner);
+    const prePrincipalBalance = +await tempusAMM.principalShare.balanceOf(owner);
+    expect(await tempusAMM.balanceOf(owner)).to.be.equal(199.999999999999);
+    await tempusAMM.exitPoolExactLpAmountIn(owner, 100);
+    expect(await tempusAMM.balanceOf(owner)).to.be.equal(99.999999999999);
+    const postYieldBalance = +await tempusAMM.yieldShare.balanceOf(owner);
+    const postPrincipalBalance = +await tempusAMM.principalShare.balanceOf(owner);
+    expect(postPrincipalBalance - prePrincipalBalance).to.equal(50);
+    expect(postYieldBalance - preYieldBalance).to.equal(500);
   });
 
   it("checks second LP's pool token balance without swaps between", async () => {

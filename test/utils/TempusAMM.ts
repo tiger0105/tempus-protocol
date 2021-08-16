@@ -16,6 +16,12 @@ export const DAY = HOUR * 24;
 export const WEEK = DAY * 7;
 export const MONTH = DAY * 30;
 
+export enum TempusAMMExitKind {
+  EXACT_BPT_IN_FOR_ONE_TOKEN_OUT = 0,
+  EXACT_BPT_IN_FOR_TOKENS_OUT,
+  BPT_IN_FOR_EXACT_TOKENS_OUT,
+}
+
 export class TempusAMM extends ContractBase {
   vault: Contract;
   principalShare: ERC20;
@@ -90,6 +96,29 @@ export class TempusAMM extends ContractBase {
     };
   
     await this.vault.connect(from).joinPool(poolId, from.address, from.address, joinPoolRequest);
+  }
+
+  async exitPoolExactLpAmountIn(from: SignerWithAddress, lpTokensAmount: Number) {
+    const poolId = await this.contract.getPoolId();
+    
+    const assets = [
+      { address: this.principalShare.address },
+      { address: this.yieldShare.address }
+    ].sort(( asset1, asset2 ) => parseInt(asset1.address) - parseInt(asset2.address));
+
+    const exitUserData = ethers.utils.defaultAbiCoder.encode(
+      ['uint256', 'uint256'], 
+      [TempusAMMExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT, toWei(lpTokensAmount)]
+    );
+    
+    const exitPoolRequest = {
+      assets: assets.map(({ address }) => address),
+      minAmountsOut: [1000000, 100000],
+      userData: exitUserData,
+      toInternalBalance: false
+    };
+  
+    await this.vault.connect(from).exitPool(poolId, from.address, from.address, exitPoolRequest);
   }
 
   async swapGivenIn(from: SignerWithAddress, assetIn: string, assetOut: string, amount: Number) {
