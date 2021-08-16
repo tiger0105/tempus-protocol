@@ -161,6 +161,14 @@ describe("TempusAMM", async () => {
     expect(postYieldBalance - preYieldBalance).to.equal(500);
   });
 
+  it("checks LP exiting pool for one token reverts", async () => {    
+    const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, principalShare, yieldShare);
+    await tempusAMM.principalShare.contract.setPricePerFullShare(toWei(1.0));
+    await tempusAMM.yieldShare.contract.setPricePerFullShare(toWei(0.1));
+    await tempusAMM.provideLiquidity(owner, 100, 1000, true);
+    await expectRevert(tempusAMM.exitPoolExactLpAmountIn(owner, 100, true));
+  });
+
   it("checks second LP's pool token balance without swaps between", async () => {
     const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, principalShare, yieldShare);
     await tempusAMM.principalShare.contract.setPricePerFullShare(toWei(1.0));
