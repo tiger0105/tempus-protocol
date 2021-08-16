@@ -27,6 +27,8 @@ import "./interfaces/ITempusShare.sol";
 import "./StableMath.sol";
 import "./TempusAMMUserDataHelpers.sol";
 
+import "hardhat/console.sol";
+
 contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRateProvider {
     using WordCodec for bytes32;
     using FixedPoint for uint256;
@@ -638,22 +640,19 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
     }
 
     // TODO: add docs
-    function _undoRateAdjustBalancesCopy(uint256[] memory balances)
-        private
-        view
-        returns (uint256[] memory newBalances)
+    function _undoRateAdjustBalancesCopy(uint256[] memory balances) private view returns (uint256[] memory)
     {
-        newBalances = new uint256[](balances.length);
+        uint256[] memory newBalances = new uint256[](balances.length);
         for (uint256 i = 0; i < balances.length; i++) {
             newBalances[i] = balances[i];
         }
-
         _undoRateAdjustBalances(newBalances);
+        return newBalances;
     }
 
     // TODO: add docs
     function _undoRateAdjustBalances(uint256[] memory balances) private view {
-        uint256[] memory rates;
+        uint256[] memory rates = new uint256[](2);
         rates[0] = _token0.getPricePerFullShare();
         rates[1] = _token1.getPricePerFullShare();
 
