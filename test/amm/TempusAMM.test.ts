@@ -85,6 +85,9 @@ describe("TempusAMM", async () => {
     await tempusAMM.yieldShare.contract.setPricePerFullShare(toWei(0.1));
     await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
     let [invariant, amplification] = await tempusAMM.getLastInvariant();
+    const amplificationParams = await tempusAMM.getAmplificationParam();
+    expect(amplificationParams.value).to.be.equal(amplification);
+    expect(amplificationParams.isUpdating).to.be.true;
     expect(invariant).to.equal(toWei(200));
     expect(amplification).to.equal(5000);
     // move half period of pool duration
@@ -207,13 +210,14 @@ describe("TempusAMM", async () => {
     expect(balanceOwner).to.be.within(+balanceUser * 0.99999, +balanceUser * 1.000001);
   });
 
-  it("checks second LP's pool token balance with swaps between", async () => {
+  it("checks rate and second LP's pool token balance with swaps between", async () => {
     const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, principalShare, yieldShare);
     await tempusAMM.principalShare.contract.setPricePerFullShare(toWei(1.0));
     await tempusAMM.yieldShare.contract.setPricePerFullShare(toWei(0.1));
     await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
 
     expect(await tempusAMM.balanceOf(owner)).to.be.equal(199.999999999999);
+    expect(+await tempusAMM.getRate()).to.be.equal(1);
 
     await tempusAMM.swapGivenIn(owner, tempusAMM.yieldShare.address, tempusAMM.principalShare.address, 100);
     await tempusAMM.swapGivenOut(owner, tempusAMM.principalShare.address, tempusAMM.yieldShare.address, 100);
@@ -223,6 +227,7 @@ describe("TempusAMM", async () => {
     await tempusAMM.provideLiquidity(user, 100, 1000, TempusAMMJoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT);
 
     expect(+await tempusAMM.balanceOf(user)).to.be.equal(199.59926562946222);
+    expect(+await tempusAMM.getRate()).to.be.equal(1.001997905851921);
 
     // do more swaps
     await tempusAMM.swapGivenIn(owner, tempusAMM.yieldShare.address, tempusAMM.principalShare.address, 100);
@@ -240,6 +245,7 @@ describe("TempusAMM", async () => {
     await tempusAMM.provideLiquidity(user1, 100, 1000, TempusAMMJoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT);
     
     expect(+await tempusAMM.balanceOf(user1)).to.be.equal(198.795221425031305545);
+    expect(+await tempusAMM.getRate()).to.be.equal(1.0060283069268658);
   });
 
   it("test swaps principal in with balances aligned with exchange rate", async () => {
