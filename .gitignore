@@ -9,3 +9,4 @@ deployments/localhost
 typechain/*
 .env
 .vscode/*
+mythxOutput.json
