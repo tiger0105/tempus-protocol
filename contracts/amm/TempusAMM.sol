@@ -607,8 +607,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
     }
 
     // TODO: add docs
-    function _undoRateAdjustBalancesCopy(uint256[] memory balances) private view returns (uint256[] memory)
-    {
+    function _undoRateAdjustBalancesCopy(uint256[] memory balances) private view returns (uint256[] memory) {
         uint256[] memory newBalances = new uint256[](balances.length);
         for (uint256 i = 0; i < balances.length; i++) {
             newBalances[i] = balances[i];
