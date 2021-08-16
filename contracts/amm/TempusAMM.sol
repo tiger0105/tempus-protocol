@@ -425,45 +425,14 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         bytes memory userData
     ) private view returns (uint256, uint256[] memory) {
         ExitKind kind = userData.exitKind();
+        require(kind != ExitKind.EXACT_BPT_IN_FOR_ONE_TOKEN_OUT, "Exit kind not supported!");
 
-        if (kind == ExitKind.EXACT_BPT_IN_FOR_ONE_TOKEN_OUT) {
-            return _exitExactBPTInForTokenOut(balances, userData);
-        } else if (kind == ExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT) {
+        if (kind == ExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT) {
             return _exitExactBPTInForTokensOut(balances, userData);
         } else {
             // ExitKind.BPT_IN_FOR_EXACT_TOKENS_OUT
             return _exitBPTInForExactTokensOut(balances, scalingFactors, userData);
         }
-    }
-
-    function _exitExactBPTInForTokenOut(uint256[] memory balances, bytes memory userData)
-        private
-        view
-        whenNotPaused
-        returns (uint256, uint256[] memory)
-    {
-        // This exit function is disabled if the contract is paused.
-
-        (uint256 bptAmountIn, uint256 tokenIndex) = userData.exactBptInForTokenOut();
-        // Note that there is no minimum amountOut parameter: this is handled by `IVault.exitPool`.
-
-        _require(tokenIndex < _getTotalTokens(), Errors.OUT_OF_BOUNDS);
-
-        // We exit in a single token, so initialize amountsOut with zeros
-        uint256[] memory amountsOut = new uint256[](_getTotalTokens());
-
-        // And then assign the result to the selected token
-        (uint256 currentAmp, ) = _getAmplificationParameter();
-        amountsOut[tokenIndex] = StableMath._calcTokenOutGivenExactBptIn(
-            currentAmp,
-            _rateAdjustBalancesCopy(balances),
-            tokenIndex,
-            bptAmountIn,
-            totalSupply(),
-            getSwapFeePercentage()
-        );
-
-        return (bptAmountIn, _undoRateAdjustBalancesCopy(amountsOut));
     }
 
     function _exitExactBPTInForTokensOut(uint256[] memory balances, bytes memory userData)
@@ -638,22 +607,18 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
     }
 
     // TODO: add docs
-    function _undoRateAdjustBalancesCopy(uint256[] memory balances)
-        private
-        view
-        returns (uint256[] memory newBalances)
-    {
-        newBalances = new uint256[](balances.length);
+    function _undoRateAdjustBalancesCopy(uint256[] memory balances) private view returns (uint256[] memory) {
+        uint256[] memory newBalances = new uint256[](balances.length);
         for (uint256 i = 0; i < balances.length; i++) {
             newBalances[i] = balances[i];
         }
-
         _undoRateAdjustBalances(newBalances);
+        return newBalances;
     }
 
     // TODO: add docs
     function _undoRateAdjustBalances(uint256[] memory balances) private view {
-        uint256[] memory rates;
+        uint256[] memory rates = new uint256[](2);
         rates[0] = _token0.getPricePerFullShare();
         rates[1] = _token1.getPricePerFullShare();
 

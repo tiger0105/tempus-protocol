@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { Contract } from "ethers";
+import { BigNumber, Contract, Transaction } from "ethers";
 import { NumberOrString, toWei, fromWei } from "./Decimal";
 import { ContractBase } from "./ContractBase";
 import { ERC20 } from "./ERC20";
@@ -15,6 +15,12 @@ export const HOUR = MINUTE * 60;
 export const DAY = HOUR * 24;
 export const WEEK = DAY * 7;
 export const MONTH = DAY * 30;
+
+export enum TempusAMMExitKind {
+  EXACT_BPT_IN_FOR_ONE_TOKEN_OUT = 0,
+  EXACT_BPT_IN_FOR_TOKENS_OUT,
+  BPT_IN_FOR_EXACT_TOKENS_OUT,
+}
 
 export class TempusAMM extends ContractBase {
   vault: Contract;
@@ -57,6 +63,10 @@ export class TempusAMM extends ContractBase {
     return new TempusAMM(tempusAMM, vault, principalShare, yieldShare);
   }
 
+  async getLastInvariant(): Promise<[NumberOrString, NumberOrString]> {
+    return this.contract.getLastInvariant();
+  }
+
   async balanceOf(user:SignerWithAddress): Promise<NumberOrString> {
     return fromWei(await this.contract.balanceOf(user.address));
   }
@@ -86,6 +96,54 @@ export class TempusAMM extends ContractBase {
     };
   
     await this.vault.connect(from).joinPool(poolId, from.address, from.address, joinPoolRequest);
+  }
+
+  async exitPoolExactLpAmountIn(from: SignerWithAddress, lpTokensAmount: Number, singleToken:boolean = false, singleTokenIndex:Number = 0) {
+    const poolId = await this.contract.getPoolId();
+    
+    const assets = [
+      { address: this.principalShare.address },
+      { address: this.yieldShare.address }
+    ].sort(( asset1, asset2 ) => parseInt(asset1.address) - parseInt(asset2.address));
+
+    const exitUserData = ethers.utils.defaultAbiCoder.encode(
+      singleToken ? ['uint256', 'uint256', 'uint256'] : ['uint256', 'uint256'], 
+      singleToken ? 
+        [TempusAMMExitKind.EXACT_BPT_IN_FOR_ONE_TOKEN_OUT, toWei(lpTokensAmount), singleTokenIndex] :
+        [TempusAMMExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT, toWei(lpTokensAmount)]
+    );
+    
+    const exitPoolRequest = {
+      assets: assets.map(({ address }) => address),
+      minAmountsOut: [1000000, 100000],
+      userData: exitUserData,
+      toInternalBalance: false
+    };
+  
+    await this.vault.connect(from).exitPool(poolId, from.address, from.address, exitPoolRequest);
+  }
+
+  async exitPoolExactAmountOut(from:SignerWithAddress, amountsOut:Number[], maxAmountLpIn:Number) {
+    const poolId = await this.contract.getPoolId();
+    
+    const assets = [
+      { address: this.principalShare.address, amountOut: toWei(amountsOut[0]) },
+      { address: this.yieldShare.address, amountOut: toWei(amountsOut[1]) }
+    ].sort(( asset1, asset2 ) => parseInt(asset1.address) - parseInt(asset2.address));
+
+    const exitUserData = ethers.utils.defaultAbiCoder.encode(
+      ['uint256', 'uint256[]', 'uint256'], 
+      [TempusAMMExitKind.BPT_IN_FOR_EXACT_TOKENS_OUT, assets.map(({ amountOut }) => amountOut), toWei(maxAmountLpIn)],
+    );
+    
+    const exitPoolRequest = {
+      assets: assets.map(({ address }) => address),
+      minAmountsOut: [1000000, 100000],
+      userData: exitUserData,
+      toInternalBalance: false
+    };
+  
+    await this.vault.connect(from).exitPool(poolId, from.address, from.address, exitPoolRequest);
   }
 
   async swapGivenIn(from: SignerWithAddress, assetIn: string, assetOut: string, amount: Number) {
@@ -139,5 +197,13 @@ export class TempusAMM extends ContractBase {
     const maximumIn = toWei(1000);
     const deadline = Math.floor(new Date().getTime() / 1000) * 2; // current_unix_timestamp * 2
     await this.vault.connect(from).swap(singleSwap, fundManagement, maximumIn, deadline);
+  }
+
+  async startAmplificationUpdate(ampTarget: number, endTime: number): Promise<Transaction> {
+    return this.contract.startAmplificationParameterUpdate(ampTarget, endTime);
+  }
+
+  async stopAmplificationUpdate(): Promise<Transaction> {
+    return this.contract.stopAmplificationParameterUpdate();
   }
 }
