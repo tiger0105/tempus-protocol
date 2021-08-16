@@ -85,6 +85,9 @@ describe("TempusAMM", async () => {
     await tempusAMM.yieldShare.contract.setPricePerFullShare(toWei(0.1));
     await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
     let [invariant, amplification] = await tempusAMM.getLastInvariant();
+    const amplificationParams = await tempusAMM.getAmplificationParam();
+    expect(amplificationParams.value).to.be.equal(amplification);
+    expect(amplificationParams.isUpdating).to.be.true;
     expect(invariant).to.equal(toWei(200));
     expect(amplification).to.equal(5000);
     // move half period of pool duration

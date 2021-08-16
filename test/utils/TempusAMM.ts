@@ -215,4 +215,8 @@ export class TempusAMM extends ContractBase {
   async stopAmplificationUpdate(): Promise<Transaction> {
     return this.contract.stopAmplificationParameterUpdate();
   }
+
+  async getAmplificationParam(): Promise<{value:NumberOrString, isUpdating:NumberOrString, precision:NumberOrString}> {
+    return this.contract.getAmplificationParameter();
+  }
 }
