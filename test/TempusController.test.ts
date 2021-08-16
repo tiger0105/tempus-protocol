@@ -1,7 +1,7 @@
 import { deployments, ethers } from "hardhat";
 import { expect } from "chai";
 import { ONE_WEI, toWei } from "./utils/Decimal";
-import { TempusAMM } from "./utils/TempusAMM"
+import { TempusAMM, TempusAMMJoinKind } from "./utils/TempusAMM"
 import { ContractBase } from "./utils/ContractBase";
 import { blockTimestamp, expectRevert } from "./utils/Utils";
 import { Aave } from "./utils/Aave";
@@ -69,7 +69,7 @@ describe("TempusController", async () => {
 
         // pre-initialize AMM liquidity
         await tempusPool.deposit(owner, 10000, owner);
-        await tempusAMM.provideLiquidity(owner, 12.34567, 1234.5678912, true);
+        await tempusAMM.provideLiquidity(owner, 12.34567, 1234.5678912, TempusAMMJoinKind.INIT);
         
         const vaultPrincipalShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(tempusAMM.vault.address);
         const vaultYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(tempusAMM.vault.address);
@@ -115,7 +115,7 @@ describe("TempusController", async () => {
 
         // pre-initialize AMM liquidity
         await tempusPool.deposit(owner, 10000, owner);
-        await tempusAMM.provideLiquidity(owner, 123.45678, 1.2345678, true);
+        await tempusAMM.provideLiquidity(owner, 123.45678, 1.2345678, TempusAMMJoinKind.INIT);
         
         const vaultPrincipalShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(tempusAMM.vault.address);
         const vaultYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(tempusAMM.vault.address);
@@ -166,7 +166,7 @@ describe("TempusController", async () => {
         const { contracts: { aavePool, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setup();
         
         await tempusPool.deposit(owner, 10000, owner);
-        await tempusAMM.provideLiquidity(owner, 12.34567, 1234.5678912, true);
+        await tempusAMM.provideLiquidity(owner, 12.34567, 1234.5678912, TempusAMMJoinKind.INIT);
         
         const invalidAction = tempusController.connect(user).depositYBTAndProvideLiquidity(
             tempusPool.address,
@@ -180,7 +180,7 @@ describe("TempusController", async () => {
         const { contracts: { aavePool, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setup();
         
         await tempusPool.deposit(owner, 10000, owner);
-        await tempusAMM.provideLiquidity(owner, 12.34567, 1234.5678912, true);
+        await tempusAMM.provideLiquidity(owner, 12.34567, 1234.5678912, TempusAMMJoinKind.INIT);
         
         const invalidAction = tempusController.connect(user).depositYBTAndProvideLiquidity(
             tempusPool1.address,
@@ -198,7 +198,7 @@ describe("TempusController", async () => {
 
         // pre-initialize AMM liquidity
         await tempusPool.deposit(owner, 10000, owner);
-        await tempusAMM.provideLiquidity(owner, 200, 2000, true); // 10% rate
+        await tempusAMM.provideLiquidity(owner, 200, 2000, TempusAMMJoinKind.INIT); // 10% rate
   
         const invalidAction = tempusController.connect(user).depositYBTAndFix(
             tempusPool.address,
@@ -221,7 +221,7 @@ describe("TempusController", async () => {
         
         // pre-initialize AMM liquidity
         await tempusPool.deposit(owner, 10000, owner);
-        await tempusAMM.provideLiquidity(owner, 200, 2000, true); // 10% rate
+        await tempusAMM.provideLiquidity(owner, 200, 2000, TempusAMMJoinKind.INIT); // 10% rate
   
         await tempusController.connect(user).depositYBTAndFix(
             tempusPool.address,

@@ -317,8 +317,6 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
         if (kind == JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT) {
             return _joinExactTokensInForBPTOut(balances, scalingFactors, userData);
-        } else if (kind == JoinKind.TOKEN_IN_FOR_EXACT_BPT_OUT) {
-            return _joinTokenInForExactBPTOut(balances, userData);
         } else {
             _revert(Errors.UNHANDLED_JOIN_KIND);
         }
@@ -346,30 +344,6 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         _require(bptAmountOut >= minBPTAmountOut, Errors.BPT_OUT_MIN_AMOUNT);
 
         return (bptAmountOut, amountsIn);
-    }
-
-    function _joinTokenInForExactBPTOut(uint256[] memory balances, bytes memory userData)
-        private
-        view
-        returns (uint256, uint256[] memory)
-    {
-        (uint256 bptAmountOut, uint256 tokenIndex) = userData.tokenInForExactBptOut();
-        // Note that there is no maximum amountIn parameter: this is handled by `IVault.joinPool`.
-
-        _require(tokenIndex < _getTotalTokens(), Errors.OUT_OF_BOUNDS);
-
-        uint256[] memory amountsIn = new uint256[](_getTotalTokens());
-        (uint256 currentAmp, ) = _getAmplificationParameter();
-        amountsIn[tokenIndex] = StableMath._calcTokenInGivenExactBptOut(
-            currentAmp,
-            _rateAdjustBalancesCopy(balances),
-            tokenIndex,
-            bptAmountOut,
-            totalSupply(),
-            getSwapFeePercentage()
-        );
-
-        return (bptAmountOut, _undoRateAdjustBalancesCopy(amountsIn));
     }
 
     // Exit

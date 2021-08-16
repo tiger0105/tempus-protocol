@@ -22,6 +22,12 @@ export enum TempusAMMExitKind {
   BPT_IN_FOR_EXACT_TOKENS_OUT,
 }
 
+export enum TempusAMMJoinKind {
+  INIT = 0,  // first join to the pool, needs to pick token balances
+  EXACT_TOKENS_IN_FOR_BPT_OUT,  // joining with exact amounts of both tokens
+  EXACT_BPT_OUT_FOR_TOKEN_IN,  // joining with one token for exact amount of lp tokens out
+}
+
 export class TempusAMM extends ContractBase {
   vault: Contract;
   principalShare: ERC20;
@@ -71,13 +77,12 @@ export class TempusAMM extends ContractBase {
     return fromWei(await this.contract.balanceOf(user.address));
   }
 
-  async provideLiquidity(from: SignerWithAddress, principalShareBalance: Number, yieldShareBalance: Number, initial: boolean) {
+  async provideLiquidity(from: SignerWithAddress, principalShareBalance: Number, yieldShareBalance: Number, joinKind: TempusAMMJoinKind) {
     const principalBalance = toWei(principalShareBalance);
     const yieldBalance = toWei(yieldShareBalance);
     await this.principalShare.connect(from).approve(this.vault.address, principalBalance);
     await this.yieldShare.connect(from).approve(this.vault.address, yieldBalance);
     
-    const JOIN_KIND = initial ? 0 : 1;
     const poolId = await this.contract.getPoolId();
     const assets = [
       { address: this.principalShare.address, amount: principalBalance },
@@ -86,7 +91,7 @@ export class TempusAMM extends ContractBase {
     
     const initialBalances = assets.map(({ amount }) => amount);
     const initUserData = ethers.utils.defaultAbiCoder.encode(
-      ['uint256', 'uint256[]'], [JOIN_KIND, initialBalances]
+      ['uint256', 'uint256[]'], [joinKind, initialBalances]
     );
     const joinPoolRequest = {
       assets: assets.map(({ address }) => address),
