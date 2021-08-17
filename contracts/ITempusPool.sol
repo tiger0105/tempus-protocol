@@ -12,7 +12,7 @@ interface ITempusPool {
     /// @param recipient Address of the recipient who will receive TPS and TYS tokens
     /// @param yieldTokenAmount Amount of yield tokens received from underlying pool
     /// @param shareAmounts Number of Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS) granted to `recipient`
-    /// @param rate Exchange rate of the underlying pool from Yield Bearing Tokens to the underlying asset
+    /// @param rate Interest Rate of the underlying pool from Yield Bearing Tokens to the underlying asset
     event Deposited(address depositor, address recipient, uint256 yieldTokenAmount, uint256 shareAmounts, uint256 rate);
 
     /// @dev Event emitted on successful TempusPool redeem().
@@ -21,14 +21,14 @@ interface ITempusPool {
     /// @param principalAmount Number of Tempus Principal Shares (TPS) to redeem into the Yield Bearing Token (YBT)
     /// @param yieldAmount Number of Tempus Yield Shares (TYS) to redeem into the Yield Bearing Token (YBT)
     /// @param yieldBearingAmount Number of Yield bearing tokens redeemed from the pool
-    /// @param rate Exchange rate of the underlying pool from Yield Bearing Tokens to the underlying asset
+    /// @param rate Interest Rate of the underlying pool from Yield Bearing Tokens to the underlying asset
     event Redeemed(address redeemer, uint principalAmount, uint yieldAmount, uint yieldBearingAmount, uint rate);
 
     /// @return The version of the pool.
     function version() external view returns (uint);
 
     /// @return The name of the underlying protocol
-    function underlyingProtocol() external view returns (bytes32);
+    function protocolName() external view returns (bytes32);
 
     /// @return The underlying yield bearing token.
     /// @dev This token will be used as a token that user can deposit to mint same amounts
@@ -73,12 +73,13 @@ interface ITempusPool {
     /// @return Amount of Yield Bearing Tokens redeemed to `msg.sender`
     function redeem(uint256 principalAmount, uint256 yieldAmount) external returns (uint256);
 
-    /// The current exchange rate of yield bearing token versus its backing.
-    /// @return The rate.
-    function currentExchangeRate() external view returns (uint256);
+    /// The current interest rate of the underlying pool
+    /// Calling this can accrue interest in the underlying pool
+    /// @return The interest rate
+    function currentInterestRate() external view returns (uint256);
 
-    /// Initial exchange rate of Yield Bearing Token versus Backing Token
-    function initialExchangeRate() external view returns (uint256);
+    /// @return Initial interest rate of the underlying pool
+    function initialInterestRate() external view returns (uint256);
 
     /// @return Rate of exchanging one Tempus Yield Share into Yield Bearing Token
     function pricePerYieldShare() external view returns (uint256);

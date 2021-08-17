@@ -248,9 +248,9 @@ describe("TempusAMM", async () => {
     expect(+await tempusAMM.getRate()).to.be.equal(1.0060283069268658);
   });
 
-  it("test swaps principal in with balances aligned with exchange rate", async () => {
+  it("test swaps principal in with balances aligned with Interest Rate", async () => {
     const swapsTests:SwapTestRun[] = [
-      // basic swap with exchange rate aligned to balances with increasing amplification
+      // basic swap with Interest Rate aligned to balances with increasing amplification
       {amplification: 5, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 9.784018372524834},
       {amplification: 15, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 9.794000668498882},
       {amplification: 35, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 9.79733270625232},
@@ -268,9 +268,9 @@ describe("TempusAMM", async () => {
     }
   });
 
-  it("tests swaps principal in with balances not aligned with exchange rate", async () => {
+  it("tests swaps principal in with balances not aligned with Interest Rate", async () => {
     const swapsTests:SwapTestRun[] = [
-      // exchange rate doesn't match balances with increasing amplification
+      // Interest Rate doesn't match balances with increasing amplification
       {amplification: 2, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 6.272332951557398},
       {amplification: 4, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 5.715922328378409},
       {amplification: 6, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 5.48168727610396},
@@ -291,9 +291,9 @@ describe("TempusAMM", async () => {
     }
   });
 
-  it("tests swaps principal in with balances not aligned with exchange rate - different direction", async () => {
+  it("tests swaps principal in with balances not aligned with Interest Rate - different direction", async () => {
     const swapsTests:SwapTestRun[] = [
-      // exchange rate doesn't match balances (different direction) with increasing amplification
+      // Interest Rate doesn't match balances (different direction) with increasing amplification
       {amplification: 1, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 5.3317755638575175},
       {amplification: 3, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 6.896221833652769},
       {amplification: 5, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 7.627913133644028},
@@ -317,14 +317,14 @@ describe("TempusAMM", async () => {
 
   it("tests various swaps yield in", async () => {
     const swapsTests:SwapTestRun[] = [
-      // basic swap with exchange rate aligned to balances with increasing amplification
+      // basic swap with Interest Rate aligned to balances with increasing amplification
       {amplification: 5, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 0.9784018372524833},
       {amplification: 15, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 0.9794000668498882},
       {amplification: 35, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 0.979733270625232},
       {amplification: 65, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 0.9798544929018749},
       {amplification: 95, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 0.9798999591380052},
       
-      // exchange rate doesn't match balances with increasing amplification
+      // Interest Rate doesn't match balances with increasing amplification
       {amplification: 1, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.3562540744512224},
       {amplification: 3, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.6103952416463594},
       {amplification: 5, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.7127786624515455},
@@ -334,7 +334,7 @@ describe("TempusAMM", async () => {
       {amplification: 70, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.9363193351638321},
       {amplification: 95, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.9424276065986663},
       
-      // exchange rate doesn't match balances (different direction) with increasing amplification
+      // Interest Rate doesn't match balances (different direction) with increasing amplification
       {amplification: 1, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.7872015561660912},
       {amplification: 3, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.3849666433163224},
       {amplification: 5, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.2536077337113882},

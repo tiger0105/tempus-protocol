@@ -20,7 +20,7 @@ export class LidoTestPool extends ITestPool
   }
   async createTempusPool(initialRate:number, poolDurationSeconds:number): Promise<TempusPool> {
     this.lido = await Lido.create(1000000);
-    await this.setExchangeRate(initialRate);
+    await this.setInterestRate(initialRate);
 
     this.maturityTime = await blockTimestamp() + poolDurationSeconds;
     const names = {
@@ -32,8 +32,8 @@ export class LidoTestPool extends ITestPool
     this.tempus = await TempusPool.deploy(this.lido.yieldToken, this.lido.priceOracle, this.maturityTime, names);
     return this.tempus;
   }
-  async setExchangeRate(rate:number): Promise<void> {
-    await this.lido.setExchangeRate(rate);
+  async setInterestRate(rate:number): Promise<void> {
+    await this.lido.setInterestRate(rate);
   }
   async deposit(user:Signer, amount:number): Promise<void> {
     await this.lido.submit(user, amount);

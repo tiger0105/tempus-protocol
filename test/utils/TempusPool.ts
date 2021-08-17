@@ -60,7 +60,7 @@ export class TempusPool extends ContractBase {
   /**
    * Deploys TempusPool
    * @param yieldToken The yield bearing token, such as aave.earn (AToken)
-   * @param priceOracle Price oracle name which returns the current exchange rate from yieldTokens, such as AavePriceOracle
+   * @param priceOracle Price oracle name which returns the current Interest Rate from yieldTokens, such as AavePriceOracle
    * @param startTime Starting time of the pool
    * @param maturityTime Maturity time of the pool
    */
@@ -131,8 +131,8 @@ export class TempusPool extends ContractBase {
     return await this.contract.version();
   }
 
-  async underlyingProtocol(): Promise<BytesLike> {
-    return await this.contract.underlyingProtocol();
+  async protocolName(): Promise<BytesLike> {
+    return await this.contract.protocolName();
   }
 
   /**
@@ -152,24 +152,24 @@ export class TempusPool extends ContractBase {
   }
 
   /**
-   * @returns Initial exchange rate when the pool started
+   * @returns Initial Interest Rate when the pool started
    */
-  async initialExchangeRate(): Promise<NumberOrString> {
-    return this.fromBigNum(await this.contract.initialExchangeRate());
+  async initialInterestRate(): Promise<NumberOrString> {
+    return this.fromBigNum(await this.contract.initialInterestRate());
   }
   
   /**
-   * @returns Current exchange rate of the pool
+   * @returns Current Interest rate of the pool
    */
-  async currentExchangeRate(): Promise<NumberOrString> {
-    return this.fromBigNum(await this.contract.currentExchangeRate());
+  async currentInterestRate(): Promise<NumberOrString> {
+    return this.fromBigNum(await this.contract.currentInterestRate());
   }
 
   /**
-   * @returns Exchange rate at maturity of the pool
+   * @returns Interest rate at maturity of the pool
    */
-  async maturityExchangeRate(): Promise<NumberOrString> {
-    return this.fromBigNum(await this.contract.maturityExchangeRate());
+  async maturityInterestRate(): Promise<NumberOrString> {
+    return this.fromBigNum(await this.contract.maturityInterestRate());
   }
 
   /**

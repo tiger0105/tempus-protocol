@@ -32,7 +32,7 @@ export class AaveTestPool extends ITestPool
     this.tempus = await TempusPool.deploy(this.aave.yieldToken, this.aave.priceOracle, this.maturityTime, names);
     return this.tempus;
   }
-  async setExchangeRate(rate:number): Promise<void> {
+  async setInterestRate(rate:number): Promise<void> {
     await this.aave.setLiquidityIndex(rate);
   }
   async deposit(user:Signer, amount:number): Promise<void> {

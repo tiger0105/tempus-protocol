@@ -18,6 +18,8 @@ abstract contract CTokenInterface is CTokenStorage {
 
     // as defined in Compound protocol
     function exchangeRateStored() external view virtual returns (uint);
+
+    function exchangeRateCurrent() external virtual returns (uint);
 }
 
 contract CErc20Storage {

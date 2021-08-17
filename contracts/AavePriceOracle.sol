@@ -5,12 +5,17 @@ import "./IPriceOracle.sol";
 import "./protocols/aave/IAToken.sol";
 
 contract AavePriceOracle is IPriceOracle {
-    function underlyingProtocol() external pure override returns (bytes32) {
+    function protocolName() external pure override returns (bytes32) {
         return "Aave";
     }
 
-    /// @return Current Interest Rate as a 1e18 decimal
-    function currentInterestRate(address token) external view override returns (uint256) {
+    /// @return Updated current Interest Rate as an 1e18 decimal
+    function updateInterestRate(address token) external view override returns (uint256) {
+        return this.storedInterestRate(token);
+    }
+
+    /// @return Stored Interest Rate as an 1e18 decimal
+    function storedInterestRate(address token) external view override returns (uint256) {
         IAToken atoken = IAToken(token);
         uint rateInRay = atoken.POOL().getReserveNormalizedIncome(atoken.UNDERLYING_ASSET_ADDRESS());
         // convert from RAY 1e27 to WAD 1e18 decimal
@@ -18,12 +23,12 @@ contract AavePriceOracle is IPriceOracle {
     }
 
     /// NOTE: Aave AToken is pegged 1:1 with backing token
-    function numAssetsPerYieldToken(address, uint256 amount) external pure override returns (uint256) {
-        return amount;
+    function numAssetsPerYieldToken(uint256 yieldBearingAmount, uint256) external pure override returns (uint256) {
+        return yieldBearingAmount;
     }
 
     /// NOTE: Aave AToken is pegged 1:1 with backing token
-    function numYieldTokensPerAsset(address, uint256 amount) external pure override returns (uint256) {
-        return amount;
+    function numYieldTokensPerAsset(uint256 backingTokenAmount, uint256) external pure override returns (uint256) {
+        return backingTokenAmount;
     }
 }

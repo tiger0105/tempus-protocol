@@ -60,7 +60,7 @@ describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
   {
     await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/);
     await pool.setupAccounts(owner, [[user, 500]]);
-    await pool.setExchangeRate(0.8);
+    await pool.setInterestRate(0.8);
 
     (await pool.expectDepositYBT(user, 100)).to.equal('Negative yield!');
   });
@@ -73,7 +73,7 @@ describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
     (await pool.expectDepositYBT(user, 100)).to.equal('success');
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/100, "YBT reduce by 100 after deposit");
 
-    await pool.setExchangeRate(2.0);
+    await pool.setInterestRate(2.0);
     if (pool.yieldPeggedToAsset)
     {
       // after 2x exchangeRate our YBT will be worth 2x as well:
@@ -88,8 +88,8 @@ describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
       (await pool.userState(user)).expect(200, 200, /*yieldBearing:*/0, "YBT reduce by 100 after deposit");
     }
 
-    expect(await pool.tempus.initialExchangeRate()).to.equal(1.0);
-    expect(await pool.tempus.currentExchangeRate()).to.equal(2.0);
+    expect(await pool.tempus.initialInterestRate()).to.equal(1.0);
+    expect(await pool.tempus.currentInterestRate()).to.equal(2.0);
   });
 
   it("Should allow depositing with different recipient", async () =>
@@ -142,7 +142,7 @@ describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/400, "user1 YBT reduce by 100 after deposit");
     (await pool.userState(user2)).expect(200, 200, /*yieldBearing:*/300, "user2 YBT reduce by 200 after deposit");
 
-    await pool.setExchangeRate(2.0);
+    await pool.setInterestRate(2.0);
 
     if (pool.yieldPeggedToAsset)
     {
@@ -163,8 +163,8 @@ describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
       (await pool.userState(user2)).expect(200, 200, /*yieldBearing:*/300, "expected NO CHANGE for user2");
     }
 
-    expect(await pool.tempus.initialExchangeRate()).to.equal(1.0);
-    expect(await pool.tempus.currentExchangeRate()).to.equal(2.0);
+    expect(await pool.tempus.initialInterestRate()).to.equal(1.0);
+    expect(await pool.tempus.currentInterestRate()).to.equal(2.0);
   });
 
 });

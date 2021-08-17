@@ -19,6 +19,10 @@ abstract contract CTokenMock is ERC20, CTokenInterface {
         return ComptrollerMock(address(comptroller)).exchangeRate();
     }
 
+    function exchangeRateCurrent() public view override returns (uint) {
+        return ComptrollerMock(address(comptroller)).exchangeRate();
+    }
+
     /**
      * @notice Sender supplies assets into the market and receives cTokens in exchange
      * @dev Accrues interest whether or not the operation succeeds, unless reverted

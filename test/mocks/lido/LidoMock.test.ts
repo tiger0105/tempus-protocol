@@ -114,8 +114,8 @@ describe("Lido Mock", () =>
       await lido.submit(user, 32.0);
       expect(await lido.sharesOf(user)).to.equal(32.0);
       
-      await lido.setExchangeRate(1.25);
-      expect(await lido.exchangeRate()).to.equal(1.25);
+      await lido.setInterestRate(1.25);
+      expect(await lido.interestRate()).to.equal(1.25);
 
       const redeemable = await lido.getPooledEthByShares(10);
       expect(redeemable).to.equal(12.5, "redeemable ETH should increase by 1.25x with interestRate 1.25x");

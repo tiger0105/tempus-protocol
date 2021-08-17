@@ -58,16 +58,16 @@ export class Lido extends ERC20 {
     return this.fromBigNum(await this.contract.totalSupply());
   }
 
-  /** @return Current exchange rate */
-  async exchangeRate(): Promise<NumberOrString> {
-    return this.priceOracle.currentInterestRate(this);
+  /** @return Stored Interest Rate */
+  async interestRate(): Promise<NumberOrString> {
+    return this.priceOracle.storedInterestRate(this);
   }
 
   /**
-   * Sets the pool exchange rate
-   * @param exchangeRate New synthetic exchange rate
+   * Sets the pool Interest Rate
+   * @param interestRate New synthetic Interest Rate
    */
-  async setExchangeRate(exchangeRate:NumberOrString): Promise<void> {
+  async setInterestRate(interestRate:NumberOrString): Promise<void> {
     let totalETHSupply:BigNumber = await this.contract.totalSupply();
     // total ETH is 0, so we must actually deposit something, otherwise we can't manipulate the rate
     if (totalETHSupply.isZero()) {
@@ -77,8 +77,8 @@ export class Lido extends ERC20 {
 
     // figure out if newRate requires a change of stETH
     const totalShares:BigNumber = await this.contract.getTotalShares();
-    const curRate = await this.priceOracle.contract.currentInterestRate(this.address);// (totalShares.mul(ONE_WEI)).div(totalETHSupply);
-    const newRate = this.toBigNum(exchangeRate);
+    const curRate = await this.priceOracle.contract.storedInterestRate(this.address);
+    const newRate = this.toBigNum(interestRate);
     // TODO: there's a precision issue here
     const difference = newRate.mul(ONE_WEI).div(curRate).sub(ONE_WEI);
     if (difference.isZero())

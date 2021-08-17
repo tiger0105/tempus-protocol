@@ -33,7 +33,7 @@ export class CompoundTestPool extends ITestPool
     this.tempus = await TempusPool.deploy(this.compound.yieldToken, this.compound.priceOracle, this.maturityTime, names);
     return this.tempus;
   }
-  async setExchangeRate(rate:number): Promise<void> {
+  async setInterestRate(rate:number): Promise<void> {
     await this.compound.setExchangeRate(rate);
   }
   async deposit(user:Signer, amount:number): Promise<void> {
