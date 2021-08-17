@@ -20,7 +20,7 @@ describe("Tempus Pool", async () => {
     [owner, user, user2] = await ethers.getSigners();
   });
 
-  async function setExchangeRate(exchangeRate:NumberOrString) {
+  async function setInterestRate(exchangeRate:NumberOrString) {
     if (aave) await aave.setLiquidityIndex(exchangeRate, owner);
     else if (compound) await compound.setExchangeRate(exchangeRate);
   }
@@ -32,7 +32,7 @@ describe("Tempus Pool", async () => {
     await aave.asset.transfer(owner, user2, 10000);
 
     // set starting rate
-    await setExchangeRate(liquidityIndex);
+    await setInterestRate(liquidityIndex);
 
     // generate some ATokens by owner depositing, and then transfer some to user
     if (depositToUser > 0) {
@@ -103,7 +103,7 @@ describe("Tempus Pool", async () => {
     it("Should revert on negative yield during deposit", async () => 
     {
       await createAavePool(1.1, 500);
-      setExchangeRate(1.0);
+      setInterestRate(1.0);
       (await expectRevert(pool.deposit(user, 100, /*recipient:*/user))).to.equal("Negative yield!");
     });
 
@@ -113,7 +113,7 @@ describe("Tempus Pool", async () => {
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
 
-      await setExchangeRate(2.0);
+      await setInterestRate(2.0);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/800);
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 150, 150, /*yieldBearing:*/700);
@@ -161,7 +161,7 @@ describe("Tempus Pool", async () => {
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
       await expectUserState(pool, user2, 200, 200, /*yieldBearing:*/300);
 
-      await setExchangeRate(2.0);
+      await setInterestRate(2.0);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/800);
       await expectUserState(pool, user2, 200, 200, /*yieldBearing:*/600);
       await pool.deposit(user, 100, /*recipient:*/user);
@@ -224,7 +224,7 @@ describe("Tempus Pool", async () => {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
-      await setExchangeRate(2.0);
+      await setInterestRate(2.0);
 
       await pool.redeem(user, 100, 100);
       await expectUserState(pool, user, 0, 0, /*yieldBearing:*/1000);
@@ -236,7 +236,7 @@ describe("Tempus Pool", async () => {
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
 
-      await setExchangeRate(0.9);
+      await setInterestRate(0.9);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/360);
       await increaseTime(60*60);
       await pool.finalize();
@@ -251,10 +251,10 @@ describe("Tempus Pool", async () => {
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
 
-      await setExchangeRate(1.2);
+      await setInterestRate(1.2);
       await increaseTime(60*60);
       await pool.finalize();
-      await setExchangeRate(1.1);
+      await setInterestRate(1.1);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/440);
 
       await pool.redeem(user, 100, 100);
@@ -279,7 +279,7 @@ describe("Tempus Pool", async () => {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
-      await setExchangeRate(2.0);
+      await setInterestRate(2.0);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/800);
 
       await increaseTime(60*60);
@@ -294,12 +294,12 @@ describe("Tempus Pool", async () => {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
-      await setExchangeRate(2.0);
+      await setInterestRate(2.0);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/800);
 
       await increaseTime(60*60);
       await pool.finalize();
-      await setExchangeRate(4.0);
+      await setInterestRate(4.0);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/1600);
       await pool.redeem(user, 100, 100);
       await expectUserState(pool, user, 0, 0, /*yieldBearing:*/1800);
@@ -312,7 +312,7 @@ describe("Tempus Pool", async () => {
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
 
-      await setExchangeRate(2.0);
+      await setInterestRate(2.0);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/800);
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 150, 150, /*yieldBearing:*/700);
@@ -324,7 +324,7 @@ describe("Tempus Pool", async () => {
       expect(await pool.initialInterestRate()).to.equal(1.0);
       expect(await pool.currentInterestRate()).to.equal(2.0);
 
-      await setExchangeRate(2.5);
+      await setInterestRate(2.5);
       await increaseTime(60*60);
       await pool.finalize();
       expect(await pool.initialInterestRate()).to.equal(1.0);
@@ -377,7 +377,7 @@ describe("Tempus Pool", async () => {
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/0);
 
       // withdraw with additional yield
-      await setExchangeRate(1.5);
+      await setInterestRate(1.5);
       await pool.principalShare.approve(user, wrapper.address, 100);
       await pool.yieldShare.approve(user, wrapper.address, 100);
       await wrapperC.redeem(aave.toBigNum(100), aave.toBigNum(100));
