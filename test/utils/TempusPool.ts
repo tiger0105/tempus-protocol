@@ -131,8 +131,8 @@ export class TempusPool extends ContractBase {
     return await this.contract.version();
   }
 
-  async underlyingProtocol(): Promise<BytesLike> {
-    return await this.contract.underlyingProtocol();
+  async protocolName(): Promise<BytesLike> {
+    return await this.contract.protocolName();
   }
 
   /**

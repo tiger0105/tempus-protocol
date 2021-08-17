@@ -58,9 +58,9 @@ export class Lido extends ERC20 {
     return this.fromBigNum(await this.contract.totalSupply());
   }
 
-  /** @return Current exchange rate */
+  /** @return Stored exchange rate */
   async exchangeRate(): Promise<NumberOrString> {
-    return this.priceOracle.currentInterestRate(this);
+    return this.priceOracle.storedInterestRate(this);
   }
 
   /**
@@ -77,7 +77,7 @@ export class Lido extends ERC20 {
 
     // figure out if newRate requires a change of stETH
     const totalShares:BigNumber = await this.contract.getTotalShares();
-    const curRate = await this.priceOracle.contract.currentInterestRate(this.address);// (totalShares.mul(ONE_WEI)).div(totalETHSupply);
+    const curRate = await this.priceOracle.contract.storedInterestRate(this.address);
     const newRate = this.toBigNum(exchangeRate);
     // TODO: there's a precision issue here
     const difference = newRate.mul(ONE_WEI).div(curRate).sub(ONE_WEI);

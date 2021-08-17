@@ -32,7 +32,7 @@ describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
 
   it("undelying protocol name is correct", async () => 
   {
-    const protocol:string = utils.parseBytes32String(await pool.underlyingProtocol());
+    const protocol:string = utils.parseBytes32String(await pool.protocolName());
     expect(protocol).to.equal(testPool.type);
   });
 

@@ -24,9 +24,9 @@ describe("Tempus Pool", async () => {
       const yieldToken = await ERC20.attach("ATokenMock", await aavePool.yieldToken());
 
       let oracle:IPriceOracle = await IPriceOracle.deploy("AavePriceOracle");
-      let interestRate = await oracle.currentInterestRate(yieldToken);
-      let numAssetTokens = await oracle.numAssetsPerYieldToken(yieldToken, 2);
-      let numYieldTokens = await oracle.numYieldTokensPerAsset(yieldToken, 3);
+      let interestRate = await oracle.updateInterestRate(yieldToken);
+      let numAssetTokens = await oracle.numAssetsPerYieldToken(2, interestRate);
+      let numYieldTokens = await oracle.numYieldTokensPerAsset(3, interestRate);
       expect(interestRate).to.equal(1.0);
       expect(numAssetTokens).to.equal(2);
       expect(numYieldTokens).to.equal(3);
@@ -37,9 +37,9 @@ describe("Tempus Pool", async () => {
       const lido = await Lido.create(1000000);
       await lido.submit(user, 2);
       const yieldToken = lido.yieldToken;
-      let interestRate = await lido.priceOracle.currentInterestRate(yieldToken);
-      let numAssetTokens = await lido.priceOracle.numAssetsPerYieldToken(yieldToken, 2);
-      let numYieldTokens = await lido.priceOracle.numYieldTokensPerAsset(yieldToken, 3);
+      let interestRate = await lido.priceOracle.updateInterestRate(yieldToken);
+      let numAssetTokens = await lido.priceOracle.numAssetsPerYieldToken(2, interestRate);
+      let numYieldTokens = await lido.priceOracle.numYieldTokensPerAsset(3, interestRate);
       expect(interestRate).to.equal(1.0);
       expect(numAssetTokens).to.equal(2);
       expect(numYieldTokens).to.equal(3);
@@ -49,9 +49,9 @@ describe("Tempus Pool", async () => {
     {
       let compound = await Comptroller.create('CErc20', 1000000);
       const yieldToken = compound.yieldToken;
-      let interestRate = await compound.priceOracle.currentInterestRate(yieldToken);
-      let numAssetTokens = await compound.priceOracle.numAssetsPerYieldToken(yieldToken, 2);
-      let numYieldTokens = await compound.priceOracle.numYieldTokensPerAsset(yieldToken, 3);
+      let interestRate = await compound.priceOracle.updateInterestRate(yieldToken);
+      let numAssetTokens = await compound.priceOracle.numAssetsPerYieldToken(2, interestRate);
+      let numYieldTokens = await compound.priceOracle.numYieldTokensPerAsset(3, interestRate);
       expect(interestRate).to.equal(1.0);
       expect(numAssetTokens).to.equal(2);
       expect(numYieldTokens).to.equal(3);
