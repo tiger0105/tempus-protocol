@@ -24,7 +24,7 @@ export class IPriceOracle extends ContractBase {
   
   /**
    * @param token An ERC20 token which belongs to a POOL
-   * @returns Current exchange rate of that Token in the pool
+   * @returns Current stored Interest Rate of that Token in the pool
    */
   async storedInterestRate(token:ERC20|string): Promise<NumberOrString> {
     const address:string = (typeof(token) == 'string') ? token : token.address;

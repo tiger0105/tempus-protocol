@@ -64,7 +64,7 @@ export abstract class ITestPool {
   abstract createTempusPool(initialRate:number, poolDurationSeconds:number): Promise<TempusPool>;
 
   /**
-   * @param rate Sets the exchange rate for the underlying mock pool
+   * @param rate Sets the Interest Rate for the underlying mock pool
    */
   abstract setExchangeRate(rate:number): Promise<void>;
 

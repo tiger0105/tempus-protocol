@@ -47,11 +47,11 @@ describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
     expect(await pool.matured()).to.equal(false);
   });
 
-  it("Exchange rates should be set", async () =>
+  it("Interest Rates should be set", async () =>
   {
-    expect(await pool.initialExchangeRate()).to.equal(1.0);
-    expect(await pool.currentExchangeRate()).to.equal(1.0);
-    expect(await pool.maturityExchangeRate()).to.equal(0.0);
+    expect(await pool.initialInterestRate()).to.equal(1.0);
+    expect(await pool.currentInterestRate()).to.equal(1.0);
+    expect(await pool.maturityInterestRate()).to.equal(0.0);
   });
 
   it("Finalize prior to maturity", async () =>

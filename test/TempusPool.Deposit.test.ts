@@ -88,8 +88,8 @@ describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
       (await pool.userState(user)).expect(200, 200, /*yieldBearing:*/0, "YBT reduce by 100 after deposit");
     }
 
-    expect(await pool.tempus.initialExchangeRate()).to.equal(1.0);
-    expect(await pool.tempus.currentExchangeRate()).to.equal(2.0);
+    expect(await pool.tempus.initialInterestRate()).to.equal(1.0);
+    expect(await pool.tempus.currentInterestRate()).to.equal(2.0);
   });
 
   it("Should allow depositing with different recipient", async () =>
@@ -163,8 +163,8 @@ describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
       (await pool.userState(user2)).expect(200, 200, /*yieldBearing:*/300, "expected NO CHANGE for user2");
     }
 
-    expect(await pool.tempus.initialExchangeRate()).to.equal(1.0);
-    expect(await pool.tempus.currentExchangeRate()).to.equal(2.0);
+    expect(await pool.tempus.initialInterestRate()).to.equal(1.0);
+    expect(await pool.tempus.currentInterestRate()).to.equal(2.0);
   });
 
 });

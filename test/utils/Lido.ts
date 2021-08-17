@@ -58,14 +58,14 @@ export class Lido extends ERC20 {
     return this.fromBigNum(await this.contract.totalSupply());
   }
 
-  /** @return Stored exchange rate */
+  /** @return Stored Interest Rate */
   async exchangeRate(): Promise<NumberOrString> {
     return this.priceOracle.storedInterestRate(this);
   }
 
   /**
-   * Sets the pool exchange rate
-   * @param exchangeRate New synthetic exchange rate
+   * Sets the pool Interest Rate
+   * @param exchangeRate New synthetic Interest Rate
    */
   async setExchangeRate(exchangeRate:NumberOrString): Promise<void> {
     let totalETHSupply:BigNumber = await this.contract.totalSupply();

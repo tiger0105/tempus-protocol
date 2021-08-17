@@ -59,7 +59,7 @@ export class Comptroller extends ContractBase {
   }
 
   /**
-   * @return Current exchange rate in 1e18 decimal
+   * @return Current Interest Rate in 1e18 decimal
    */
   async exchangeRate(): Promise<NumberOrString> {
     const rate:BigNumber = await this.contract.exchangeRate();
@@ -67,7 +67,7 @@ export class Comptroller extends ContractBase {
   }
 
   /**
-   * Sets the pool exchange rate in 1e18 decimal
+   * Sets the pool Interest Rate in 1e18 decimal
    */
   async setExchangeRate(exchangeRate:NumberOrString, owner:SignerOrAddress = null) {
     if (owner !== null) {

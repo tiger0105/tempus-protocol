@@ -118,8 +118,8 @@ describe("Tempus Pool", async () => {
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 150, 150, /*yieldBearing:*/700);
 
-      expect(await pool.initialExchangeRate()).to.equal(1.0);
-      expect(await pool.currentExchangeRate()).to.equal(2.0);
+      expect(await pool.initialInterestRate()).to.equal(1.0);
+      expect(await pool.currentInterestRate()).to.equal(2.0);
     });
 
     it("Should allow depositing with different recipient", async () =>
@@ -168,8 +168,8 @@ describe("Tempus Pool", async () => {
       await expectUserState(pool, user, 150, 150, /*yieldBearing:*/700);
       await expectUserState(pool, user2, 200, 200, /*yieldBearing:*/600);
 
-      expect(await pool.initialExchangeRate()).to.equal(1.0);
-      expect(await pool.currentExchangeRate()).to.equal(2.0);
+      expect(await pool.initialInterestRate()).to.equal(1.0);
+      expect(await pool.currentInterestRate()).to.equal(2.0);
     });
   });
 
@@ -321,15 +321,15 @@ describe("Tempus Pool", async () => {
       await pool.deposit(user2, 200, /*recipient:*/user2);
       await expectUserState(pool, user2, 100, 100, /*yieldBearing:*/800);
 
-      expect(await pool.initialExchangeRate()).to.equal(1.0);
-      expect(await pool.currentExchangeRate()).to.equal(2.0);
+      expect(await pool.initialInterestRate()).to.equal(1.0);
+      expect(await pool.currentInterestRate()).to.equal(2.0);
 
       await setExchangeRate(2.5);
       await increaseTime(60*60);
       await pool.finalize();
-      expect(await pool.initialExchangeRate()).to.equal(1.0);
-      expect(await pool.currentExchangeRate()).to.equal(2.5);
-      expect(await pool.maturityExchangeRate()).to.equal(2.5);
+      expect(await pool.initialInterestRate()).to.equal(1.0);
+      expect(await pool.currentInterestRate()).to.equal(2.5);
+      expect(await pool.maturityInterestRate()).to.equal(2.5);
 
       // First user redeems
       await expectUserState(pool, user, 150, 150, /*yieldBearing:*/875);

@@ -16,7 +16,7 @@ describe("Tempus Pool", async () => {
 
   describe("Price Oracle", async () =>
   {
-    it("Should give correct exchange rate from Aave", async () =>
+    it("Should give correct Interest Rate from Aave", async () =>
     {
       // TODO: use new deployment utilities (will come in another PR)
       const backingAsset = await ERC20.deploy("ERC20FixedSupply", "DAI Stablecoin", "DAI", toWei(1000000));
@@ -32,7 +32,7 @@ describe("Tempus Pool", async () => {
       expect(numYieldTokens).to.equal(3);
     });
 
-    it("Should give correct exchange rate from Lido", async () =>
+    it("Should give correct Interest Rate from Lido", async () =>
     {
       const lido = await Lido.create(1000000);
       await lido.submit(user, 2);
@@ -45,7 +45,7 @@ describe("Tempus Pool", async () => {
       expect(numYieldTokens).to.equal(3);
     });
     
-    it("Should give correct exchange rate from Compound", async () =>
+    it("Should give correct Interest Rate from Compound", async () =>
     {
       let compound = await Comptroller.create('CErc20', 1000000);
       const yieldToken = compound.yieldToken;
