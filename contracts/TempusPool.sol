@@ -27,8 +27,8 @@ contract TempusPool is ITempusPool, Ownable {
     uint256 public immutable override startTime;
     uint256 public immutable override maturityTime;
 
-    uint256 public immutable override initialExchangeRate;
-    uint256 public maturityExchangeRate;
+    uint256 public immutable override initialInterestRate;
+    uint256 public maturityInterestRate;
     IERC20 public immutable override principalShare;
     IERC20 public immutable override yieldShare;
 
@@ -70,7 +70,7 @@ contract TempusPool is ITempusPool, Ownable {
         priceOracle = oracle;
         startTime = block.timestamp;
         maturityTime = maturity;
-        initialExchangeRate = oracle.updateInterestRate(token);
+        initialInterestRate = oracle.updateInterestRate(token);
 
         principalShare = new PrincipalShare(this, principalName, principalSymbol);
         yieldShare = new YieldShare(this, yieldName, yieldSymbol);
@@ -80,7 +80,7 @@ contract TempusPool is ITempusPool, Ownable {
     function finalize() public override {
         if (!matured) {
             require(block.timestamp >= maturityTime, "Maturity not been reached yet.");
-            maturityExchangeRate = currentExchangeRate();
+            maturityInterestRate = currentInterestRate();
             matured = true;
 
             assert(principalShare.totalSupply() == yieldShare.totalSupply());
@@ -118,7 +118,7 @@ contract TempusPool is ITempusPool, Ownable {
     function deposit(uint256 yieldTokenAmount, address recipient) public override returns (uint256) {
         require(!matured, "Maturity reached.");
         uint256 rate = priceOracle.updateInterestRate(yieldBearingToken);
-        require(rate >= initialExchangeRate, "Negative yield!");
+        require(rate >= initialInterestRate, "Negative yield!");
 
         // Collect the deposit
         IERC20(yieldBearingToken).safeTransferFrom(msg.sender, address(this), yieldTokenAmount);
@@ -135,7 +135,7 @@ contract TempusPool is ITempusPool, Ownable {
 
         // Issue appropriate shares
         uint256 backingTokenDepositAmount = priceOracle.numAssetsPerYieldToken(tokenAmount, rate);
-        uint256 tokensToIssue = (backingTokenDepositAmount * initialExchangeRate) / rate;
+        uint256 tokensToIssue = (backingTokenDepositAmount * initialInterestRate) / rate;
 
         PrincipalShare(address(principalShare)).mint(recipient, tokensToIssue);
         YieldShare(address(yieldShare)).mint(recipient, tokensToIssue);
@@ -163,20 +163,20 @@ contract TempusPool is ITempusPool, Ownable {
 
     function _redeem(uint256 principalAmount, uint256 yieldAmount) internal returns (uint256) {
         uint256 currentRate = priceOracle.updateInterestRate(yieldBearingToken);
-        uint256 exchangeRate = currentRate;
+        uint256 interestRate = currentRate;
         // in case of negative yield after maturity, we use lower rate for redemption
         // so, we need to change from currentRate to maturity rate only if maturity rate is lower
-        if (matured && currentRate > maturityExchangeRate) {
-            exchangeRate = maturityExchangeRate;
+        if (matured && currentRate > maturityInterestRate) {
+            interestRate = maturityInterestRate;
         }
 
         uint256 redeemableBackingTokens;
-        if (exchangeRate < initialExchangeRate) {
-            redeemableBackingTokens = (principalAmount * exchangeRate) / initialExchangeRate;
+        if (interestRate < initialInterestRate) {
+            redeemableBackingTokens = (principalAmount * interestRate) / initialInterestRate;
         } else {
-            uint256 rateDiff = exchangeRate - initialExchangeRate;
+            uint256 rateDiff = interestRate - initialInterestRate;
             // this is expressed in backing token
-            uint256 amountPerYieldShareToken = rateDiff.divf18(initialExchangeRate);
+            uint256 amountPerYieldShareToken = rateDiff.divf18(initialInterestRate);
             uint256 redeemAmountFromYieldShares = yieldAmount.mulf18(amountPerYieldShareToken);
 
             // TODO: Scale based on number of decimals for tokens
@@ -199,18 +199,18 @@ contract TempusPool is ITempusPool, Ownable {
 
         IERC20(yieldBearingToken).safeTransfer(msg.sender, redeemableYieldTokens);
 
-        emit Redeemed(msg.sender, principalAmount, yieldAmount, redeemableYieldTokens, exchangeRate);
+        emit Redeemed(msg.sender, principalAmount, yieldAmount, redeemableYieldTokens, interestRate);
 
         return redeemableYieldTokens;
     }
 
-    function currentExchangeRate() public view override returns (uint256) {
+    function currentInterestRate() public view override returns (uint256) {
         return priceOracle.storedInterestRate(yieldBearingToken);
     }
 
     function pricePerYieldShare() public view override returns (uint256) {
-        uint256 currentRate = currentExchangeRate();
-        uint256 initialRate = initialExchangeRate;
+        uint256 currentRate = currentInterestRate();
+        uint256 initialRate = initialInterestRate;
 
         // TODO: Not finished, needs additional testing later
         uint256 rate = (currentRate - initialRate).divf18(initialRate);

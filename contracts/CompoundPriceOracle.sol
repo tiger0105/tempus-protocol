@@ -14,7 +14,7 @@ contract CompoundPriceOracle is IPriceOracle {
 
     /// @return Updated current Interest Rate as an 1e18 decimal
     function updateInterestRate(address token) external override returns (uint256) {
-        // NOTE: exchangeRateCurrent() will accrue interest and gets the latest exchange rate
+        // NOTE: exchangeRateCurrent() will accrue interest and gets the latest Interest Rate
         //       We do this to avoid arbitrage
         return ICToken(token).exchangeRateCurrent();
     }
