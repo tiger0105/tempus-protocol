@@ -8,20 +8,27 @@ import "./math/Fixed256x18.sol";
 contract CompoundPriceOracle is IPriceOracle {
     using Fixed256x18 for uint256;
 
-    function underlyingProtocol() external pure override returns (bytes32) {
+    function protocolName() external pure override returns (bytes32) {
         return "Compound";
     }
 
-    /// @return Current Interest Rate as a 1e18 decimal
-    function currentInterestRate(address token) external view override returns (uint256) {
+    /// @return Updated current Interest Rate as an 1e18 decimal
+    function updateInterestRate(address token) external override returns (uint256) {
+        // NOTE: exchangeRateCurrent() will accrue interest and gets the latest exchange rate
+        //       We do this to avoid arbitrage
+        return ICToken(token).exchangeRateCurrent();
+    }
+
+    /// @return Current Interest Rate as an 1e18 decimal
+    function storedInterestRate(address token) external view override returns (uint256) {
         return ICToken(token).exchangeRateStored();
     }
 
-    function numAssetsPerYieldToken(address token, uint256 amount) external view override returns (uint256) {
-        return this.currentInterestRate(token).mulf18(amount);
+    function numAssetsPerYieldToken(uint256 amount, uint256 rate) external pure override returns (uint256) {
+        return rate.mulf18(amount);
     }
 
-    function numYieldTokensPerAsset(address t, uint256 amount) external view override returns (uint256) {
-        return amount.divf18(this.currentInterestRate(t));
+    function numYieldTokensPerAsset(uint256 amount, uint256 rate) external pure override returns (uint256) {
+        return amount.divf18(rate);
     }
 }

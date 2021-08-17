@@ -28,7 +28,7 @@ interface ITempusPool {
     function version() external view returns (uint);
 
     /// @return The name of the underlying protocol
-    function underlyingProtocol() external view returns (bytes32);
+    function protocolName() external view returns (bytes32);
 
     /// @return The underlying yield bearing token.
     /// @dev This token will be used as a token that user can deposit to mint same amounts
@@ -73,11 +73,12 @@ interface ITempusPool {
     /// @return Amount of Yield Bearing Tokens redeemed to `msg.sender`
     function redeem(uint256 principalAmount, uint256 yieldAmount) external returns (uint256);
 
-    /// The current exchange rate of yield bearing token versus its backing.
-    /// @return The rate.
+    /// The current interest rate of the underlying pool
+    /// Calling this can accrue interest in the underlying pool
+    /// @return The interest rate
     function currentExchangeRate() external view returns (uint256);
 
-    /// Initial exchange rate of Yield Bearing Token versus Backing Token
+    /// @return Initial interest rate of the underlying pool
     function initialExchangeRate() external view returns (uint256);
 
     /// @return Rate of exchanging one Tempus Yield Share into Yield Bearing Token
