@@ -20,7 +20,7 @@ export class CompoundTestPool extends ITestPool
     return this.compound.yieldToken.balanceOf(user);
   }
   async createTempusPool(initialRate:number, poolDurationSeconds:number): Promise<TempusPool> {
-    this.compound = await Comptroller.create('CErc20', 1000000);
+    this.compound = await Comptroller.create(1000000);
     await this.compound.setExchangeRate(initialRate);
 
     this.maturityTime = await blockTimestamp() + poolDurationSeconds;

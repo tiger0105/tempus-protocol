@@ -16,11 +16,9 @@ describe("Tempus Pool (Compound)", async () => {
     [owner, user] = await ethers.getSigners();
   });
 
-  async function createCompoundPool(type:string, depositToUser:number = 0) {
-    compound = await Comptroller.create(type, 1000000);
-    if (compound.asset != null) {
-      await compound.asset.transfer(owner, user, 10000); // initial deposit for User
-    }
+  async function createCompoundPool(depositToUser:number = 0) {
+    compound = await Comptroller.create(1000000);
+    await compound.asset.transfer(owner, user, 10000); // initial deposit for User
 
     // generate some CTokens by owner depositing, and then transfer some to user
     if (depositToUser > 0) {
@@ -38,7 +36,7 @@ describe("Tempus Pool (Compound)", async () => {
   {
     it("Should give appropriate shares after pool deposit", async () =>
     {
-      await createCompoundPool('CErc20', /*depositToUser:*/500);
+      await createCompoundPool(/*depositToUser:*/500);
       await expectUserState(pool, user, 0, 0, /*yieldBearing:*/500);
       await pool.deposit(user, 100, /*recipient:*/user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/400);
@@ -46,7 +44,7 @@ describe("Tempus Pool (Compound)", async () => {
 
     it("Should give appropriate shares after CErc20 ASSET Wrapper deposit", async () =>
     {
-      await createCompoundPool('CErc20');
+      await createCompoundPool();
 
       await expectUserState(pool, user, 0, 0, /*yieldBearing:*/0);
       await compound.asset.approve(user, pool.address, 100);
@@ -60,7 +58,7 @@ describe("Tempus Pool (Compound)", async () => {
   {
     it("Should give appropriate shares after Backing Tokens deposit", async () =>
     {
-      await createCompoundPool('CErc20');
+      await createCompoundPool();
       await expectUserState(pool, user, 0, 0, /*yieldBearing:*/0);
 
       const initialBalance = await compound.asset.balanceOf(user);
@@ -77,7 +75,7 @@ describe("Tempus Pool (Compound)", async () => {
 
     it("Should redeem correct amount of Backing Tokens with Yield", async () =>
     {
-      await createCompoundPool('CErc20');
+      await createCompoundPool();
       await expectUserState(pool, user, 0, 0, /*yieldBearing:*/0);
 
       const initialBalance = await compound.asset.balanceOf(user);

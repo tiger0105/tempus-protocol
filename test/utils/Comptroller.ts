@@ -17,37 +17,22 @@ export class Comptroller extends ContractBase {
   }
 
   /**
-   * @param type Type of CToken, valid values are: 'CEther', 'CErc20'
-   *             If type is 'CEther', then there's no asset token
-   *             If type is 'CErc20', then asset token is DAI
-   * @param totalErc20Supply If type is 'CErc20', this is the total supply
+   * @note We only support CErc20 because CEther has almost no yield
+   * @param totalErc20Supply Total supply amount of the asset token
    */
-  static async create(type:string, totalErc20Supply:Number = 0): Promise<Comptroller> {
+  static async create(totalErc20Supply:Number = 0): Promise<Comptroller> {
     const pool = await ContractBase.deployContract("ComptrollerMock");
     const priceOracle = await IPriceOracle.deploy("CompoundPriceOracle");
 
-    if (type == 'CErc20') {
-      let asset = await ERC20.deploy("ERC20FixedSupply", "DAI Stablecoin", "DAI", toWei(totalErc20Supply));
-      const cDAI = await ERC20.deploy("CErc20", pool.address, asset.address, "Compound DAI Yield Token", "cDAI");
-      return new Comptroller(pool, asset, cDAI, priceOracle);
-    }
-    if (type == 'CEther') {
-      const cEther = await ERC20.deploy("CEther", pool.address, "Compound ETH Yield Token", "CEther");
-      return new Comptroller(pool, null, cEther, priceOracle);
-    }
-    throw new Error("Invalid CToken type: " + type);
+    let asset = await ERC20.deploy("ERC20FixedSupply", "DAI Stablecoin", "DAI", toWei(totalErc20Supply));
+    const cDAI = await ERC20.deploy("CErc20", pool.address, asset.address, "Compound DAI Yield Token", "cDAI");
+    return new Comptroller(pool, asset, cDAI, priceOracle);
   }
 
   /**
    * @return Current Asset balance of the user as a decimal, eg. 1.0
    */
   async assetBalance(user:SignerOrAddress): Promise<NumberOrString> {
-    if (this.asset == null) {
-      if (typeof(user) === 'string') {
-        return this.fromBigNum(await ethers.getDefaultProvider().getBalance(user));
-      }
-      return this.fromBigNum(await user.getBalance());
-    }
     return await this.asset.balanceOf(user);
   }
 
@@ -121,35 +106,11 @@ export class Comptroller extends ContractBase {
   }
 
   /**
-   * Calls payable mint on the CToken, which means CToken must be CEther
-   */
-  async mintEther(user:SignerOrAddress, ethAmount:NumberOrString) {
-    if (this.asset != null) {
-      throw new Error("Asset is not CEther");
-    }
-    const wei = toWei(ethAmount);
-    await this.yieldToken.contract.connect(user).mint({value: wei});
-  }
-
-  /**
    * Calls CErc20 mint() on the CToken, which means CToken must be CErc20 (like cDAI)
    */
-  async mintERC20(user:SignerOrAddress, amount:NumberOrString) {
-    if (this.asset == null) {
-      throw new Error("Asset is not CErc20");
-    }
+  async mint(user:SignerOrAddress, amount:NumberOrString) {
     const assetAmount = this.asset.toBigNum(amount);
     await this.asset.approve(user, this.yieldToken.address, amount);
     await this.yieldToken.contract.connect(user).mint(assetAmount);
-  }
-
-  /**
-   * Mints either CErc20 or CEther tokens depending on the underlying CToken
-   */
-  async mint(user:SignerOrAddress, amount:NumberOrString) {
-    if (this.asset == null) {
-      return await this.mintEther(user, amount);
-    }
-    return await this.mintERC20(user, amount);
   }
 }
