@@ -43,7 +43,8 @@ describe("Tempus Pool", async () => {
 
     maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
     const names = generateTempusSharesNames("aToken", "aTKN", maturityTime);
-    pool = await TempusPool.deployAave(aave.yieldToken, aave.priceOracle, maturityTime, names);
+    const yieldEst = 0.1;
+    pool = await TempusPool.deployAave(aave.yieldToken, aave.priceOracle, maturityTime, yieldEst, names);
   }
 
   async function createLidoPool(depositToUser:number = 0) {
@@ -58,7 +59,8 @@ describe("Tempus Pool", async () => {
 
     maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
     const names = generateTempusSharesNames("Lido staked token", "stTKN", maturityTime);
-    pool = await TempusPool.deployLido(lido.yieldToken, lido.priceOracle, maturityTime, names);
+    const yieldEst = 0.1;
+    pool = await TempusPool.deployLido(lido.yieldToken, lido.priceOracle, maturityTime, yieldEst, names);
   }
 
   describe("Deposit AAVE", async () =>

@@ -100,6 +100,17 @@ interface ITempusPool {
     /// @return Initial interest rate of the underlying pool
     function initialInterestRate() external view returns (uint256);
 
-    /// @return Rate of exchanging one Tempus Yield Share into Yield Bearing Token
-    function pricePerYieldShare() external view returns (uint256);
+    /// @return Rate of one Tempus Yield Share expressed in Asset Tokens
+    function pricePerYieldShare() external returns (uint256);
+
+    /// @return Rate of one Tempus Principal Share expressed in Asset Tokens
+    function pricePerPrincipalShare() external returns (uint256);
+
+    /// @return Rate of one Tempus Yield Share expressed in Asset Tokens,
+    /// @dev calculated with stored interest rates
+    function pricePerYieldShareStored() external view returns (uint256);
+
+    /// @return Rate of one Tempus Principal Share expressed in Asset Tokens
+    /// @dev calculated with stored interest rates
+    function pricePerPrincipalShareStored() external view returns (uint256);
 }

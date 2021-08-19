@@ -29,7 +29,8 @@ describe("Tempus Pool (Compound)", async () => {
 
     maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
     const names = generateTempusSharesNames("cToken", "cTKN", maturityTime);
-    pool = await TempusPool.deployCompound(compound.yieldToken, compound.priceOracle, maturityTime, names);
+    const yieldEst = 0.1;
+    pool = await TempusPool.deployCompound(compound.yieldToken, compound.priceOracle, maturityTime, yieldEst, names);
   }
 
   describe("Deposit Compound", async () =>

@@ -12,8 +12,11 @@ contract YieldShare is PoolShare {
         string memory symbol
     ) PoolShare(ShareKind.Yield, _pool, name, symbol) {}
 
-    /// @dev This is for Curve api support.
-    function getPricePerFullShare() public view override returns (uint256) {
+    function getPricePerFullShare() public override returns (uint256) {
         return pool.pricePerYieldShare();
+    }
+
+    function getPricePerFullShareStored() public view override returns (uint256) {
+        return pool.pricePerYieldShareStored();
     }
 }

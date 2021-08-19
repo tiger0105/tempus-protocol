@@ -36,7 +36,8 @@ export class LidoTestPool extends ITestPool
       yieldName: this.yieldName, 
       yieldSymbol: this.yieldName
     };
-    this.tempus = await TempusPool.deployLido(this.lido.yieldToken, this.lido.priceOracle, this.maturityTime, names);
+    const yieldEst = 0.1;
+    this.tempus = await TempusPool.deployLido(this.lido.yieldToken, this.lido.priceOracle, this.maturityTime, yieldEst, names);
     return this.tempus;
   }
   async setInterestRate(rate:number): Promise<void> {

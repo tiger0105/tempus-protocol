@@ -30,16 +30,20 @@ describe("Tempus Pool (YieldShare)", async () => {
 
     let maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
     const names = generateTempusSharesNames("aToken", "aTKN", maturityTime);
-    pool = await TempusPool.deployAave(aave.yieldToken, aave.priceOracle, maturityTime, names);
+    const yieldEst = 0.1;
+    pool = await TempusPool.deployAave(aave.yieldToken, aave.priceOracle, maturityTime, yieldEst, names);
   }
 
   describe("Deploy", async () =>
   {
-    it("Should have 1.0 Principal rate and 0.0 Yield rate at init", async () =>
+    it("correct rates for Yields and Principals", async () =>
     {
       await createAavePool();
-      expect(await pool.principalShare.getPricePerFullShare()).to.equal(1.0);
-      expect(await pool.yieldShare.getPricePerFullShare()).to.equal(0.0);
+      let principalPrice:number = +await pool.principalShare.getPricePerFullShareStored();
+      let yieldsPrice:number = +await pool.yieldShare.getPricePerFullShareStored();
+      expect(principalPrice).to.be.within(0.9090909090, 0.9090909091);
+      expect(yieldsPrice).to.be.within(0.090909090, 0.090909091);
+      expect(principalPrice + yieldsPrice).to.be.equal(1);
     });
   });
 

@@ -33,6 +33,8 @@ abstract contract TempusPool is ITempusPool, Ownable {
     IERC20 public immutable override principalShare;
     IERC20 public immutable override yieldShare;
 
+    uint256 private immutable initialEstimatedYield;
+
     bool public override matured;
 
     struct FeesConfig {
@@ -56,11 +58,17 @@ abstract contract TempusPool is ITempusPool, Ownable {
     /// @param bToken backing token (or zero address if ETH)
     /// @param oracle the price oracle correspoding to the token
     /// @param maturity maturity time of this pool
+    /// @param estimatedFinalYield estimated yield for the whole lifetime of the pool
+    /// @param principalName name of Tempus Principal Share
+    /// @param principalSymbol symbol of Tempus Principal Share
+    /// @param yieldName name of Tempus Yield Share
+    /// @param yieldSymbol symbol of Tempus Yield Share
     constructor(
         address token,
         address bToken,
         IPriceOracle oracle,
         uint256 maturity,
+        uint256 estimatedFinalYield,
         string memory principalName,
         string memory principalSymbol,
         string memory yieldName,
@@ -78,6 +86,8 @@ abstract contract TempusPool is ITempusPool, Ownable {
 
         principalShare = new PrincipalShare(this, principalName, principalSymbol);
         yieldShare = new YieldShare(this, yieldName, yieldSymbol);
+
+        initialEstimatedYield = estimatedFinalYield;
     }
 
     function depositToUnderlying(uint256 amount) internal virtual returns (uint256 mintedYieldTokenAmount);
@@ -287,12 +297,73 @@ abstract contract TempusPool is ITempusPool, Ownable {
         return priceOracle.storedInterestRate(yieldBearingToken);
     }
 
-    function pricePerYieldShare() public view override returns (uint256) {
-        uint256 currentRate = currentInterestRate();
-        uint256 initialRate = initialInterestRate;
+    function currentYield(uint256 interestRate) private view returns (uint256) {
+        uint256 currentRate = interestRate;
+        if (matured && currentRate > maturityInterestRate) {
+            currentRate = maturityInterestRate;
+        }
 
-        // TODO: Not finished, needs additional testing later
-        uint256 rate = (currentRate - initialRate).divf18(initialRate);
+        uint256 rate = (currentRate - initialInterestRate).divf18(initialInterestRate);
         return rate;
+    }
+
+    function currentYield() private returns (uint256) {
+        return currentYield(priceOracle.updateInterestRate(yieldBearingToken));
+    }
+
+    function currentYieldStored() private view returns (uint256) {
+        return currentYield(priceOracle.storedInterestRate(yieldBearingToken));
+    }
+
+    function estimatedYield() private returns (uint256) {
+        return estimatedYield(currentYield());
+    }
+
+    function estimatedYieldStored() private view returns (uint256) {
+        return estimatedYield(currentYieldStored());
+    }
+
+    function estimatedYield(uint256 yieldCurrent) private view returns (uint256) {
+        if (matured) {
+            return yieldCurrent;
+        }
+        uint256 currentTime = block.timestamp;
+        uint256 timeToMaturity = (maturityTime > currentTime) ? (maturityTime - currentTime) : 0;
+        uint256 poolDuration = maturityTime - startTime;
+
+        return yieldCurrent + timeToMaturity.divf18(poolDuration).mulf18(initialEstimatedYield);
+    }
+
+    /// Caluculations for Pricint Tmpus Yields and Tempus Principals
+    /// pricePerYield + pricePerPrincipal = 1 + currentYield     (1)
+    /// pricePerYield : pricePerPrincipal = estimatedYield : 1   (2)
+    /// pricePerYield = pricePerPrincipal * estimatedYield       (3)
+    /// using (3) in (1) we get:
+    /// pricePerPrincipal * (1 + estimatedYield) = 1 + currentYield
+    /// pricePerPrincipal = (1 + currentYield) / (1 + estimatedYield)
+    /// pricePerYield = (1 + currentYield) * estimatedYield() / (1 + estimatedYield)
+
+    function pricePerYieldShare(uint256 currYield, uint256 estYield) private pure returns (uint256) {
+        return (estYield.mulf18(Fixed256x18.ONE + currYield)).divf18(Fixed256x18.ONE + estYield);
+    }
+
+    function pricePerPrincipalShare(uint256 currYield, uint256 estYield) private pure returns (uint256) {
+        return (Fixed256x18.ONE + currYield).divf18(Fixed256x18.ONE + estYield);
+    }
+
+    function pricePerYieldShare() external override returns (uint256) {
+        return pricePerYieldShare(currentYield(), estimatedYield());
+    }
+
+    function pricePerYieldShareStored() external view override returns (uint256) {
+        return pricePerYieldShare(currentYieldStored(), estimatedYieldStored());
+    }
+
+    function pricePerPrincipalShare() external override returns (uint256) {
+        return pricePerPrincipalShare(currentYield(), estimatedYield());
+    }
+
+    function pricePerPrincipalShareStored() external view override returns (uint256) {
+        return pricePerPrincipalShare(currentYieldStored(), estimatedYieldStored());
     }
 }

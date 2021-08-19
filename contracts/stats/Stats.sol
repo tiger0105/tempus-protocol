@@ -16,8 +16,8 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
         uint256 principalShareTotalSupply = pool.principalShare().totalSupply();
         uint256 yieldShareTotalSupply = pool.yieldShare().totalSupply();
         // TODO: this assumption that TPS price is always 1e18 is only correct with the current implementation of pricePerPoolShare which is probably not good
-        uint256 pricePerPrincipalShare = 1e18;
-        uint256 pricePerYieldShare = pool.pricePerYieldShare();
+        uint256 pricePerPrincipalShare = pool.pricePerPrincipalShareStored();
+        uint256 pricePerYieldShare = pool.pricePerYieldShareStored();
 
         return
             calculateTvlInBackingTokens(
