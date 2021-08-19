@@ -4,7 +4,7 @@ import { Signer, SignerOrAddress } from "../utils/ContractBase";
 import { TempusPool } from "../utils/TempusPool";
 import { ERC20 } from "../utils/ERC20";
 import { NumberOrString } from "../utils/Decimal";
-import { getRevertMessage } from "../utils/Utils";
+import { getRevertMessage, increaseTime } from "../utils/Utils";
 
 export enum PoolType
 {
@@ -176,6 +176,14 @@ export abstract class ITestPool {
   }
 
   /**
+   * Fast forwards time to after maturity and Finalized the pool
+   */
+  async fastForwardToMaturity(): Promise<void> {
+    await increaseTime(this.maturityTime);
+    return this.tempus.finalize();
+  }
+
+  /**
    * Typical setup call for most tests
    * 1. Deposits Asset into underlying pool by Owner
    * 1. Transfers Assets from Owner to depositors[]
@@ -191,7 +199,7 @@ export abstract class ITestPool {
     for (let depositor of depositors) { // initial deposit for users
       const user = depositor[0];
       const amount = depositor[1];
-      await this.asset().transfer(owner, user, 10000); // TODO: make this a parameter?
+      await this.asset().transfer(owner, user, 100000); // TODO: make this a parameter?
       await this.tempus.yieldBearing.transfer(owner, user, amount);
     }
   }
