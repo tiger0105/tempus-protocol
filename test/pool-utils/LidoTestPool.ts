@@ -1,10 +1,13 @@
+import { Transaction } from "ethers";
+import { ethers } from "hardhat";
 import { ITestPool, PoolType } from "./ITestPool";
 import { Signer } from "../utils/ContractBase";
 import { ERC20 } from "../utils/ERC20";
 import { TempusPool } from "../utils/TempusPool";
-import { blockTimestamp } from "../utils/Utils";
+import { blockTimestamp, getRevertMessage } from "../utils/Utils";
 import { Lido } from "../utils/Lido";
-import { NumberOrString } from "../utils/Decimal";
+import { fromWei, NumberOrString, toWei } from "../utils/Decimal";
+import { expect } from "chai";
 
 export class LidoTestPool extends ITestPool
 {
@@ -18,6 +21,10 @@ export class LidoTestPool extends ITestPool
   async yieldTokenBalance(user:Signer): Promise<NumberOrString> {
     return this.lido.balanceOf(user);
   }
+  async backingTokenBalance(user:Signer): Promise<NumberOrString> {
+    const ethBalance = await ethers.provider.getBalance(user.address);
+    return fromWei(ethBalance);
+  }
   async createTempusPool(initialRate:number, poolDurationSeconds:number): Promise<TempusPool> {
     this.lido = await Lido.create(1000000);
     await this.setInterestRate(initialRate);
@@ -29,7 +36,7 @@ export class LidoTestPool extends ITestPool
       yieldName: this.yieldName, 
       yieldSymbol: this.yieldName
     };
-    this.tempus = await TempusPool.deploy(this.lido.yieldToken, this.lido.priceOracle, this.maturityTime, names);
+    this.tempus = await TempusPool.deployLido(this.lido.yieldToken, this.lido.priceOracle, this.maturityTime, names);
     return this.tempus;
   }
   async setInterestRate(rate:number): Promise<void> {
@@ -37,5 +44,25 @@ export class LidoTestPool extends ITestPool
   }
   async deposit(user:Signer, amount:number): Promise<void> {
     await this.lido.submit(user, amount);
+  }
+  async depositBT(user:Signer, backingTokenAmount:number, recipient:Signer = user): Promise<Transaction> {
+    // sends ETH value with tx
+    return this.tempus.depositBackingToken(user, backingTokenAmount, recipient, backingTokenAmount);
+  }
+  async expectDepositBT(user:Signer, backingTokenAmount:number, recipient:Signer = user): Promise<Chai.Assertion> {
+    try {
+      const preDepositBackingBalance = await this.backingTokenBalance(user);
+      const tx = await this.depositBT(user, backingTokenAmount, recipient);
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash)
+      
+      const txEthGasFee = receipt.gasUsed.mul(tx.gasPrice);
+      const postDepositBackingBalance = await this.backingTokenBalance(user);
+      const backingBalanceDelta = fromWei(toWei(preDepositBackingBalance).sub(toWei(postDepositBackingBalance)).sub(txEthGasFee));
+      expect(+backingBalanceDelta).to.equal(backingTokenAmount);
+      
+      return expect('success');
+    } catch(e) {
+      return expect(getRevertMessage(e));
+    }
   }
 }

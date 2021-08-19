@@ -22,7 +22,7 @@ async function deployATokenTempusPool(aave: Aave, poolDurationSeconds: number) {
   const maturityTime = await blockTimestamp() + poolDurationSeconds;
   
   const names = generateTempusSharesNames("aToken", "aTKN", maturityTime);
-  const pool:TempusPool = await TempusPool.deploy(aave.yieldToken, aave.priceOracle, maturityTime, names);
+  const pool:TempusPool = await TempusPool.deployAave(aave.yieldToken, aave.priceOracle, maturityTime, names);
 
   console.log('AToken TempusPool deployed with length %i sec to: %s', poolDurationSeconds, pool.address);
 }

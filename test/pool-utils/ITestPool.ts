@@ -3,7 +3,7 @@ import { Transaction } from "ethers";
 import { Signer } from "../utils/ContractBase";
 import { TempusPool } from "../utils/TempusPool";
 import { ERC20 } from "../utils/ERC20";
-import { NumberOrString } from "../utils/Decimal";
+import { fromWei, NumberOrString, toWei } from "../utils/Decimal";
 import { getRevertMessage } from "../utils/Utils";
 
 export enum PoolType
@@ -76,19 +76,61 @@ export abstract class ITestPool {
   /**
    * Deposit YieldBearingTokens into TempusPool
    */
-  async depositYBT(user:Signer, yieldBearingAmount:number, recipient:Signer = null): Promise<Transaction> {
-    return this.tempus.deposit(user, yieldBearingAmount, (recipient !== null ? recipient : user));
+  async depositYBT(user:Signer, yieldBearingAmount:number, recipient:Signer = user): Promise<Transaction> {
+    return this.tempus.deposit(user, yieldBearingAmount, recipient);
   }
 
+  /**
+   * Deposit BackingTokens into TempusPool
+   */
+   async depositBT(user:Signer, backingTokenAmount:number, recipient:Signer = user): Promise<Transaction> {
+    return this.tempus.depositBackingToken(user, backingTokenAmount, recipient);
+  }
+
+  /**
+   * Redeems TempusShares to BackingTokens
+   */
+   async redeemToBT(user:Signer, principalAmount:number, yieldAmount:number): Promise<Transaction> {
+    return this.tempus.redeemToBackingToken(user, principalAmount, yieldAmount);
+  }
+
+  /**
+   * @return Current Backing Token balance of the user
+   */
+   async backingTokenBalance(user:Signer): Promise<NumberOrString> {
+    return this.asset().balanceOf(user);
+  }
+  
   /**
    * Deposit YieldBearingTokens into TempusPool, and return a testable `expect()` object.
    * This is set up so we are able to report TEST failure File and Line:
    * @example (await pool.expectDepositYBT(user, 100)).to.equal('success');
    * @returns ERROR message, or FALSE on success
    */
-  async expectDepositYBT(user:Signer, yieldBearingAmount:number, recipient:Signer = null): Promise<Chai.Assertion> {
+  async expectDepositYBT(user:Signer, yieldBearingAmount:number, recipient:Signer = user): Promise<Chai.Assertion> {
     try {
       await this.depositYBT(user, yieldBearingAmount, recipient);
+      return expect('success');
+    } catch(e) {
+      return expect(getRevertMessage(e));
+    }
+  }
+
+  /**
+   * Deposit BackingTokens into TempusPool, and return a testable `expect()` object.
+   * This is set up so we are able to report TEST failure File and Line:
+   * @dev This also asserts backing balance is properly deducted
+   * @example (await pool.expectDepositBT(user, 100)).to.equal('success');
+   * @returns ERROR message, or FALSE on success
+   */
+  async expectDepositBT(user:Signer, backingTokenAmount:number, recipient:Signer = user): Promise<Chai.Assertion> {
+    try {
+      const preDepositBackingBalance = await this.backingTokenBalance(user);
+      await this.depositBT(user, backingTokenAmount, recipient);
+      const postDepositBackingBalance = await this.backingTokenBalance(user);
+      const backingBalanceDelta = fromWei(toWei(preDepositBackingBalance).sub(toWei(postDepositBackingBalance)));
+      expect(+backingBalanceDelta).to.equal(backingTokenAmount);
+      
       return expect('success');
     } catch(e) {
       return expect(getRevertMessage(e));
@@ -104,8 +146,8 @@ export abstract class ITestPool {
   async setupAccounts(owner:Signer, depositors:[Signer,number][]): Promise<void> {
     if (!this.tempus)
       throw new Error('setupAccounts: createTempusPool not called');
-
-    const totalDeposit = depositors.reduce((sum, current) => sum + current[1], 500);
+    
+    const totalDeposit = depositors.reduce((sum, current) => sum + current[1], 100);
     await this.deposit(owner, totalDeposit);
 
     for (let depositor of depositors) { // initial deposit for users

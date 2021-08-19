@@ -1,4 +1,3 @@
-import { ethers } from "hardhat";
 import { ITestPool, PoolType } from "./ITestPool";
 import { AaveTestPool } from "./AaveTestPool";
 import { LidoTestPool } from "./LidoTestPool";
@@ -7,7 +6,7 @@ import { CompoundTestPool } from "./CompoundTestPool";
 export function createTestPool(type:PoolType): ITestPool {
     switch (type) {
       case PoolType.Aave: return new AaveTestPool();
-      case PoolType.Lido: return new LidoTestPool();
+      case PoolType.Lido: return new LidoTestPool(); 
       case PoolType.Compound: return new CompoundTestPool();
     }
   }

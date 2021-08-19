@@ -39,8 +39,8 @@ export class TempusPool extends ContractBase {
   yieldShare:PoolShare;
   priceOracle:IPriceOracle;
 
-  constructor(pool:Contract, yieldBearing:ERC20, principalShare:PoolShare, yieldShare:PoolShare, priceOracle:IPriceOracle) {
-    super("TempusPool", 18, pool);
+  constructor(contractName: string, pool:Contract, yieldBearing:ERC20, principalShare:PoolShare, yieldShare:PoolShare, priceOracle:IPriceOracle) {
+    super(contractName, 18, pool);
     this.yieldBearing = yieldBearing;
     this.principalShare = principalShare;
     this.yieldShare = yieldShare;
@@ -51,22 +51,41 @@ export class TempusPool extends ContractBase {
   }
 
   /**
-   * @returns Number of YBT deposited into this TempusPool contract
-   */
-  async contractBalance(): Promise<NumberOrString> {
-    return this.yieldBearing.balanceOf(this.contract.address);
-  }
-
-  /**
-   * Deploys TempusPool
+   * Deploys AaveTempusPool
    * @param yieldToken The yield bearing token, such as aave.earn (AToken)
-   * @param priceOracle Price oracle name which returns the current Interest Rate from yieldTokens, such as AavePriceOracle
+   * @param priceOracle Price oracle name which returns the current exchange rate from yieldTokens, such as AavePriceOracle
    * @param startTime Starting time of the pool
    * @param maturityTime Maturity time of the pool
    */
-  static async deploy(yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number, tempusShareNames: TempusSharesNames): Promise<TempusPool> {
+  static async deployAave(yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number, tempusShareNames: TempusSharesNames): Promise<TempusPool> {
+    return TempusPool.deploy("AaveTempusPool", yieldToken, priceOracle, maturityTime, tempusShareNames);
+  }
+
+  /**
+   * Deploys CompoundTempusPool
+   * @param yieldToken The yield bearing token, such as cDai
+   * @param priceOracle Price oracle name which returns the current Interest Rate from yieldTokens, such as CompoundPriceOracle
+   * @param startTime Starting time of the pool
+   * @param maturityTime Maturity time of the pool
+   */
+  static async deployCompound(yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number, tempusShareNames: TempusSharesNames): Promise<TempusPool> {
+    return TempusPool.deploy("CompoundTempusPool", yieldToken, priceOracle, maturityTime, tempusShareNames);
+  }
+
+  /**
+   * Deploys LidoTempusPool
+   * @param contractName Name of the specific TempusPool contract implementation
+   * @param priceOracle Price oracle name which returns the current exchange rate from yieldTokens, such as AavePriceOracle
+   * @param maturityTime Maturity time of the pool
+   * @param tempusShareNames Names of TPS & TYS
+   */
+  static async deployLido(yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number, tempusShareNames: TempusSharesNames): Promise<TempusPool> {
+    return TempusPool.deploy("LidoTempusPool", yieldToken, priceOracle, maturityTime, tempusShareNames);
+  }
+
+  private static async deploy(contractName: string, yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number, tempusShareNames: TempusSharesNames): Promise<TempusPool> {
     const pool = await ContractBase.deployContract(
-      "TempusPool", 
+      contractName,
       yieldToken.address, 
       priceOracle.address, 
       maturityTime,
@@ -75,13 +94,21 @@ export class TempusPool extends ContractBase {
       tempusShareNames.yieldName,
       tempusShareNames.yieldSymbol
     );
+
     const principalShare = await PoolShare.attach("principal", await pool.principalShare());
     const yieldShare = await PoolShare.attach("yield", await pool.yieldShare());
-    return new TempusPool(pool, yieldToken, principalShare, yieldShare, priceOracle);
+    return new TempusPool(contractName, pool, yieldToken, principalShare, yieldShare, priceOracle);
   }
 
   /**
-   * Deposits backing asset tokens into Tempus Pool on behalf of user
+   * @returns Number of YBT deposited into this TempusPool contract
+   */
+  async contractBalance(): Promise<NumberOrString> {
+    return this.yieldBearing.balanceOf(this.contract.address);
+  }
+
+  /**
+   * Deposits yield bearing tokens into Tempus Pool on behalf of user
    * @param user User who is depositing
    * @param yieldBearingAmount Amount of Yield Bearing Tokens to deposit
    * @param recipient Address or User who will receive the minted shares
@@ -94,6 +121,26 @@ export class TempusPool extends ContractBase {
     } catch(e) {
       throw new Error("TempusPool.deposit failed: " + e.message);
     }
+  }
+
+  /**
+  * Deposits backing tokens into Tempus Pool on behalf of user
+  * @param user User who is depositing
+  * @param yieldBearingAmount Amount of Backing Tokens to deposit
+  * @param recipient Address or User who will receive the minted shares
+  */
+  async depositBackingToken(user:SignerOrAddress, backingTokenAmount:NumberOrString, recipient:SignerOrAddress, ethValue: NumberOrString = 0): Promise<Transaction> {
+    return this.connect(user).depositBackingToken(this.toBigNum(backingTokenAmount), addressOf(recipient), { value : this.toBigNum(ethValue)});
+  }
+
+  /**
+   * Reedem shares from the Tempus Pool to Backing Tokens
+   * @param user User who is depositing
+   * @param principalAmount How many principal shares to redeem
+   * @param yieldAmount How many yield shares to redeem
+   */
+  async redeemToBackingToken(user:SignerOrAddress, principalAmount:NumberOrString, yieldAmount:NumberOrString): Promise<Transaction> {
+    return this.contract.connect(user).redeemToBackingToken(this.toBigNum(principalAmount), this.toBigNum(yieldAmount));
   }
 
   /**

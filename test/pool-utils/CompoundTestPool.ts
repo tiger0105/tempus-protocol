@@ -30,7 +30,7 @@ export class CompoundTestPool extends ITestPool
       yieldName: this.yieldName, 
       yieldSymbol: this.yieldName
     };
-    this.tempus = await TempusPool.deploy(this.compound.yieldToken, this.compound.priceOracle, this.maturityTime, names);
+    this.tempus = await TempusPool.deployCompound(this.compound.yieldToken, this.compound.priceOracle, this.maturityTime, names);
     return this.tempus;
   }
   async setInterestRate(rate:number): Promise<void> {

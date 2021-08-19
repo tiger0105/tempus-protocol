@@ -35,6 +35,11 @@ interface ITempusPool {
     /// of principal and interest shares.
     function yieldBearingToken() external view returns (address);
 
+    /// @dev This is the address of the actual backing asset token
+    ///      in the case of ETH, this address will be 0
+    /// @return Address of the Backing Token
+    function backingToken() external view returns (address);
+
     /// @return This TempusPool's Tempus Principal Share (TPS)
     function principalShare() external view returns (IERC20);
 
@@ -65,6 +70,11 @@ interface ITempusPool {
     /// @return Amount of TPS and TYS minted to `recipient`
     function deposit(uint256 yieldTokenAmount, address recipient) external returns (uint256);
 
+    /// @dev Deposits backing token to the underlying protocol, and then to Tempus Pool.
+    /// @param backingTokenAmount amount of Backing Tokens to be deposit into the underlying protocol
+    /// @return Amount of TPS and TYS minted to `msg.sender`
+    function depositBackingToken(uint256 backingTokenAmount, address recipient) external payable returns (uint256);
+
     /// @dev Redeem yield bearing tokens from this TempusPool
     ///      msg.sender will receive the YBT
     ///      NOTE Before maturity, principalAmount must equal to yieldAmount.
@@ -72,6 +82,15 @@ interface ITempusPool {
     /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem for YBT
     /// @return Amount of Yield Bearing Tokens redeemed to `msg.sender`
     function redeem(uint256 principalAmount, uint256 yieldAmount) external returns (uint256);
+
+    /// @dev Redeem TPS+TYS held by msg.sender into backing tokens
+    ///      `msg.sender` must approve TPS and TYS amounts to this TempusPool.
+    ///      `msg.sender` will receive the backing tokens
+    ///      NOTE Before maturity, principalAmount must equal to yieldAmount.
+    /// @param principalAmount Amount of Tempus Principal Shares (TPS) to redeem
+    /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem
+    /// @return Amount of backing tokens redeemed to `msg.sender`
+    function redeemToBackingToken(uint256 principalAmount, uint256 yieldAmount) external payable returns (uint256);
 
     /// The current interest rate of the underlying pool
     /// Calling this can accrue interest in the underlying pool
