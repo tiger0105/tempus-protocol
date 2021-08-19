@@ -1,10 +1,10 @@
-
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { ITestPool, PoolType } from "./pool-utils/ITestPool";
 import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
 
 import { Signer } from "./utils/ContractBase";
+import { toWei } from "./utils/Decimal";
 import { increaseTime } from "./utils/Utils";
 
 describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
@@ -14,6 +14,19 @@ describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
   beforeEach(async () =>
   {
     [owner, user, user2] = await ethers.getSigners();
+  });
+
+  it("Should emit correct event on deposit", async () =>
+  {
+    await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/);
+    await pool.setupAccounts(owner, [[user, 100]]);
+    await expect(pool.depositYBT(user, 100)).to.emit(pool.tempus.contract, 'Deposited').withArgs(
+      user.address,
+      user.address,
+      toWei(100),
+      toWei(100),
+      toWei(1.0)
+    );
   });
 
   it("Should allow depositing 100 (initialRate=1.0)", async () =>

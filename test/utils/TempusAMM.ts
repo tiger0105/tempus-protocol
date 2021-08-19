@@ -6,6 +6,7 @@ import { ERC20 } from "./ERC20";
 import { MockProvider } from "@ethereum-waffle/provider";
 import { deployMockContract } from "@ethereum-waffle/mock-contract";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signers";
+import { blockTimestamp } from "./Utils";
 
 const WETH_ARTIFACTS = require("../../artifacts/@balancer-labs/v2-solidity-utils/contracts/misc/IWETH.sol/IWETH");
 
@@ -177,7 +178,7 @@ export class TempusAMM extends ContractBase {
       toInternalBalance: false
     };
     const minimumReturn = 1;
-    const deadline = Math.floor(new Date().getTime() / 1000) * 2; // current_unix_timestamp * 2
+    const deadline = await blockTimestamp() + 60*60; // deadline in one hour
     await this.vault.connect(from).swap(singleSwap, fundManagement, minimumReturn, deadline);
   }
 
@@ -204,7 +205,7 @@ export class TempusAMM extends ContractBase {
       toInternalBalance: false
     };
     const maximumIn = toWei(1000);
-    const deadline = Math.floor(new Date().getTime() / 1000) * 2; // current_unix_timestamp * 2
+    const deadline = await blockTimestamp() + 60*60; // deadline in one hour
     await this.vault.connect(from).swap(singleSwap, fundManagement, maximumIn, deadline);
   }
 

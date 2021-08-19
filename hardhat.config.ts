@@ -96,7 +96,7 @@ module.exports = {
               : undefined,
           }
         : undefined,
-      accounts: TEST_ACCOUNTS_KEYS.map(privateKey => ({ privateKey, balance: "10000000000000000000000" }))
+      accounts: TEST_ACCOUNTS_KEYS.map(privateKey => ({ privateKey, balance: "1000000000000000000000000" }))
     }
   },
   namedAccounts: {
