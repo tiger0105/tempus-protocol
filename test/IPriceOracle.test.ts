@@ -47,7 +47,7 @@ describe("Tempus Pool", async () => {
     
     it("Should give correct Interest Rate from Compound", async () =>
     {
-      let compound = await Comptroller.create('CErc20', 1000000);
+      let compound = await Comptroller.create(1000000);
       const yieldToken = compound.yieldToken;
       let interestRate = await compound.priceOracle.updateInterestRate(yieldToken);
       let numAssetTokens = await compound.priceOracle.numAssetsPerYieldToken(2, interestRate);
