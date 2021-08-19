@@ -1,5 +1,5 @@
 import { ITestPool, PoolType } from "./ITestPool";
-import { Signer } from "../utils/ContractBase";
+import { Signer, SignerOrAddress } from "../utils/ContractBase";
 import { ERC20 } from "../utils/ERC20";
 import { TempusPool } from "../utils/TempusPool";
 import { blockTimestamp } from "../utils/Utils";
@@ -16,7 +16,7 @@ export class CompoundTestPool extends ITestPool
   public asset(): ERC20 {
     return this.compound.asset;
   }
-  async yieldTokenBalance(user:Signer): Promise<NumberOrString> {
+  async yieldTokenBalance(user:SignerOrAddress): Promise<NumberOrString> {
     return this.compound.yieldToken.balanceOf(user);
   }
   async createTempusPool(initialRate:number, poolDurationSeconds:number): Promise<TempusPool> {

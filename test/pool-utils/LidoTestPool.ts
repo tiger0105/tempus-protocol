@@ -1,7 +1,7 @@
 import { Transaction } from "ethers";
 import { ethers } from "hardhat";
 import { ITestPool, PoolType } from "./ITestPool";
-import { Signer } from "../utils/ContractBase";
+import { Signer, SignerOrAddress } from "../utils/ContractBase";
 import { ERC20 } from "../utils/ERC20";
 import { TempusPool } from "../utils/TempusPool";
 import { blockTimestamp, getRevertMessage } from "../utils/Utils";
@@ -18,7 +18,7 @@ export class LidoTestPool extends ITestPool
   public asset(): ERC20 {
     return this.lido.asset;
   }
-  async yieldTokenBalance(user:Signer): Promise<NumberOrString> {
+  async yieldTokenBalance(user:SignerOrAddress): Promise<NumberOrString> {
     return this.lido.balanceOf(user);
   }
   async backingTokenBalance(user:Signer): Promise<NumberOrString> {
