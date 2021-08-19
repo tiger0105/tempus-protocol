@@ -3,14 +3,26 @@ pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 import "./amm/interfaces/ITempusAMM.sol";
 import "./amm/interfaces/IVault.sol";
 import "./ITempusPool.sol";
 import "./math/Fixed256x18.sol";
+import "./factories/ITempusPoolFactory.sol";
 
-contract TempusController {
+contract TempusController is Ownable {
     using Fixed256x18 for uint256;
     using SafeERC20 for IERC20;
+
+    /// event emitted on TempusPool deployment
+    /// @param pool tempus pool just deployed
+    /// @param yieldToken yield bearing token in underlying protocol
+    /// @param backingToken backing token for @param yieldToken
+    /// @param maturity maturity time
+    event TempusPoolDeployed(ITempusPool pool, address yieldToken, address backingToken, uint256 maturity);
+
+    mapping(bytes32 => ITempusPoolFactory) private factories;
 
     // TODO: we need to add a reference to ITempusPool in TempusAMM... This would also mean the we can remove the ITempusPool argument
 
@@ -175,5 +187,36 @@ contract TempusController {
         (balancesRatio[0], balancesRatio[1]) = rate > Fixed256x18.ONE
             ? (Fixed256x18.ONE, Fixed256x18.ONE.divf18(rate))
             : (rate, Fixed256x18.ONE);
+    }
+
+    function addFactory(ITempusPoolFactory factory) external onlyOwner {
+        require(factory.protocol() != bytes32(0), "Invalid protocol name!");
+        factories[factory.protocol()] = factory;
+    }
+
+    function deployTempusPool(
+        bytes32 protocol,
+        address token,
+        uint256 maturity,
+        uint256 estYield,
+        string memory principalName,
+        string memory principalSymbol,
+        string memory yieldName,
+        string memory yieldSymbol
+    ) external returns (ITempusPool tempusPool) {
+        ITempusPoolFactory factory = factories[protocol];
+        require(factory != ITempusPoolFactory(address(0)), "Protocol not supported!");
+
+        tempusPool = factory.deployPool(
+            token,
+            maturity,
+            estYield,
+            principalName,
+            principalSymbol,
+            yieldName,
+            yieldSymbol
+        );
+
+        emit TempusPoolDeployed(tempusPool, token, tempusPool.backingToken(), maturity);
     }
 }
