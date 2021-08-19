@@ -27,10 +27,12 @@ abstract contract PoolShare is ERC20OwnerMintableToken {
         pool = _pool;
     }
 
-    /// @dev Price per single share when exchanging back to Yield Bearing Tokens
-    ///      of the underlying pool.
-    ///      This is for Curve api support.
-    ///      Example: exchanging Tempus Yield Share to aDAI
+    /// @dev Price per single share expressed in Backing Tokens of the underlying pool.
+    ///      This is for the purpose of TempusAMM api support.
+    ///      Example: exchanging Tempus Yield Share to DAI
     /// @return 1e18 decimal conversion rate per share
-    function getPricePerFullShare() public view virtual returns (uint256);
+    function getPricePerFullShare() public virtual returns (uint256);
+
+    /// @return 1e18 decimal stored conversion rate per share
+    function getPricePerFullShareStored() public view virtual returns (uint256);
 }

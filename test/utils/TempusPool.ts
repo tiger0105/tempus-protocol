@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { BigNumber, BytesLike, Contract, Transaction } from "ethers";
-import { NumberOrString } from "./Decimal";
+import { NumberOrString, toWei } from "./Decimal";
 import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
 import { IPriceOracle } from "./IPriceOracle";
@@ -57,8 +57,8 @@ export class TempusPool extends ContractBase {
    * @param startTime Starting time of the pool
    * @param maturityTime Maturity time of the pool
    */
-  static async deployAave(yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number, tempusShareNames: TempusSharesNames): Promise<TempusPool> {
-    return TempusPool.deploy("AaveTempusPool", yieldToken, priceOracle, maturityTime, tempusShareNames);
+  static async deployAave(yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number, estimatedYield:number, tempusShareNames: TempusSharesNames): Promise<TempusPool> {
+    return TempusPool.deploy("AaveTempusPool", yieldToken, priceOracle, maturityTime, estimatedYield, tempusShareNames);
   }
 
   /**
@@ -68,8 +68,8 @@ export class TempusPool extends ContractBase {
    * @param startTime Starting time of the pool
    * @param maturityTime Maturity time of the pool
    */
-  static async deployCompound(yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number, tempusShareNames: TempusSharesNames): Promise<TempusPool> {
-    return TempusPool.deploy("CompoundTempusPool", yieldToken, priceOracle, maturityTime, tempusShareNames);
+  static async deployCompound(yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number, estimatedYield:number, tempusShareNames: TempusSharesNames): Promise<TempusPool> {
+    return TempusPool.deploy("CompoundTempusPool", yieldToken, priceOracle, maturityTime, estimatedYield, tempusShareNames);
   }
 
   /**
@@ -79,16 +79,17 @@ export class TempusPool extends ContractBase {
    * @param maturityTime Maturity time of the pool
    * @param tempusShareNames Names of TPS & TYS
    */
-  static async deployLido(yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number, tempusShareNames: TempusSharesNames): Promise<TempusPool> {
-    return TempusPool.deploy("LidoTempusPool", yieldToken, priceOracle, maturityTime, tempusShareNames);
+  static async deployLido(yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number, estimatedYield:number, tempusShareNames: TempusSharesNames): Promise<TempusPool> {
+    return TempusPool.deploy("LidoTempusPool", yieldToken, priceOracle, maturityTime, estimatedYield, tempusShareNames);
   }
 
-  private static async deploy(contractName: string, yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number, tempusShareNames: TempusSharesNames): Promise<TempusPool> {
+  private static async deploy(contractName: string, yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number, estimatedYield:number, tempusShareNames: TempusSharesNames): Promise<TempusPool> {
     const pool = await ContractBase.deployContract(
       contractName,
       yieldToken.address, 
       priceOracle.address, 
       maturityTime,
+      toWei(estimatedYield),
       tempusShareNames.principalName,
       tempusShareNames.principalSymbol,
       tempusShareNames.yieldName,

@@ -11,11 +11,24 @@ contract LidoTempusPool is TempusPool {
         ILido token,
         IPriceOracle oracle,
         uint256 maturity,
+        uint256 estYield,
         string memory principalName,
         string memory principalSymbol,
         string memory yieldName,
         string memory yieldSymbol
-    ) TempusPool(address(token), address(0), oracle, maturity, principalName, principalSymbol, yieldName, yieldSymbol) {
+    )
+        TempusPool(
+            address(token),
+            address(0),
+            oracle,
+            maturity,
+            estYield,
+            principalName,
+            principalSymbol,
+            yieldName,
+            yieldSymbol
+        )
+    {
         // TODO: consider adding sanity check for _lido.name() and _lido.symbol()
         lido = token;
     }

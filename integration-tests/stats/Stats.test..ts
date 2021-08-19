@@ -34,7 +34,8 @@ const setup = deployments.createFixture(async () => {
   const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
 
   const names = generateTempusSharesNames("Aave wrapped ether", "aWETH", maturityTime);
-  const tempusPool = await TempusPool.deployAave(aWethYieldToken, priceOracle, maturityTime, names);
+  const yieldEst = 0.1;
+  const tempusPool = await TempusPool.deployAave(aWethYieldToken, priceOracle, maturityTime, yieldEst, names);
   
   const stats = await ContractBase.deployContract("Stats");
 
