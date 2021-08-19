@@ -23,7 +23,7 @@ class DeployLocalForked {
     
     // Deploy Tempus pool backed by Aave (aDAI Token)
     const names = generateTempusSharesNames("aDai aave token", "aDai", maturityTime);
-    const tempusPool = await TempusPool.deploy(aDaiToken, priceOracle, maturityTime, names);
+    const tempusPool = await TempusPool.deployAave(aDaiToken, priceOracle, maturityTime, names);
 
     // Deploy stats contract
     const statistics = await ContractBase.deployContract("Stats");

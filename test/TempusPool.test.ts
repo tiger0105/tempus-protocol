@@ -43,7 +43,7 @@ describe("Tempus Pool", async () => {
 
     maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
     const names = generateTempusSharesNames("aToken", "aTKN", maturityTime);
-    pool = await TempusPool.deploy(aave.yieldToken, aave.priceOracle, maturityTime, names);
+    pool = await TempusPool.deployAave(aave.yieldToken, aave.priceOracle, maturityTime, names);
   }
 
   async function createLidoPool(depositToUser:number = 0) {
@@ -58,7 +58,7 @@ describe("Tempus Pool", async () => {
 
     maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
     const names = generateTempusSharesNames("Lido staked token", "stTKN", maturityTime);
-    pool = await TempusPool.deploy(lido.yieldToken, lido.priceOracle, maturityTime, names);
+    pool = await TempusPool.deployLido(lido.yieldToken, lido.priceOracle, maturityTime, names);
   }
 
   describe("Deposit AAVE", async () =>
@@ -343,55 +343,53 @@ describe("Tempus Pool", async () => {
     });
   });
 
-  describe("DepositWrapper AAVE", () =>
+  describe("Deposit Backing Tokens AAVE", () =>
   {
-    it("Should give appropriate shares after ASSET Wrapper deposit", async () =>
+    it("Should give appropriate shares after depositing Backing Tokens", async () =>
     {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/0);
       await expectUserState(pool, user, 0, 0, /*yieldBearing:*/0);
 
-      const wrapper = await ContractBase.deployContract("AaveDepositWrapper", pool.address);
-      let wrapperC = wrapper.connect(user);
-      let initialBalance = await aave.asset.balanceOf(user);
-      await aave.asset.approve(user, wrapper.address, 100);
-      await wrapperC.deposit(aave.toBigNum(100));
+      const initialBalance = await aave.asset.balanceOf(user);
+      
+      await aave.asset.approve(user, pool.address, 100);
+      await pool.depositBackingToken(user, 100, user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/0);
 
-      // withdraw
-      await pool.principalShare.approve(user, wrapper.address, 100);
-      await pool.yieldShare.approve(user, wrapper.address, 100);
-      await wrapperC.redeem(aave.toBigNum(100), aave.toBigNum(100));
+      await pool.principalShare.approve(user, pool.address, 100);
+      await pool.yieldShare.approve(user, pool.address, 100);
+      
+      await pool.redeemToBackingToken(user, 100, 100);
       expect(await aave.asset.balanceOf(user)).to.equal(initialBalance);
     });
 
-    it("Should redeem correct amount of ASSET with Yield", async () =>
+    it("Should redeem correct amount of Backing Tokens with Yield", async () =>
     {
       await createAavePool(/*liqudityIndex:*/1.0, /*depositToUser:*/0);
       await expectUserState(pool, user, 0, 0, /*yieldBearing:*/0);
 
-      const wrapper = await ContractBase.deployContract("AaveDepositWrapper", pool.address);
-      let wrapperC = wrapper.connect(user);
       let initialBalance = await aave.asset.balanceOf(user);
-      await aave.asset.approve(user, wrapper.address, 100);
-      await wrapperC.deposit(aave.toBigNum(100));
+      await aave.asset.approve(user, pool.address, 100);
+      await pool.depositBackingToken(user, 100, user);
       await expectUserState(pool, user, 100, 100, /*yieldBearing:*/0);
 
       // withdraw with additional yield
       await setInterestRate(1.5);
-      await pool.principalShare.approve(user, wrapper.address, 100);
-      await pool.yieldShare.approve(user, wrapper.address, 100);
-      await wrapperC.redeem(aave.toBigNum(100), aave.toBigNum(100));
+      await pool.principalShare.approve(user, pool.address, 100);
+      await pool.yieldShare.approve(user, pool.address, 100);
+      await pool.redeemToBackingToken(user, 100, 100);
       expect(await aave.asset.balanceOf(user)).to.equal(Number(initialBalance) + 50);
     });
   });
 
-  describe("Deposit ASSET Lido", async () =>
+  describe("Deposit Backing Tokens Lido", async () =>
   {
-    it("Should give appropriate shares after ASSET Wrapper deposit", async () =>
+    it("Should give appropriate shares after Backing Tokens deposit", async () =>
     {
       await createLidoPool();
-      const wrapper = await ContractBase.deployContract("LidoDepositWrapper", pool.address);
-      await wrapper.connect(user).deposit({value: lido.toBigNum(100)});
+      const depositAmount = 100;
+      await pool.depositBackingToken(user, depositAmount, user, depositAmount);
+      
       // TODO: This test is bugged because expectUserState is deprecated and gives wrong
       //       result for Lido. Disabled until new TempusPool.Deploy.test is finished
       //await expectUserState(pool, user, 100, 100, /*yieldBearing:*/0);

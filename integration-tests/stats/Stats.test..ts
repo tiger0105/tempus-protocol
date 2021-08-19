@@ -34,14 +34,12 @@ const setup = deployments.createFixture(async () => {
   const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
 
   const names = generateTempusSharesNames("Aave wrapped ether", "aWETH", maturityTime);
-  const tempusPool = await TempusPool.deploy(aWethYieldToken, priceOracle, maturityTime, names);
+  const tempusPool = await TempusPool.deployAave(aWethYieldToken, priceOracle, maturityTime, names);
   
-  const aaveDepositWrapper = await ContractBase.deployContract("AaveDepositWrapper", tempusPool.address);
   const stats = await ContractBase.deployContract("Stats");
 
   return {
     contracts: {
-      aaveDepositWrapper,
       tempusPool,
       aWeth: aWethYieldToken,
       stats
@@ -55,14 +53,14 @@ const setup = deployments.createFixture(async () => {
 describe('Stats <> Chainlink', function () {
   it('verifies querying the TVL of a pull in USD denominations returns a correct result', async () => {
     // arrange
-    const { signers: { aWethHolder }, contracts: { aWeth, aaveDepositWrapper, tempusPool, stats }} = await setup();
+    const { signers: { aWethHolder }, contracts: { aWeth, tempusPool, stats }} = await setup();
     const depositAmount: number = 1234.56789;
     const chainlinkAggregatorEnsHash = NameHash.hash("eth-usd.data.eth");
     const currentBlockDate = new Date(1000 * (await ethers.provider.getBlock(FORKED_BLOCK_NUMBER)).timestamp);
     const ethPriceQuote = await EthPriceQuoteProvider.getDailyQuote(currentBlockDate);
     
     // act
-    await aWeth.approve(aWethHolder, aaveDepositWrapper.address, depositAmount);
+    await aWeth.approve(aWethHolder, tempusPool.address, depositAmount);
     await tempusPool.deposit(aWethHolder, depositAmount, aWethHolder);
     
     // assert

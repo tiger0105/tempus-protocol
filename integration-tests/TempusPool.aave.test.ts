@@ -28,13 +28,10 @@ const setup = deployments.createFixture(async () => {
   const priceOracle = await IPriceOracle.deploy("AavePriceOracle");
   const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
   const names = generateTempusSharesNames("aDai aave token", "aDai", maturityTime);
-  const tempusPool = await TempusPool.deploy(aDaiYieldToken, priceOracle, maturityTime, names);
+  const tempusPool = await TempusPool.deployAave(aDaiYieldToken, priceOracle, maturityTime, names);
   
-  const aaveDepositWrapper = await ContractBase.deployContract("AaveDepositWrapper", tempusPool.address);
-
   return {
     contracts: {
-      aaveDepositWrapper,
       tempusPool,
       dai: daiBackingToken,
       aDai: aDaiYieldToken
@@ -48,13 +45,13 @@ const setup = deployments.createFixture(async () => {
 
 // TODO: fix those tests. They are failing because we've changed the math in the deposit flow
 describe.skip('TempusPool <> Aave', function () {
-  it('verifies a correct amount of shares is minted when depositing BT to the TempusPool (via the deposit wrapper)', async () => {
-    const { signers: { daiHolder }, contracts: { dai, aDai, aaveDepositWrapper, tempusPool }} = await setup();
+  it('verifies a correct amount of shares is minted when depositing BT to the TempusPool', async () => {
+    const { signers: { daiHolder }, contracts: { dai, aDai, tempusPool }} = await setup();
     
     const depositAmount: number = 100;
 
-    await dai.approve(daiHolder, aaveDepositWrapper.address, depositAmount);
-    await aaveDepositWrapper.connect(daiHolder).deposit(toWei(depositAmount));
+    await dai.approve(daiHolder, tempusPool.address, depositAmount);
+    await tempusPool.deposit(daiHolder, depositAmount, daiHolder);
     
     const expectedMintedShares = await calculateMintedSharesOnDeposit(tempusPool, depositAmount);
     
