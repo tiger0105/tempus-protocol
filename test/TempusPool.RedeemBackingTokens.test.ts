@@ -4,7 +4,6 @@ import { Signer } from "./utils/ContractBase";
 import { ITestPool, PoolType } from "./pool-utils/ITestPool";
 import { describeForEachPoolType } from "./pool-utils/MultiPoolTestSuite";
 
-// NOTE: Lido is excluded because redeem is not possible yet
 describeForEachPoolType("TempusPool Redeem", [PoolType.Aave, PoolType.Compound], (pool:ITestPool) =>
 {
   let owner:Signer, user:Signer, user2:Signer;
@@ -51,5 +50,24 @@ describeForEachPoolType("TempusPool Redeem", [PoolType.Aave, PoolType.Compound],
 
     expect(await pool.backingTokenBalance(user)).to.equal(1100, "gain extra 100 backing tokens due to interest 2.0x");
   });
+});
 
+describeForEachPoolType("TempusPool Redeem", [PoolType.Lido], (pool:ITestPool) =>
+{
+  let owner:Signer, user:Signer, user2:Signer;
+
+  beforeEach(async () =>
+  {
+    [owner, user, user2] = await ethers.getSigners();
+  });
+
+  it("Should revert on redeem", async () =>
+  {
+    await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/);
+    await pool.asset().transfer(owner, user, 1000);
+    await pool.asset().approve(user, pool.tempus.address, 100);
+    (await pool.expectDepositBT(user, 100)).to.equal('success');
+
+    (await pool.expectRedeemBT(user, 100, 100)).to.equal('LidoTempusPool.withdrawFromUnderlyingProtocol not supported');
+  });
 });
