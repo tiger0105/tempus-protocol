@@ -12,10 +12,11 @@ contract AaveTempusPool is TempusPool {
     using SafeERC20 for IERC20;
 
     ILendingPool internal immutable aavePool;
+    bytes32 public immutable override protocolName = "Aave";
+
 
     constructor(
         IAToken token,
-        IPriceOracle oracle,
         uint256 maturity,
         uint256 estYield,
         string memory principalName,
@@ -26,8 +27,8 @@ contract AaveTempusPool is TempusPool {
         TempusPool(
             address(token),
             token.UNDERLYING_ASSET_ADDRESS(),
-            oracle,
             maturity,
+            updateInterestRate(address(token)),
             estYield,
             principalName,
             principalSymbol,
@@ -57,5 +58,28 @@ contract AaveTempusPool is TempusPool {
         returns (uint256 backingTokenAmount)
     {
         return aavePool.withdraw(backingToken, yieldBearingTokensAmount, recipient);
+    }
+
+    /// @return Updated current Interest Rate as an 1e18 decimal
+    function updateInterestRate(address token) internal view override returns (uint256) {
+        return storedInterestRate(token);
+    }
+
+    /// @return Stored Interest Rate as an 1e18 decimal
+    function storedInterestRate(address token) internal view override returns (uint256) {
+        IAToken atoken = IAToken(token);
+        uint rateInRay = atoken.POOL().getReserveNormalizedIncome(atoken.UNDERLYING_ASSET_ADDRESS());
+        // convert from RAY 1e27 to WAD 1e18 decimal
+        return rateInRay / 1e9;
+    }
+
+    /// NOTE: Aave AToken is pegged 1:1 with backing token
+    function numAssetsPerYieldToken(uint256 yieldBearingAmount, uint256) external pure override returns (uint256) {
+        return yieldBearingAmount;
+    }
+
+    /// NOTE: Aave AToken is pegged 1:1 with backing token
+    function numYieldTokensPerAsset(uint256 backingTokenAmount, uint256) external pure override returns (uint256) {
+        return backingTokenAmount;
     }
 }

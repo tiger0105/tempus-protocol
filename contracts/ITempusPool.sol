@@ -43,7 +43,7 @@ interface ITempusPool {
     /// @return The version of the pool.
     function version() external view returns (uint);
 
-    /// @return The name of the underlying protocol
+    /// @return The name of underlying protocol, for example "Aave" for Aave protocol
     function protocolName() external view returns (bytes32);
 
     /// @return The underlying yield bearing token.
@@ -129,4 +129,22 @@ interface ITempusPool {
     /// @return Rate of one Tempus Principal Share expressed in Asset Tokens
     /// @dev calculated with stored interest rates
     function pricePerPrincipalShareStored() external view returns (uint256);
+
+    // TODO Reduce possible duplication
+
+    /// @dev This returns actual Backing Token amount for amount of YBT (Yield Bearing Tokens)
+    ///      For example, in case of Aave and Lido the result is 1:1,
+    ///      and for compound is `yieldBearingAmount * currentInterestRate()`
+    /// @param yieldBearingAmount Amount of YBT
+    /// @param interestRate The current interest rate
+    /// @return Amount of Backing Tokens for specified @param yieldBearingAmount
+    function numAssetsPerYieldToken(uint256 yieldBearingAmount, uint256 interestRate) external pure returns (uint256);
+
+    /// @dev This returns amount of YBT (Yield Bearing Tokens) that can be converted
+    ///      from @param backingTokenAmount Backing Tokens
+    /// @param backingTokenAmount Amount of Backing Tokens
+    /// @param interestRate The current interest rate
+    /// @return Amount of YBT for specified @param backingTokenAmount
+    function numYieldTokensPerAsset(uint256 backingTokenAmount, uint256 interestRate) external view returns (uint256);
+
 }
