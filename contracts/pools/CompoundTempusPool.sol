@@ -6,16 +6,18 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../TempusPool.sol";
 import "../protocols/compound/ICErc20.sol";
+import "../math/Fixed256x18.sol";
 
 /// Allows depositing ERC20 into Compound's CErc20 contracts
 contract CompoundTempusPool is TempusPool {
     using SafeERC20 for IERC20;
+    using Fixed256x18 for uint256;
 
     ICErc20 internal immutable cToken;
+    bytes32 public immutable override protocolName = "Compound";
 
     constructor(
         ICErc20 token,
-        IPriceOracle oracle,
         uint256 maturity,
         uint256 estYield,
         string memory principalName,
@@ -26,8 +28,8 @@ contract CompoundTempusPool is TempusPool {
         TempusPool(
             address(token),
             token.underlying(),
-            oracle,
             maturity,
+            updateInterestRate(address(token)),
             estYield,
             principalName,
             principalSymbol,
@@ -75,5 +77,25 @@ contract CompoundTempusPool is TempusPool {
         IERC20(backingToken).safeTransfer(recipient, backing);
 
         return backing;
+    }
+
+    /// @return Updated current Interest Rate as an 1e18 decimal
+    function updateInterestRate(address token) internal override returns (uint256) {
+        // NOTE: exchangeRateCurrent() will accrue interest and gets the latest Interest Rate
+        //       We do this to avoid arbitrage
+        return ICToken(token).exchangeRateCurrent();
+    }
+
+    /// @return Current Interest Rate as an 1e18 decimal
+    function storedInterestRate(address token) internal view override returns (uint256) {
+        return ICToken(token).exchangeRateStored();
+    }
+
+    function numAssetsPerYieldToken(uint yieldTokens, uint rate) public pure override returns (uint) {
+        return yieldTokens.mulf18(rate);
+    }
+
+    function numYieldTokensPerAsset(uint backingTokens, uint rate) public pure override returns (uint) {
+        return backingTokens.divf18(rate);
     }
 }

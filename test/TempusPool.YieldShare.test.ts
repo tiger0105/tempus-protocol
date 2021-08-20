@@ -1,50 +1,29 @@
-import { ethers } from "hardhat";
 import { expect } from "chai";
-import { Aave } from "./utils/Aave";
-import { Signer } from "./utils/ContractBase";
-import { generateTempusSharesNames, TempusPool } from "./utils/TempusPool";
-import { blockTimestamp } from "./utils/Utils";
+import { ITestPool } from "./pool-utils/ITestPool";
+import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
 
-describe("Tempus Pool (YieldShare)", async () => {
-  let owner:Signer, user:Signer;
-  let aave:Aave;
-  let pool:TempusPool;
-
-  beforeEach(async () => {
-    [owner, user] = await ethers.getSigners();
-    createAavePool();
-  });
-
-  async function createAavePool(liquidityIndex:number = 1.0, depositToUser:number = 0) {
-    aave = await Aave.create(1000000);
-    await aave.asset.transfer(owner, user, 10000); // initial deposit for User
-
-    // set starting rate
-    await aave.setLiquidityIndex(liquidityIndex, owner);
-
-    // generate some ATokens by owner depositing, and then transfer some to user
-    if (depositToUser > 0) {
-      await aave.deposit(owner, depositToUser*2);
-      await aave.yieldToken.transfer(owner, user, depositToUser);
-    }
-
-    let maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
-    const names = generateTempusSharesNames("aToken", "aTKN", maturityTime);
-    const yieldEst = 0.1;
-    pool = await TempusPool.deployAave(aave.yieldToken, aave.priceOracle, maturityTime, yieldEst, names);
-  }
-
-  describe("Deploy", async () =>
+describeForEachPool("TempusPool YieldShare", (pool:ITestPool) =>
+{
+  it("Should have correct rates for Yields and Principals before Maturity", async () =>
   {
-    it("correct rates for Yields and Principals", async () =>
-    {
-      await createAavePool();
-      let principalPrice:number = +await pool.principalShare.getPricePerFullShareStored();
-      let yieldsPrice:number = +await pool.yieldShare.getPricePerFullShareStored();
-      expect(principalPrice).to.be.within(0.9090909090, 0.9090909091);
-      expect(yieldsPrice).to.be.within(0.090909090, 0.090909091);
-      expect(principalPrice + yieldsPrice).to.be.equal(1);
-    });
+    await pool.createTempusPool(/*initialRate:*/1.0, 60*60 /*maturity in 1 hr*/);
+    let principalPrice:number = +await pool.tempus.principalShare.getPricePerFullShareStored();
+    let yieldsPrice:number = +await pool.tempus.yieldShare.getPricePerFullShareStored();
+    expect(principalPrice).to.be.within(0.9090909090, 0.9090909091);
+    expect(yieldsPrice).to.be.within(0.090909090, 0.090909091);
+    expect(principalPrice + yieldsPrice).to.be.equal(1);
   });
 
+  it("Should have correct rates for Yields and Principals after Maturity", async () =>
+  {
+    await pool.createTempusPool(/*initialRate:*/1.0, 60*60 /*maturity in 1 hr*/);
+    await pool.setInterestRate(1.5);
+    await pool.fastForwardToMaturity();
+
+    let principalPrice:number = +await pool.tempus.principalShare.getPricePerFullShareStored();
+    let yieldsPrice:number = +await pool.tempus.yieldShare.getPricePerFullShareStored();
+    expect(principalPrice).to.be.within(1.0, 1.0);
+    expect(yieldsPrice).to.be.within(0.5, 0.5);
+    expect(principalPrice + yieldsPrice).to.be.equal(1.5);
+  });
 });

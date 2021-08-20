@@ -43,7 +43,7 @@ interface ITempusPool {
     /// @return The version of the pool.
     function version() external view returns (uint);
 
-    /// @return The name of the underlying protocol
+    /// @return The name of underlying protocol, for example "Aave" for Aave protocol
     function protocolName() external view returns (bytes32);
 
     /// @return The underlying yield bearing token.

@@ -6,10 +6,10 @@ import "../protocols/lido/ILido.sol";
 
 contract LidoTempusPool is TempusPool {
     ILido internal immutable lido;
+    bytes32 public immutable override protocolName = "Lido";
 
     constructor(
         ILido token,
-        IPriceOracle oracle,
         uint256 maturity,
         uint256 estYield,
         string memory principalName,
@@ -20,8 +20,8 @@ contract LidoTempusPool is TempusPool {
         TempusPool(
             address(token),
             address(0),
-            oracle,
             maturity,
+            updateInterestRate(address(token)),
             estYield,
             principalName,
             principalSymbol,
@@ -53,5 +53,29 @@ contract LidoTempusPool is TempusPool {
     {
         require(false, "LidoTempusPool.withdrawFromUnderlyingProtocol not supported");
         return 0;
+    }
+
+    /// @return Updated current Interest Rate as an 1e18 decimal
+    function updateInterestRate(address token) internal view override returns (uint256) {
+        return storedInterestRate(token);
+    }
+
+    // @return Stored Interest Rate as an 1e18 decimal
+    function storedInterestRate(address token) internal view override returns (uint256) {
+        // NOTE: if totalShares() is 0, then rate is also 0,
+        //       but this only happens right after deploy, so we ignore it
+        return ILido(token).getPooledEthByShares(1e18);
+    }
+
+    /// NOTE: Lido StETH is pegged 1:1 to ETH
+    /// @return Asset Token amount
+    function numAssetsPerYieldToken(uint yieldTokens, uint) public pure override returns (uint) {
+        return yieldTokens;
+    }
+
+    /// NOTE: Lido StETH is pegged 1:1 to ETH
+    /// @return YBT amount
+    function numYieldTokensPerAsset(uint backingTokens, uint) public pure override returns (uint) {
+        return backingTokens;
     }
 }

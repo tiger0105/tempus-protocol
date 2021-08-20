@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "./IPriceOracle.sol";
 import "./ITempusPool.sol";
 import "./token/PrincipalShare.sol";
 import "./token/YieldShare.sol";
@@ -19,9 +18,6 @@ abstract contract TempusPool is ITempusPool, Ownable {
 
     uint public constant override version = 1;
 
-    bytes32 public immutable override protocolName;
-
-    IPriceOracle public immutable priceOracle;
     address public immutable override yieldBearingToken;
     address public immutable override backingToken;
 
@@ -56,8 +52,8 @@ abstract contract TempusPool is ITempusPool, Ownable {
     /// Constructs Pool with underlying token, start and maturity date
     /// @param token underlying yield bearing token
     /// @param bToken backing token (or zero address if ETH)
-    /// @param oracle the price oracle correspoding to the token
     /// @param maturity maturity time of this pool
+    /// @param initInterestRate initial interest rate of the pool
     /// @param estimatedFinalYield estimated yield for the whole lifetime of the pool
     /// @param principalName name of Tempus Principal Share
     /// @param principalSymbol symbol of Tempus Principal Share
@@ -66,8 +62,8 @@ abstract contract TempusPool is ITempusPool, Ownable {
     constructor(
         address token,
         address bToken,
-        IPriceOracle oracle,
         uint256 maturity,
+        uint256 initInterestRate,
         uint256 estimatedFinalYield,
         string memory principalName,
         string memory principalSymbol,
@@ -76,18 +72,15 @@ abstract contract TempusPool is ITempusPool, Ownable {
     ) {
         require(maturity > block.timestamp, "maturityTime is after startTime");
 
-        protocolName = oracle.protocolName();
         yieldBearingToken = token;
         backingToken = bToken;
-        priceOracle = oracle;
         startTime = block.timestamp;
         maturityTime = maturity;
-        initialInterestRate = oracle.updateInterestRate(token);
+        initialInterestRate = initInterestRate;
+        initialEstimatedYield = estimatedFinalYield;
 
         principalShare = new PrincipalShare(this, principalName, principalSymbol);
         yieldShare = new YieldShare(this, yieldName, yieldSymbol);
-
-        initialEstimatedYield = estimatedFinalYield;
     }
 
     function depositToUnderlying(uint256 amount) internal virtual returns (uint256 mintedYieldTokenAmount);
@@ -163,7 +156,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
 
     function _deposit(uint256 yieldTokenAmount, address recipient) internal returns (uint256) {
         require(!matured, "Maturity reached.");
-        uint256 rate = priceOracle.updateInterestRate(yieldBearingToken);
+        uint256 rate = updateInterestRate(yieldBearingToken);
         require(rate >= initialInterestRate, "Negative yield!");
 
         // Collect fees if they are set, reducing the number of tokens for the sender
@@ -177,7 +170,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
         }
 
         // Issue appropriate shares
-        uint256 backingTokenDepositAmount = priceOracle.numAssetsPerYieldToken(tokenAmount, rate);
+        uint256 backingTokenDepositAmount = numAssetsPerYieldToken(tokenAmount, rate);
         uint256 tokensToIssue = (backingTokenDepositAmount * initialInterestRate) / rate;
 
         PrincipalShare(address(principalShare)).mint(recipient, tokensToIssue);
@@ -234,7 +227,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
         PrincipalShare(address(principalShare)).burn(msg.sender, principalAmount);
         YieldShare(address(yieldShare)).burn(msg.sender, yieldAmount);
 
-        uint256 currentRate = priceOracle.updateInterestRate(yieldBearingToken);
+        uint256 currentRate = updateInterestRate(yieldBearingToken);
         (uint256 redeemableYieldTokens, uint256 redeemableBackingTokens, uint256 interestRate) = getRedemptionAmounts(
             principalAmount,
             yieldAmount,
@@ -297,11 +290,11 @@ abstract contract TempusPool is ITempusPool, Ownable {
             redeemableBackingTokens = principalAmount + redeemAmountFromYieldShares;
         }
 
-        redeemableYieldTokens = priceOracle.numYieldTokensPerAsset(redeemableBackingTokens, currentRate);
+        redeemableYieldTokens = numYieldTokensPerAsset(redeemableBackingTokens, currentRate);
     }
 
     function currentInterestRate() public view override returns (uint256) {
-        return priceOracle.storedInterestRate(yieldBearingToken);
+        return storedInterestRate(yieldBearingToken);
     }
 
     function currentYield(uint256 interestRate) private view returns (uint256) {
@@ -315,11 +308,11 @@ abstract contract TempusPool is ITempusPool, Ownable {
     }
 
     function currentYield() private returns (uint256) {
-        return currentYield(priceOracle.updateInterestRate(yieldBearingToken));
+        return currentYield(updateInterestRate(yieldBearingToken));
     }
 
     function currentYieldStored() private view returns (uint256) {
-        return currentYield(priceOracle.storedInterestRate(yieldBearingToken));
+        return currentYield(storedInterestRate(yieldBearingToken));
     }
 
     function estimatedYield() private returns (uint256) {
@@ -373,4 +366,33 @@ abstract contract TempusPool is ITempusPool, Ownable {
     function pricePerPrincipalShareStored() external view override returns (uint256) {
         return pricePerPrincipalShare(currentYieldStored(), estimatedYieldStored());
     }
+
+    // TODO Reduce possible duplication
+
+    /// @dev This updates the underlying pool's interest rate
+    ///      It should be done first thing before deposit/redeem to avoid arbitrage
+    /// @return Updated current Interest Rate as an 1e18 decimal
+    function updateInterestRate(address token) internal virtual returns (uint256);
+
+    /// @dev This returns the stored Interest Rate of the YBT (Yield Bearing Token) pool
+    ///      it is safe to call this after updateInterestRate() was called
+    /// @param token The address of the YBT protocol
+    /// e.g it is an AToken in case of Aave, CToken in case of Compound, StETH in case of Lido
+    /// @return Stored Interest Rate as an 1e18 decimal
+    function storedInterestRate(address token) internal view virtual returns (uint256);
+
+    /// @dev This returns actual Backing Token amount for amount of YBT (Yield Bearing Tokens)
+    ///      For example, in case of Aave and Lido the result is 1:1,
+    ///      and for compound is `yieldTokens * currentInterestRate`
+    /// @param yieldTokens Amount of YBT
+    /// @param interestRate The current interest rate
+    /// @return Amount of Backing Tokens for specified @param yieldTokens
+    function numAssetsPerYieldToken(uint yieldTokens, uint interestRate) public pure virtual returns (uint);
+
+    /// @dev This returns amount of YBT (Yield Bearing Tokens) that can be converted
+    ///      from @param backingTokens Backing Tokens
+    /// @param backingTokens Amount of Backing Tokens
+    /// @param interestRate The current interest rate
+    /// @return Amount of YBT for specified @param backingTokens
+    function numYieldTokensPerAsset(uint backingTokens, uint interestRate) public view virtual returns (uint);
 }

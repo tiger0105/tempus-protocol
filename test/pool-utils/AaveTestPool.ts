@@ -30,7 +30,7 @@ export class AaveTestPool extends ITestPool
       yieldSymbol: this.yieldName
     };
     const yieldEst = 0.1;
-    this.tempus = await TempusPool.deployAave(this.aave.yieldToken, this.aave.priceOracle, this.maturityTime, yieldEst, names);
+    this.tempus = await TempusPool.deployAave(this.aave.yieldToken, this.maturityTime, yieldEst, names);
     return this.tempus;
   }
   async setInterestRate(rate:number): Promise<void> {

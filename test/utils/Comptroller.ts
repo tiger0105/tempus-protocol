@@ -2,18 +2,15 @@ import { Contract, BigNumber, ethers } from "ethers";
 import { NumberOrString, toWei, formatDecimal } from "./Decimal";
 import { addressOf, ContractBase, SignerOrAddress, Signer } from "./ContractBase";
 import { ERC20 } from "./ERC20";
-import { IPriceOracle } from "./IPriceOracle";
 
 export class Comptroller extends ContractBase {
   asset:ERC20; // backing asset DAI or null if ETH
   yieldToken:ERC20; // yield token - cDAI or CEther
-  priceOracle:IPriceOracle;
   
-  constructor(pool:Contract, asset: ERC20|null, yieldToken:ERC20, priceOracle:IPriceOracle) {
+  constructor(pool:Contract, asset: ERC20|null, yieldToken:ERC20) {
     super("ComptrollerMock", 18, pool);
     this.asset = asset!;
     this.yieldToken = yieldToken;
-    this.priceOracle = priceOracle;
   }
 
   /**
@@ -22,11 +19,9 @@ export class Comptroller extends ContractBase {
    */
   static async create(totalErc20Supply:Number = 0): Promise<Comptroller> {
     const pool = await ContractBase.deployContract("ComptrollerMock");
-    const priceOracle = await IPriceOracle.deploy("CompoundPriceOracle");
-
     let asset = await ERC20.deploy("ERC20FixedSupply", "DAI Stablecoin", "DAI", toWei(totalErc20Supply));
     const cDAI = await ERC20.deploy("CErc20", pool.address, asset.address, "Compound DAI Yield Token", "cDAI");
-    return new Comptroller(pool, asset, cDAI, priceOracle);
+    return new Comptroller(pool, asset, cDAI);
   }
 
   /**
@@ -47,8 +42,7 @@ export class Comptroller extends ContractBase {
    * @return Current Exchange Rate in 1e18 decimal
    */
   async exchangeRate(): Promise<NumberOrString> {
-    const rate:BigNumber = await this.contract.exchangeRate();
-    return formatDecimal(rate, 18);
+    return this.fromBigNum(await this.contract.exchangeRate());
   }
 
   /**
