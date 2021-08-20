@@ -53,7 +53,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
     /// @param token underlying yield bearing token
     /// @param bToken backing token (or zero address if ETH)
     /// @param maturity maturity time of this pool
-    /// @param interestRate current interest rate of the pool
+    /// @param initInterestRate initial interest rate of the pool
     /// @param estimatedFinalYield estimated yield for the whole lifetime of the pool
     /// @param principalName name of Tempus Principal Share
     /// @param principalSymbol symbol of Tempus Principal Share
@@ -63,7 +63,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
         address token,
         address bToken,
         uint256 maturity,
-        uint256 interestRate,
+        uint256 initInterestRate,
         uint256 estimatedFinalYield,
         string memory principalName,
         string memory principalSymbol,
@@ -76,7 +76,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
         backingToken = bToken;
         startTime = block.timestamp;
         maturityTime = maturity;
-        initialInterestRate = interestRate;
+        initialInterestRate = initInterestRate;
         initialEstimatedYield = estimatedFinalYield;
 
         principalShare = new PrincipalShare(this, principalName, principalSymbol);
@@ -170,7 +170,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
         }
 
         // Issue appropriate shares
-        uint256 backingTokenDepositAmount = this.numAssetsPerYieldToken(tokenAmount, rate);
+        uint256 backingTokenDepositAmount = numAssetsPerYieldToken(tokenAmount, rate);
         uint256 tokensToIssue = (backingTokenDepositAmount * initialInterestRate) / rate;
 
         PrincipalShare(address(principalShare)).mint(recipient, tokensToIssue);
@@ -290,7 +290,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
             redeemableBackingTokens = principalAmount + redeemAmountFromYieldShares;
         }
 
-        redeemableYieldTokens = this.numYieldTokensPerAsset(redeemableBackingTokens, currentRate);
+        redeemableYieldTokens = numYieldTokensPerAsset(redeemableBackingTokens, currentRate);
     }
 
     function currentInterestRate() public view override returns (uint256) {
@@ -367,6 +367,8 @@ abstract contract TempusPool is ITempusPool, Ownable {
         return pricePerPrincipalShare(currentYieldStored(), estimatedYieldStored());
     }
 
+    // TODO Reduce possible duplication
+
     /// @dev This updates the underlying pool's interest rate
     ///      It should be done first thing before deposit/redeem to avoid arbitrage
     /// @return Updated current Interest Rate as an 1e18 decimal
@@ -377,6 +379,20 @@ abstract contract TempusPool is ITempusPool, Ownable {
     /// @param token The address of the YBT protocol
     /// e.g it is an AToken in case of Aave, CToken in case of Compound, StETH in case of Lido
     /// @return Stored Interest Rate as an 1e18 decimal
-    function storedInterestRate(address token) internal virtual view returns (uint256);
+    function storedInterestRate(address token) internal view virtual returns (uint256);
 
+    /// @dev This returns actual Backing Token amount for amount of YBT (Yield Bearing Tokens)
+    ///      For example, in case of Aave and Lido the result is 1:1,
+    ///      and for compound is `yieldTokens * currentInterestRate`
+    /// @param yieldTokens Amount of YBT
+    /// @param interestRate The current interest rate
+    /// @return Amount of Backing Tokens for specified @param yieldTokens
+    function numAssetsPerYieldToken(uint yieldTokens, uint interestRate) public pure virtual returns (uint);
+
+    /// @dev This returns amount of YBT (Yield Bearing Tokens) that can be converted
+    ///      from @param backingTokens Backing Tokens
+    /// @param backingTokens Amount of Backing Tokens
+    /// @param interestRate The current interest rate
+    /// @return Amount of YBT for specified @param backingTokens
+    function numYieldTokensPerAsset(uint backingTokens, uint interestRate) public view virtual returns (uint);
 }

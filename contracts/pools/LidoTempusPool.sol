@@ -69,13 +69,13 @@ contract LidoTempusPool is TempusPool {
 
     /// NOTE: Lido StETH is pegged 1:1 to ETH
     /// @return Asset Token amount
-    function numAssetsPerYieldToken(uint256 yieldBearingAmount, uint256) external pure override returns (uint256) {
-        return yieldBearingAmount;
+    function numAssetsPerYieldToken(uint yieldTokens, uint) public pure override returns (uint) {
+        return yieldTokens;
     }
 
     /// NOTE: Lido StETH is pegged 1:1 to ETH
     /// @return YBT amount
-    function numYieldTokensPerAsset(uint256 backingTokenAmount, uint256) external pure override returns (uint256) {
-        return backingTokenAmount;
+    function numYieldTokensPerAsset(uint backingTokens, uint) public pure override returns (uint) {
+        return backingTokens;
     }
 }

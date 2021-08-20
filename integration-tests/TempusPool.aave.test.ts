@@ -6,10 +6,7 @@ import {
 } from 'hardhat';
 import { blockTimestamp } from '../test/utils/Utils';
 import { generateTempusSharesNames, TempusPool } from "../test/utils/TempusPool";
-import { IPriceOracle } from "../test/utils/IPriceOracle";
 import { ERC20 } from "../test/utils/ERC20";
-import { ContractBase } from "../test/utils/ContractBase";
-import { toWei } from "../test/utils/Decimal";
 import { calculateMintedSharesOnDeposit } from "../test/utils/TempusMath";
 
 const setup = deployments.createFixture(async () => {
@@ -25,11 +22,10 @@ const setup = deployments.createFixture(async () => {
   const daiBackingToken = await ERC20.attach("ERC20", (await ethers.getContract('Dai')).address);
   const aDaiYieldToken = await ERC20.attach("ERC20", (await ethers.getContract('aToken_Dai')).address);
   
-  const priceOracle = await IPriceOracle.deploy("AavePriceOracle");
   const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
   const names = generateTempusSharesNames("aDai aave token", "aDai", maturityTime);
   const yieldEst = 0.1;
-  const tempusPool = await TempusPool.deployAave(aDaiYieldToken, priceOracle, maturityTime, yieldEst, names);
+  const tempusPool = await TempusPool.deployAave(aDaiYieldToken, maturityTime, yieldEst, names);
   
   return {
     contracts: {

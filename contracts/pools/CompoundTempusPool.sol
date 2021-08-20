@@ -91,11 +91,11 @@ contract CompoundTempusPool is TempusPool {
         return ICToken(token).exchangeRateStored();
     }
 
-    function numAssetsPerYieldToken(uint256 amount, uint256 rate) external pure override returns (uint256) {
-        return rate.mulf18(amount);
+    function numAssetsPerYieldToken(uint yieldTokens, uint rate) public pure override returns (uint) {
+        return yieldTokens.mulf18(rate);
     }
 
-    function numYieldTokensPerAsset(uint256 amount, uint256 rate) external pure override returns (uint256) {
-        return amount.divf18(rate);
+    function numYieldTokensPerAsset(uint backingTokens, uint rate) public pure override returns (uint) {
+        return backingTokens.divf18(rate);
     }
 }

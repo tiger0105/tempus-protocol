@@ -14,7 +14,6 @@ contract AaveTempusPool is TempusPool {
     ILendingPool internal immutable aavePool;
     bytes32 public immutable override protocolName = "Aave";
 
-
     constructor(
         IAToken token,
         uint256 maturity,
@@ -74,12 +73,12 @@ contract AaveTempusPool is TempusPool {
     }
 
     /// NOTE: Aave AToken is pegged 1:1 with backing token
-    function numAssetsPerYieldToken(uint256 yieldBearingAmount, uint256) external pure override returns (uint256) {
-        return yieldBearingAmount;
+    function numAssetsPerYieldToken(uint yieldTokens, uint) public pure override returns (uint) {
+        return yieldTokens;
     }
 
     /// NOTE: Aave AToken is pegged 1:1 with backing token
-    function numYieldTokensPerAsset(uint256 backingTokenAmount, uint256) external pure override returns (uint256) {
-        return backingTokenAmount;
+    function numYieldTokensPerAsset(uint backingTokens, uint) public pure override returns (uint) {
+        return backingTokens;
     }
 }
