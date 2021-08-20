@@ -6,6 +6,17 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @author The tempus.finance team
 /// @title The interface of a Tempus Pool
 interface ITempusPool {
+    struct FeesConfig {
+        /// @dev Percentage of Yield Bearing Tokens (YBT) taken as fee during deposit()
+        uint256 depositPercent;
+        /// @dev Percentage of Yield Bearing Tokens (YBT)
+        ///      taken as fee during early redeem()
+        uint256 earlyRedeemPercent;
+        /// @dev Percentage of Yield Bearing Tokens (YBT)
+        ///      taken as fee after maturity time during redeem()
+        uint256 matureRedeemPercent;
+    }
+
     /// @dev Event emitted on successful TempusPool deposit().
     /// @param depositor Address of user who deposits Yield Bearing Tokens to mint
     ///                  Tempus Principal Share (TPS) and Tempus Yield Shares
@@ -129,4 +140,17 @@ interface ITempusPool {
     /// @return Rate of one Tempus Principal Share expressed in Asset Tokens
     /// @dev calculated with stored interest rates
     function pricePerPrincipalShareStored() external view returns (uint256);
+
+    /// Returns the current fee configuration.
+    function feesConfig()
+        external
+        view
+        returns (
+            uint256 depositPercent,
+            uint256 earlyRedeemPercent,
+            uint256 matureRedeemPercent
+        );
+
+    /// Replace the current fee configuration with a new one.
+    function setFeesConfig(FeesConfig calldata newFeesConfig) external;
 }
