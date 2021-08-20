@@ -33,18 +33,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
 
     bool public override matured;
 
-    struct FeesConfig {
-        /// @dev Percentage of Yield Bearing Tokens (YBT) taken as fee during deposit()
-        uint256 depositPercent;
-        /// @dev Percentage of Yield Bearing Tokens (YBT)
-        ///      taken as fee during early redeem()
-        uint256 earlyRedeemPercent;
-        /// @dev Percentage of Yield Bearing Tokens (YBT)
-        ///      taken as fee after maturity time during redeem()
-        uint256 matureRedeemPercent;
-    }
-
-    FeesConfig public feesConfig;
+    FeesConfig public override feesConfig;
 
     /// total amount of fees accumulated in pool
     uint256 public totalFees;
@@ -102,7 +91,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
     }
 
     /// @dev Sets the fees config for this pool. By default all fees are 0
-    function setFeesConfig(FeesConfig calldata newFeesConfig) public onlyOwner {
+    function setFeesConfig(FeesConfig calldata newFeesConfig) public override onlyOwner {
         feesConfig = newFeesConfig;
     }
 
