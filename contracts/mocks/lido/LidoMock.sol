@@ -165,4 +165,9 @@ contract LidoMock is StETH {
         }
         return StETH.getPooledEthByShares(_sharesAmount);
     }
+
+    // MOCK ONLY
+    function _getInterestRate() public view returns (uint256) {
+        return getPooledEthByShares(1e18);
+    }
 }
