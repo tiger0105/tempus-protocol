@@ -31,7 +31,7 @@ describe("Tempus Pool (YieldShare)", async () => {
     let maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
     const names = generateTempusSharesNames("aToken", "aTKN", maturityTime);
     const yieldEst = 0.1;
-    pool = await TempusPool.deployAave(aave.yieldToken, aave.priceOracle, maturityTime, yieldEst, names);
+    pool = await TempusPool.deployAave(aave.yieldToken, maturityTime, yieldEst, names);
   }
 
   describe("Deploy", async () =>

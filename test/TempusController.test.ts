@@ -31,8 +31,8 @@ const setup = deployments.createFixture(async () => {
     const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
 
     const names = generateTempusSharesNames("aToken", "aTKN", maturityTime);
-    const tempusPool = await TempusPool.deployAave(aavePool.yieldToken, aavePool.priceOracle, maturityTime, 0.1, names);
-    const tempusPool1 = await TempusPool.deployAave(aavePool1.yieldToken, aavePool1.priceOracle, maturityTime, 0.1, names);
+    const tempusPool = await TempusPool.deployAave(aavePool.yieldToken, maturityTime, 0.1, names);
+    const tempusPool1 = await TempusPool.deployAave(aavePool1.yieldToken, maturityTime, 0.1, names);
 
     const tempusAMM = await TempusAMM.create(owner, ammAmplification, ammFee, tempusPool.principalShare, tempusPool.yieldShare);
     

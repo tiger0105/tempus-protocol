@@ -3,7 +3,6 @@ import { BigNumber, BytesLike, Contract, Transaction } from "ethers";
 import { NumberOrString, toWei } from "./Decimal";
 import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
-import { IPriceOracle } from "./IPriceOracle";
 import { PoolShare } from "./PoolShare";
 
 export interface TempusSharesNames {
@@ -37,14 +36,12 @@ export class TempusPool extends ContractBase {
   yieldBearing:ERC20; // actual yield bearing token such as AToken or CToken
   principalShare:PoolShare;
   yieldShare:PoolShare;
-  priceOracle:IPriceOracle;
 
-  constructor(contractName: string, pool:Contract, yieldBearing:ERC20, principalShare:PoolShare, yieldShare:PoolShare, priceOracle:IPriceOracle) {
+  constructor(contractName: string, pool:Contract, yieldBearing:ERC20, principalShare:PoolShare, yieldShare:PoolShare) {
     super(contractName, 18, pool);
     this.yieldBearing = yieldBearing;
     this.principalShare = principalShare;
     this.yieldShare = yieldShare;
-    this.priceOracle = priceOracle;
     if (this.yieldBearing.decimals != this.decimals) {
       throw new Error("TempusPool decimals must equal backing asset decimals");
     }
@@ -53,41 +50,40 @@ export class TempusPool extends ContractBase {
   /**
    * Deploys AaveTempusPool
    * @param yieldToken The yield bearing token, such as aave.earn (AToken)
-   * @param priceOracle Price oracle name which returns the current exchange rate from yieldTokens, such as AavePriceOracle
-   * @param startTime Starting time of the pool
    * @param maturityTime Maturity time of the pool
+   * @param estimatedYield Initial estimated APR
+   * @param tempusShareNames Symbol names for TPS+TYS
    */
-  static async deployAave(yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number, estimatedYield:number, tempusShareNames: TempusSharesNames): Promise<TempusPool> {
-    return TempusPool.deploy("AaveTempusPool", yieldToken, priceOracle, maturityTime, estimatedYield, tempusShareNames);
+  static async deployAave(yieldToken:ERC20, maturityTime:number, estimatedYield:number, tempusShareNames:TempusSharesNames): Promise<TempusPool> {
+    return TempusPool.deploy("AaveTempusPool", yieldToken, maturityTime, estimatedYield, tempusShareNames);
   }
 
   /**
    * Deploys CompoundTempusPool
    * @param yieldToken The yield bearing token, such as cDai
-   * @param priceOracle Price oracle name which returns the current Interest Rate from yieldTokens, such as CompoundPriceOracle
-   * @param startTime Starting time of the pool
    * @param maturityTime Maturity time of the pool
+   * @param estimatedYield Initial estimated APR
+   * @param tempusShareNames Symbol names for TPS+TYS
    */
-  static async deployCompound(yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number, estimatedYield:number, tempusShareNames: TempusSharesNames): Promise<TempusPool> {
-    return TempusPool.deploy("CompoundTempusPool", yieldToken, priceOracle, maturityTime, estimatedYield, tempusShareNames);
+  static async deployCompound(yieldToken:ERC20, maturityTime:number, estimatedYield:number, tempusShareNames:TempusSharesNames): Promise<TempusPool> {
+    return TempusPool.deploy("CompoundTempusPool", yieldToken, maturityTime, estimatedYield, tempusShareNames);
   }
 
   /**
    * Deploys LidoTempusPool
-   * @param contractName Name of the specific TempusPool contract implementation
-   * @param priceOracle Price oracle name which returns the current exchange rate from yieldTokens, such as AavePriceOracle
+   * @param yieldToken The yield bearing token, such as stETH
    * @param maturityTime Maturity time of the pool
-   * @param tempusShareNames Names of TPS & TYS
+   * @param estimatedYield Initial estimated APR
+   * @param tempusShareNames Symbol names for TPS+TYS
    */
-  static async deployLido(yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number, estimatedYield:number, tempusShareNames: TempusSharesNames): Promise<TempusPool> {
-    return TempusPool.deploy("LidoTempusPool", yieldToken, priceOracle, maturityTime, estimatedYield, tempusShareNames);
+  static async deployLido(yieldToken:ERC20, maturityTime:number, estimatedYield:number, tempusShareNames:TempusSharesNames): Promise<TempusPool> {
+    return TempusPool.deploy("LidoTempusPool", yieldToken, maturityTime, estimatedYield, tempusShareNames);
   }
 
-  private static async deploy(contractName: string, yieldToken:ERC20, priceOracle:IPriceOracle, maturityTime:number, estimatedYield:number, tempusShareNames: TempusSharesNames): Promise<TempusPool> {
+  private static async deploy(contractName: string, yieldToken:ERC20, maturityTime:number, estimatedYield:number, tempusShareNames:TempusSharesNames): Promise<TempusPool> {
     const pool = await ContractBase.deployContract(
       contractName,
       yieldToken.address, 
-      priceOracle.address, 
       maturityTime,
       toWei(estimatedYield),
       tempusShareNames.principalName,
@@ -98,7 +94,7 @@ export class TempusPool extends ContractBase {
 
     const principalShare = await PoolShare.attach("principal", await pool.principalShare());
     const yieldShare = await PoolShare.attach("yield", await pool.yieldShare());
-    return new TempusPool(contractName, pool, yieldToken, principalShare, yieldShare, priceOracle);
+    return new TempusPool(contractName, pool, yieldToken, principalShare, yieldShare);
   }
 
   /**
@@ -218,6 +214,33 @@ export class TempusPool extends ContractBase {
    */
   async maturityInterestRate(): Promise<NumberOrString> {
     return this.fromBigNum(await this.contract.maturityInterestRate());
+  }
+
+  /**
+   * @param token An ERC20 token which belongs to a POOL
+   * @returns Updated current Interest Rate as an 1e18 decimal
+   */
+   async updateInterestRate(token:ERC20|string): Promise<NumberOrString> {
+    const address:string = (typeof(token) == 'string') ? token : token.address;
+    await this.contract.updateInterestRate(address);
+    return this.storedInterestRate(token);
+  }
+  
+  /**
+   * @param token An ERC20 token which belongs to a POOL
+   * @returns Current stored Interest Rate of that Token in the pool
+   */
+  async storedInterestRate(token:ERC20|string): Promise<NumberOrString> {
+    const address:string = (typeof(token) == 'string') ? token : token.address;
+    return this.fromBigNum(await this.contract.storedInterestRate(address));
+  }
+
+  async numAssetsPerYieldToken(amount:NumberOrString, interestRate:NumberOrString): Promise<NumberOrString> {
+    return this.fromBigNum(await this.contract.numAssetsPerYieldToken(this.toBigNum(amount), this.toBigNum(interestRate)));
+  }
+
+  async numYieldTokensPerAsset(amount:NumberOrString, interestRate:NumberOrString): Promise<NumberOrString> {
+    return this.fromBigNum(await this.contract.numYieldTokensPerAsset(this.toBigNum(amount), this.toBigNum(interestRate)));
   }
 
   /**

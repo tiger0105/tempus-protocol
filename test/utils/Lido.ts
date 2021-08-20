@@ -3,7 +3,6 @@ import { BigNumber, Contract } from "ethers";
 import { NumberOrString, toWei, ONE_WEI } from "./Decimal";
 import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
-import { IPriceOracle } from "./IPriceOracle";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signers";
 import { expect } from "chai";
 
@@ -13,13 +12,11 @@ import { expect } from "chai";
 export class Lido extends ERC20 {
   asset:ERC20; // ETH
   yieldToken:ERC20; // StETH
-  priceOracle:IPriceOracle;
 
-  constructor(pool:Contract, asset:ERC20, priceOracle:IPriceOracle) {
+  constructor(pool:Contract, asset:ERC20) {
     super("LidoMock", pool);
     this.asset = asset;
     this.yieldToken = this; // for Lido, the pool itself is the Yield Token
-    this.priceOracle = priceOracle;
   }
   
   /**
@@ -29,8 +26,7 @@ export class Lido extends ERC20 {
     // using WEI, because ETH has 18 decimal places
     const asset = await ERC20.deploy("ERC20FixedSupply", "ETH Mock", "ETH", toWei(totalSupply));
     const pool = await ContractBase.deployContract("LidoMock");
-    const priceOracle = await IPriceOracle.deploy("StETHPriceOracle");
-    return new Lido(pool, asset, priceOracle);
+    return new Lido(pool, asset);
   }
 
   /** @return stETH balance of an user */
@@ -60,7 +56,7 @@ export class Lido extends ERC20 {
 
   /** @return Stored Interest Rate */
   async interestRate(): Promise<NumberOrString> {
-    return this.priceOracle.storedInterestRate(this);
+    return this.fromBigNum(await this.contract._getInterestRate());
   }
 
   /**
@@ -77,7 +73,7 @@ export class Lido extends ERC20 {
 
     // figure out if newRate requires a change of stETH
     const totalShares:BigNumber = await this.contract.getTotalShares();
-    const curRate = await this.priceOracle.contract.storedInterestRate(this.address);
+    const curRate = await this.contract._getInterestRate();
     const newRate = this.toBigNum(interestRate);
     // TODO: there's a precision issue here
     const difference = newRate.mul(ONE_WEI).div(curRate).sub(ONE_WEI);
