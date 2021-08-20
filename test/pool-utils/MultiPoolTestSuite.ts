@@ -3,22 +3,33 @@ import { AaveTestPool } from "./AaveTestPool";
 import { LidoTestPool } from "./LidoTestPool";
 import { CompoundTestPool } from "./CompoundTestPool";
 
-export function createTestPool(type:PoolType): ITestPool {
-    switch (type) {
-      case PoolType.Aave: return new AaveTestPool();
-      case PoolType.Lido: return new LidoTestPool(); 
-      case PoolType.Compound: return new CompoundTestPool();
-    }
+function createTestPool(type:PoolType): ITestPool {
+  switch (type) {
+    case PoolType.Aave: return new AaveTestPool();
+    case PoolType.Lido: return new LidoTestPool(); 
+    case PoolType.Compound: return new CompoundTestPool();
   }
-  
-  export function describeForEachPool(title:string, fn:(pool:ITestPool) => void)
+}
+
+/**
+ * Batch describes unit test block for all PoolTypes
+ */
+export function describeForEachPool(title:string, fn:(pool:ITestPool) => void)
+{
+  describeForEachPoolType(title, [PoolType.Aave, PoolType.Lido, PoolType.Compound], fn);
+}
+
+/**
+ * Batch describes unit test block for each specified PoolType
+ */
+export function describeForEachPoolType(title:string, poolTypes:PoolType[], fn:(pool:ITestPool) => void)
+{
+  for (let type of poolTypes)
   {
-    for (let type of [PoolType.Aave, PoolType.Lido, PoolType.Compound])
-    {
-        describe(title + " <> " + type.toString(), () =>
-        {
-          const pool = createTestPool(type);
-          fn(pool);
-        });
-    }
+      describe(title + " <> " + type.toString(), () =>
+      {
+        const pool = createTestPool(type);
+        fn(pool);
+      });
   }
+}
