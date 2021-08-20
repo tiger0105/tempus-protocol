@@ -69,11 +69,12 @@ describe("Tempus Pool", async () => {
       await createAavePool(/*liquidityIndex:*/1.0, /*depositToUser:*/500);
       await expectUserState(pool, user, 0, 0, /*yieldBearing:*/500);
       await expect(pool.deposit(user, 100, user)).to.emit(pool.contract, 'Deposited').withArgs(
-        user.address,
-        user.address,
-        toWei(100),
-        toWei(100),
-        toWei(1.0)
+        user.address, // depositor
+        user.address, // reciever
+        toWei(100), // yield token amount
+        toWei(100), // backing token value
+        toWei(100), // amount of shares
+        toWei(1.0) // interst rate
       );
     });
 
@@ -187,6 +188,7 @@ describe("Tempus Pool", async () => {
         toWei(100), // principal amount
         toWei(100), // yield amount
         toWei(100), // yield bearing token amount
+        toWei(100), // backing token amount
         toWei(1.0)  // rate
       );
     });
