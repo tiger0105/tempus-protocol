@@ -25,6 +25,7 @@ describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
       user.address,
       toWei(100),
       toWei(100),
+      toWei(100),
       toWei(1.0)
     );
   });
