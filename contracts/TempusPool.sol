@@ -183,7 +183,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
         PrincipalShare(address(principalShare)).mint(recipient, tokensToIssue);
         YieldShare(address(yieldShare)).mint(recipient, tokensToIssue);
 
-        emit Deposited(msg.sender, recipient, tokenAmount, tokensToIssue, rate);
+        emit Deposited(msg.sender, recipient, tokenAmount, backingTokenDepositAmount, tokensToIssue, rate);
 
         return tokensToIssue;
     }
@@ -252,7 +252,14 @@ abstract contract TempusPool is ITempusPool, Ownable {
             totalFees += yieldTokensFee;
         }
 
-        emit Redeemed(msg.sender, principalAmount, yieldAmount, redeemableYieldTokens, interestRate);
+        emit Redeemed(
+            msg.sender,
+            principalAmount,
+            yieldAmount,
+            redeemableYieldTokens,
+            redeemableBackingTokens,
+            interestRate
+        );
 
         return (redeemableYieldTokens, redeemableBackingTokens);
     }

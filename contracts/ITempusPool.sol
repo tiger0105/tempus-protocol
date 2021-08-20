@@ -11,18 +11,34 @@ interface ITempusPool {
     ///                  Tempus Principal Share (TPS) and Tempus Yield Shares
     /// @param recipient Address of the recipient who will receive TPS and TYS tokens
     /// @param yieldTokenAmount Amount of yield tokens received from underlying pool
+    /// @param backingTokenValue Value of @param yieldTokenAmount expressed in backing tokens
     /// @param shareAmounts Number of Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS) granted to `recipient`
-    /// @param rate Interest Rate of the underlying pool from Yield Bearing Tokens to the underlying asset
-    event Deposited(address depositor, address recipient, uint256 yieldTokenAmount, uint256 shareAmounts, uint256 rate);
+    /// @param interestRate Interest Rate of the underlying pool from Yield Bearing Tokens to the underlying asset
+    event Deposited(
+        address depositor,
+        address recipient,
+        uint256 yieldTokenAmount,
+        uint256 backingTokenValue,
+        uint256 shareAmounts,
+        uint256 interestRate
+    );
 
     /// @dev Event emitted on successful TempusPool redeem().
     /// @param redeemer Address of the user who wants to redeem Tempus Principal Shares (TPS)
     ///                 and Tempus Yield Shares (TYS) to Yield Bearing Tokens (YBT).
-    /// @param principalAmount Number of Tempus Principal Shares (TPS) to redeem into the Yield Bearing Token (YBT)
-    /// @param yieldAmount Number of Tempus Yield Shares (TYS) to redeem into the Yield Bearing Token (YBT)
+    /// @param principalShareAmount Number of Tempus Principal Shares (TPS) to redeem into the Yield Bearing Token (YBT)
+    /// @param yieldShareAmount Number of Tempus Yield Shares (TYS) to redeem into the Yield Bearing Token (YBT)
     /// @param yieldBearingAmount Number of Yield bearing tokens redeemed from the pool
-    /// @param rate Interest Rate of the underlying pool from Yield Bearing Tokens to the underlying asset
-    event Redeemed(address redeemer, uint principalAmount, uint yieldAmount, uint yieldBearingAmount, uint rate);
+    /// @param backingTokenValue Value of @param yieldBearingAmount expressed in backing tokens
+    /// @param interestRate Interest Rate of the underlying pool from Yield Bearing Tokens to the underlying asset
+    event Redeemed(
+        address redeemer,
+        uint256 principalShareAmount,
+        uint256 yieldShareAmount,
+        uint256 yieldBearingAmount,
+        uint256 backingTokenValue,
+        uint256 interestRate
+    );
 
     /// @return The version of the pool.
     function version() external view returns (uint);
