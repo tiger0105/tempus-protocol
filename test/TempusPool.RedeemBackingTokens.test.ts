@@ -1,7 +1,8 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { Signer } from "./utils/ContractBase";
-import { ITestPool, PoolType } from "./pool-utils/ITestPool";
+import { PoolType } from "./utils/TempusPool";
+import { ITestPool } from "./pool-utils/ITestPool";
 import { describeForEachPoolType } from "./pool-utils/MultiPoolTestSuite";
 
 describeForEachPoolType("TempusPool Redeem", [PoolType.Aave, PoolType.Compound], (pool:ITestPool) =>

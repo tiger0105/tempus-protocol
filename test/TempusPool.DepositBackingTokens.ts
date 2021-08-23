@@ -1,7 +1,7 @@
 
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { ITestPool, PoolType } from "./pool-utils/ITestPool";
+import { ITestPool } from "./pool-utils/ITestPool";
 import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
 
 import { Signer } from "./utils/ContractBase";

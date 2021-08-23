@@ -16,8 +16,8 @@ describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
 
   beforeEach(async () =>
   {
-    [owner, user, user2] = await ethers.getSigners();
     pool = await testPool.createTempusPool(/*initialRate:*/1.0, 60 * 60);
+    [owner, user, user2] = testPool.signers;
   });
 
   it("Should revert if maturity is less than current time", async () =>
@@ -30,7 +30,7 @@ describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
     expect(await pool.version()).to.equal(1);
   });
 
-  it("undelying protocol name is correct", async () => 
+  it("Underlying protocol name is correct", async () => 
   {
     const protocol:string = utils.parseBytes32String(await pool.protocolName());
     expect(protocol).to.equal(testPool.type);
@@ -81,15 +81,15 @@ describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
   it("Principal shares initial details", async () =>
   {
     expect(await pool.principalShare.totalSupply()).to.equal(0);
-    expect(await pool.principalShare.name()).to.equal(testPool.principalName);
-    expect(await pool.principalShare.symbol()).to.equal(testPool.principalName);
+    expect(await pool.principalShare.name()).to.equal(testPool.names.principalName);
+    expect(await pool.principalShare.symbol()).to.equal(testPool.names.principalSymbol);
   });
 
   it("Yield shares initial details", async () =>
   {
     expect(await pool.yieldShare.totalSupply()).to.equal(0);
-    expect(await pool.yieldShare.name()).to.equal(testPool.yieldName);
-    expect(await pool.yieldShare.symbol()).to.equal(testPool.yieldName);
+    expect(await pool.yieldShare.name()).to.equal(testPool.names.yieldName);
+    expect(await pool.yieldShare.symbol()).to.equal(testPool.names.yieldSymbol);
   });
 
   it("Should revert on collecting fees as there is no fees", async () => 
