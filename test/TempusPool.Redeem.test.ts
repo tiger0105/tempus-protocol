@@ -50,10 +50,10 @@ describeForEachPool("TempusPool Redeem", (pool:ITestPool) =>
     await pool.depositYBT(user, 100, /*recipient:*/user);
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/0);
 
-    (await pool.expectRedeemYBT(user, 150, 100)).to.equal("Insufficient principal balance.");
-    (await pool.expectRedeemYBT(user, 100, 150)).to.equal("Insufficient yield balance.");
+    (await pool.expectRedeemYBT(user, 150, 100)).to.equal("Insufficient principals.");
+    (await pool.expectRedeemYBT(user, 100, 150)).to.equal("Insufficient yields.");
     // We're checking principal first.
-    (await pool.expectRedeemYBT(user, 150, 150)).to.equal("Insufficient principal balance.");
+    (await pool.expectRedeemYBT(user, 150, 150)).to.equal("Insufficient principals.");
   });
 
   it("Should fail before maturity with uneqal shares", async () =>

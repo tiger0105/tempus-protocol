@@ -7,6 +7,7 @@ import { MockProvider } from "@ethereum-waffle/provider";
 import { deployMockContract } from "@ethereum-waffle/mock-contract";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signers";
 import { blockTimestamp } from "./Utils";
+import { TempusPool } from "./TempusPool";
 
 const WETH_ARTIFACTS = require("../../artifacts/@balancer-labs/v2-solidity-utils/contracts/misc/IWETH.sol/IWETH");
 
@@ -33,20 +34,21 @@ export class TempusAMM extends ContractBase {
   vault: Contract;
   principalShare: ERC20;
   yieldShare: ERC20;
+  tempusPool: TempusPool;
 
-  constructor(tempusAmmPool: Contract, vault: Contract, principalShare: ERC20, yieldShare: ERC20) {
+  constructor(tempusAmmPool: Contract, vault: Contract, tempusPool: TempusPool) {
     super("TempusAMM", 18, tempusAmmPool);
     this.vault = vault;
-    this.principalShare = principalShare;
-    this.yieldShare = yieldShare;
+    this.tempusPool = tempusPool;
+    this.principalShare = tempusPool.principalShare;
+    this.yieldShare = tempusPool.yieldShare;
   }
 
   static async create(
     owner: SignerWithAddress,
     amplification: Number,
     swapFeePercentage: Number, 
-    principalShare: ERC20,
-    yieldShare:ERC20
+    tempusPool: TempusPool
   ): Promise<TempusAMM> {
     const [sender] = new MockProvider().getWallets();
     const mockedWETH = await deployMockContract(sender, WETH_ARTIFACTS.abi);
@@ -59,7 +61,7 @@ export class TempusAMM extends ContractBase {
       vault.address, 
       "Tempus LP token", 
       "LP", 
-      [principalShare.address, yieldShare.address].sort((a1, a2) => parseInt(a1) - parseInt(a2)),
+      tempusPool.address,
       amplification, 
       toWei(swapFeePercentage),
       3 * MONTH, 
@@ -67,11 +69,14 @@ export class TempusAMM extends ContractBase {
       owner.address
     );
 
-    return new TempusAMM(tempusAMM, vault, principalShare, yieldShare);
+    return new TempusAMM(tempusAMM, vault, tempusPool);
   }
 
-  async getLastInvariant(): Promise<[NumberOrString, NumberOrString]> {
-    return this.contract.getLastInvariant();
+  async getLastInvariant(): Promise<{invariant: number, amplification: number}> {
+    let inv:BigNumber;
+    let amp: number;
+    [inv, amp] = await this.contract.getLastInvariant();
+    return {invariant: +fromWei(inv), amplification: amp};
   }
 
   async balanceOf(user:SignerWithAddress): Promise<NumberOrString> {
@@ -83,15 +88,13 @@ export class TempusAMM extends ContractBase {
   }
 
   async provideLiquidity(from: SignerWithAddress, principalShareBalance: Number, yieldShareBalance: Number, joinKind: TempusAMMJoinKind) {
-    const principalBalance = toWei(principalShareBalance);
-    const yieldBalance = toWei(yieldShareBalance);
-    await this.principalShare.connect(from).approve(this.vault.address, principalBalance);
-    await this.yieldShare.connect(from).approve(this.vault.address, yieldBalance);
+    await this.principalShare.approve(from, this.vault.address, principalShareBalance);
+    await this.yieldShare.approve(from, this.vault.address, yieldShareBalance);
     
     const poolId = await this.contract.getPoolId();
     const assets = [
-      { address: this.principalShare.address, amount: principalBalance },
-      { address: this.yieldShare.address, amount: yieldBalance }
+      { address: this.principalShare.address, amount: toWei(principalShareBalance) },
+      { address: this.yieldShare.address, amount: toWei(yieldShareBalance) }
     ].sort(( asset1, asset2 ) => parseInt(asset1.address) - parseInt(asset2.address));
     
     const initialBalances = assets.map(({ amount }) => amount);

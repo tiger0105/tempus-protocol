@@ -22,7 +22,7 @@ const _setup = underlyingProtocolSetup => (deployments.createFixture(async () =>
 
   const { underlyingProtocol, underlyingProtocol1, tempusPool, tempusPool1 } = await underlyingProtocolSetup(owner, user);
   
-  const tempusAMM = await TempusAMM.create(owner, ammAmplification, ammFee, tempusPool.principalShare, tempusPool.yieldShare);
+  const tempusAMM = await TempusAMM.create(owner, ammAmplification, ammFee, tempusPool);
   
   const tempusController = await ContractBase.deployContract('TempusController');
   await underlyingProtocol.yieldToken.approve(owner, tempusController.address, 1000000);
@@ -120,7 +120,6 @@ describe("TempusController", async () => {
         const preDepositAMMBalancesRatio = ONE_WEI.mul(toWei(vaultPrincipalShareBalancePreDeposit)).div(toWei(vaultYieldShareBalancePreDeposit));
         
         await tempusController.connect(user).depositAndProvideLiquidity(
-            tempusPool.address,
             tempusAMM.address,
             toWei(5234.456789),
             false
@@ -154,7 +153,6 @@ describe("TempusController", async () => {
         const preDepositAMMBalancesRatio = ONE_WEI.mul(toWei(vaultPrincipalShareBalancePreDeposit)).div(toWei(vaultYieldShareBalancePreDeposit));
         
         await tempusController.connect(user).depositAndProvideLiquidity(
-            tempusPool.address,
             tempusAMM.address,
             toWei(5234.456789),
             true
@@ -188,7 +186,6 @@ describe("TempusController", async () => {
         const preDepositAMMBalancesRatio = ONE_WEI.mul(toWei(vaultPrincipalShareBalancePreDeposit)).div(toWei(vaultYieldShareBalancePreDeposit));
         
         await tempusController.connect(user).depositAndProvideLiquidity(
-            tempusPool.address,
             tempusAMM.address,
             toWei(52.456789),
             true,
@@ -225,7 +222,6 @@ describe("TempusController", async () => {
         const preDepositAMMBalancesRatio = ONE_WEI.mul(toWei(vaultPrincipalShareBalancePreDeposit)).div(toWei(vaultYieldShareBalancePreDeposit));
         
         await tempusController.connect(user).depositAndProvideLiquidity(
-            tempusPool.address,
             tempusAMM.address,
             toWei(5234.456789),
             false
@@ -247,7 +243,6 @@ describe("TempusController", async () => {
         const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupAave();
         
         const invalidAction = tempusController.connect(user).depositAndProvideLiquidity(
-            tempusPool.address,
             tempusAMM.address,
             toWei(123),
             false
@@ -259,7 +254,6 @@ describe("TempusController", async () => {
         const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupAave();
         
         const invalidAction = tempusController.connect(user).depositAndProvideLiquidity(
-            tempusPool.address,
             tempusAMM.address,
             toWei(123),
             true
@@ -274,27 +268,11 @@ describe("TempusController", async () => {
         await tempusAMM.provideLiquidity(owner, 12.34567, 1234.5678912, TempusAMMJoinKind.INIT);
         
         const invalidAction = tempusController.connect(user).depositAndProvideLiquidity(
-            tempusPool.address,
             tempusAMM.address,
             0,
             false
         );
         (await expectRevert(invalidAction)).to.equal("yieldTokenAmount is 0");
-      });
-
-      it("verifies depositing and providing liquidity reverts in case of mixed tokens", async () => {
-        const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupAave();
-        
-        await tempusPool.deposit(owner, 10000, owner);
-        await tempusAMM.provideLiquidity(owner, 12.34567, 1234.5678912, TempusAMMJoinKind.INIT);
-        
-        const invalidAction = tempusController.connect(user).depositAndProvideLiquidity(
-            tempusPool1.address,
-            tempusAMM.address,
-            1,
-            false
-        );
-        (await expectRevert(invalidAction)).to.equal("TempusPool does not contain given token/s");
       });
     });
 
@@ -308,7 +286,6 @@ describe("TempusController", async () => {
         await tempusAMM.provideLiquidity(owner, 200, 2000, TempusAMMJoinKind.INIT); // 10% rate
   
         const invalidAction = tempusController.connect(user).depositAndFix(
-            tempusPool.address,
             tempusAMM.address,
             toWei(5.456789),
             false,
@@ -332,7 +309,6 @@ describe("TempusController", async () => {
         await tempusAMM.provideLiquidity(owner, 200, 2000, TempusAMMJoinKind.INIT); // 10% rate
   
         await tempusController.connect(user).depositAndFix(
-            tempusPool.address,
             tempusAMM.address,
             toWei(5.456789),
             false,
@@ -361,7 +337,6 @@ describe("TempusController", async () => {
         await tempusAMM.provideLiquidity(owner, 200, 2000, TempusAMMJoinKind.INIT); // 10% rate
   
         await tempusController.connect(user).depositAndFix(
-            tempusPool.address,
             tempusAMM.address,
             toWei(5.456789),
             true,
@@ -390,7 +365,6 @@ describe("TempusController", async () => {
         await tempusAMM.provideLiquidity(owner, 20, 200, TempusAMMJoinKind.INIT); // 10% rate
   
         await tempusController.connect(user).depositAndFix(
-            tempusPool.address,
             tempusAMM.address,
             toWei(5.456789),
             true,
