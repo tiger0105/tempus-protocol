@@ -5,17 +5,12 @@ import "./ERC20OwnerMintableToken.sol";
 import "../ITempusPool.sol";
 
 /// Token representing the principal or yield shares of a pool.
-abstract contract PoolShare is ERC20OwnerMintableToken {
-    enum ShareKind {
-        Principal,
-        Yield
-    }
-
+abstract contract PoolShare is IPoolShare, ERC20OwnerMintableToken {
     /// The kind of the share.
-    ShareKind immutable kind;
+    ShareKind public immutable override kind;
 
     /// The pool this share is part of.
-    ITempusPool immutable pool;
+    ITempusPool public immutable override pool;
 
     constructor(
         ShareKind _kind,
@@ -26,13 +21,4 @@ abstract contract PoolShare is ERC20OwnerMintableToken {
         kind = _kind;
         pool = _pool;
     }
-
-    /// @dev Price per single share expressed in Backing Tokens of the underlying pool.
-    ///      This is for the purpose of TempusAMM api support.
-    ///      Example: exchanging Tempus Yield Share to DAI
-    /// @return 1e18 decimal conversion rate per share
-    function getPricePerFullShare() public virtual returns (uint256);
-
-    /// @return 1e18 decimal stored conversion rate per share
-    function getPricePerFullShareStored() public view virtual returns (uint256);
 }

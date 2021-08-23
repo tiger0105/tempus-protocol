@@ -16,12 +16,10 @@ contract TempusController is Ownable {
 
     /// @dev Atomically deposits YBT/BT to TempusPool and provides liquidity
     ///      to the corresponding Tempus AMM with the issued TYS & TPS
-    /// @param targetPool Tempus Pool to which YBT/BT will be deposited
     /// @param tempusAMM Tempus AMM to use to swap TYS for TPS
     /// @param tokenAmount Amount of YBT/BT to be deposited
     /// @param isBackingToken specifies whether the deposited asset is the Backing Token or Yield Bearing Token
     function depositAndProvideLiquidity(
-        ITempusPool targetPool,
         ITempusAMM tempusAMM,
         uint256 tokenAmount,
         bool isBackingToken
@@ -29,9 +27,9 @@ contract TempusController is Ownable {
         IVault vault = tempusAMM.getVault();
         bytes32 poolId = tempusAMM.getPoolId();
         (IERC20[] memory ammTokens, uint256[] memory ammBalances, ) = vault.getPoolTokens(poolId);
-
-        ensureTempusPoolContainsTokens(targetPool, ammTokens);
         require(ammBalances[0] > 0 && ammBalances[1] > 0, "AMM not initialized");
+
+        ITempusPool targetPool = tempusAMM.tempusPool();
 
         if (isBackingToken) {
             depositBackingTokens(targetPool, tokenAmount);
@@ -73,13 +71,11 @@ contract TempusController is Ownable {
     }
 
     /// @dev Atomically deposits YBT/BT to TempusPool and swaps TYS for TPS to get fixed yield
-    /// @param targetPool Tempus Pool to which assets will be deposited
     /// @param tempusAMM Tempus AMM to use to swap TYS for TPS
     /// @param tokenAmount Amount of YBT/BT to be deposited
     /// @param isBackingToken specifies whether the deposited asset is the Backing Token or Yield Bearing Token
     /// @param minTYSRate Minimum TYS rate (denominated in TPS) to receive in exchange to TPS
     function depositAndFix(
-        ITempusPool targetPool,
         ITempusAMM tempusAMM,
         uint256 tokenAmount,
         bool isBackingToken,
@@ -87,9 +83,8 @@ contract TempusController is Ownable {
     ) external payable {
         IVault vault = tempusAMM.getVault();
         bytes32 poolId = tempusAMM.getPoolId();
-        (IERC20[] memory ammTokens, , ) = vault.getPoolTokens(poolId);
 
-        ensureTempusPoolContainsTokens(targetPool, ammTokens);
+        ITempusPool targetPool = tempusAMM.tempusPool();
 
         if (isBackingToken) {
             depositBackingTokens(targetPool, tokenAmount);
@@ -97,8 +92,8 @@ contract TempusController is Ownable {
             depositYieldBearingTokens(targetPool, tokenAmount);
         }
 
-        IERC20 principalShares = IERC20(targetPool.principalShare());
-        IERC20 yieldShares = IERC20(targetPool.yieldShare());
+        IERC20 principalShares = IERC20(address(targetPool.principalShare()));
+        IERC20 yieldShares = IERC20(address(targetPool.yieldShare()));
         uint256 swapAmount = yieldShares.balanceOf(address(this));
         yieldShares.safeIncreaseAllowance(address(vault), swapAmount);
 
@@ -152,20 +147,6 @@ contract TempusController is Ownable {
             require(address(backingToken) == address(0), "given TempusPool's Backing Token is not ETH");
 
             targetPool.depositBackingToken{value: msg.value}(backingTokenAmount, address(this));
-        }
-    }
-
-    // TODO: remove this once we add a refernce from ITempusAMM --> ITempusPool
-    function ensureTempusPoolContainsTokens(ITempusPool pool, IERC20[] memory tokens) private view {
-        IERC20 principalShare = pool.principalShare();
-        IERC20 yieldShare = pool.yieldShare();
-        if (principalShare == tokens[0]) {
-            require(yieldShare == tokens[1], "TempusPool does not contain given token/s");
-        } else {
-            require(
-                (yieldShare == tokens[0] && principalShare == tokens[1]),
-                "TempusPool does not contain given token/s"
-            );
         }
     }
 

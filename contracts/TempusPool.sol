@@ -26,8 +26,8 @@ abstract contract TempusPool is ITempusPool, Ownable {
 
     uint256 public immutable override initialInterestRate;
     uint256 public maturityInterestRate;
-    IERC20 public immutable override principalShare;
-    IERC20 public immutable override yieldShare;
+    IPoolShare public immutable override principalShare;
+    IPoolShare public immutable override yieldShare;
 
     uint256 private immutable initialEstimatedYield;
 
@@ -86,7 +86,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
             maturityInterestRate = currentInterestRate();
             matured = true;
 
-            assert(principalShare.totalSupply() == yieldShare.totalSupply());
+            assert(IERC20(address(principalShare)).totalSupply() == IERC20(address(yieldShare)).totalSupply());
         }
     }
 
@@ -206,8 +206,8 @@ abstract contract TempusPool is ITempusPool, Ownable {
     }
 
     function burnShares(uint256 principalAmount, uint256 yieldAmount) internal returns (uint256, uint256) {
-        require(principalShare.balanceOf(msg.sender) >= principalAmount, "Insufficient principal balance.");
-        require(yieldShare.balanceOf(msg.sender) >= yieldAmount, "Insufficient yield balance.");
+        require(IERC20(address(principalShare)).balanceOf(msg.sender) >= principalAmount, "Insufficient principals.");
+        require(IERC20(address(yieldShare)).balanceOf(msg.sender) >= yieldAmount, "Insufficient yields.");
 
         // Redeeming prior to maturity is only allowed in equal amounts.
         require(matured || (principalAmount == yieldAmount), "Inequal redemption not allowed before maturity.");

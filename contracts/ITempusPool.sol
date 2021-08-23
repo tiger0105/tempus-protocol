@@ -1,19 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.6;
+pragma solidity >=0.7.6 <0.9.0;
+pragma abicoder v2;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./token/IPoolShare.sol";
 
 /// @author The tempus.finance team
 /// @title The interface of a Tempus Pool
 interface ITempusPool {
     struct FeesConfig {
-        /// @dev Percentage of Yield Bearing Tokens (YBT) taken as fee during deposit()
         uint256 depositPercent;
-        /// @dev Percentage of Yield Bearing Tokens (YBT)
-        ///      taken as fee during early redeem()
         uint256 earlyRedeemPercent;
-        /// @dev Percentage of Yield Bearing Tokens (YBT)
-        ///      taken as fee after maturity time during redeem()
         uint256 matureRedeemPercent;
     }
 
@@ -68,10 +64,10 @@ interface ITempusPool {
     function backingToken() external view returns (address);
 
     /// @return This TempusPool's Tempus Principal Share (TPS)
-    function principalShare() external view returns (IERC20);
+    function principalShare() external view returns (IPoolShare);
 
     /// @return This TempusPool's Tempus Yield Share (TYS)
-    function yieldShare() external view returns (IERC20);
+    function yieldShare() external view returns (IPoolShare);
 
     /// @return Start time of the pool.
     function startTime() external view returns (uint256);

@@ -13,16 +13,14 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
     /// @param pool The TempusPool to fetch its TVL (total value locked)
     /// @return total value locked of a TempusPool (denominated in BackingTokens)
     function totalValueLockedInBackingTokens(TempusPool pool) public view returns (uint256) {
-        uint256 principalShareTotalSupply = pool.principalShare().totalSupply();
-        uint256 yieldShareTotalSupply = pool.yieldShare().totalSupply();
         // TODO: this assumption that TPS price is always 1e18 is only correct with the current implementation of pricePerPoolShare which is probably not good
         uint256 pricePerPrincipalShare = pool.pricePerPrincipalShareStored();
         uint256 pricePerYieldShare = pool.pricePerYieldShareStored();
 
         return
             calculateTvlInBackingTokens(
-                principalShareTotalSupply,
-                yieldShareTotalSupply,
+                IERC20(address(pool.principalShare())).totalSupply(),
+                IERC20(address(pool.yieldShare())).totalSupply(),
                 pricePerPrincipalShare,
                 pricePerYieldShare
             );
