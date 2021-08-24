@@ -20,7 +20,7 @@ import "@balancer-labs/v2-vault/contracts/interfaces/IVault.sol";
 import "@balancer-labs/v2-pool-utils/contracts/factories/BasePoolFactory.sol";
 import "@balancer-labs/v2-pool-utils/contracts/factories/FactoryWidePauseWindow.sol";
 
-import "./interfaces/ITempusShare.sol";
+import "./../ITempusPool.sol";
 import "./TempusAMM.sol";
 
 contract TempusAMMFactory is BasePoolFactory, FactoryWidePauseWindow {
@@ -34,7 +34,7 @@ contract TempusAMMFactory is BasePoolFactory, FactoryWidePauseWindow {
     function create(
         string memory name,
         string memory symbol,
-        ITempusShare[] memory tokens,
+        ITempusPool tempusPool,
         uint256 amplificationParameter,
         uint256 swapFeePercentage,
         address owner
@@ -46,7 +46,7 @@ contract TempusAMMFactory is BasePoolFactory, FactoryWidePauseWindow {
                 getVault(),
                 name,
                 symbol,
-                tokens,
+                tempusPool,
                 amplificationParameter,
                 swapFeePercentage,
                 pauseWindowDuration,
