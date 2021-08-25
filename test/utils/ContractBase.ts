@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { Contract, BigNumber, ContractFunction } from "ethers";
+import { Contract, BigNumber } from "ethers";
 import { NumberOrString, parseDecimal, formatDecimal, MAX_NUMBER_DIGITS } from "./Decimal";
 import * as signers from "@nomiclabs/hardhat-ethers/dist/src/signers";
 
