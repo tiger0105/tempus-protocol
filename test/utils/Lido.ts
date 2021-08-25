@@ -25,7 +25,12 @@ export class Lido extends ERC20 {
   static async create(totalSupply:Number, initialRate:Number = 1.0): Promise<Lido> {
     const asset = await ERC20.deploy("ERC20FixedSupply", "wETH Mock", "wETH", toWei(totalSupply));
     const pool = await ContractBase.deployContract("LidoMock");
-    const lido = new Lido(pool, asset);
+    const lido = await new Lido(pool, asset);
+
+    // Deploy a single validator to ensure Lido is never empty to simplify further processing
+    // await lido.contract.submit("0x0000000000000000000000000000000000000000", {value: toWei(32)})
+    await lido.contract.submit("0x0000000000000000000000000000000000000000", {value: ONE_WEI.mul(32)})
+
     if (initialRate != 1.0) {
       await lido.setInterestRate(initialRate);
     }
