@@ -155,13 +155,6 @@ contract LidoMock is StETH {
         return beaconBalance + bufferedEther;
     }
 
-    // MOCK only, used for manipulating Interest Rate
-    function _setSharesAndEthBalance(uint256 stEthBalance, uint256 ethBalance) public {
-        totalShares = stEthBalance;
-        beaconBalance = ethBalance;
-        bufferedEther = 0;
-    }
-
     /**
      * @return the amount of shares that corresponds to `_ethAmount` protocol-controlled Ether.
      */
@@ -182,10 +175,5 @@ contract LidoMock is StETH {
             return _sharesAmount;
         }
         return StETH.getPooledEthByShares(_sharesAmount);
-    }
-
-    // MOCK ONLY
-    function _getInterestRate() public view returns (uint256) {
-        return getPooledEthByShares(1e18);
     }
 }

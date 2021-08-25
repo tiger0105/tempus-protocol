@@ -64,7 +64,7 @@ export class Lido extends ERC20 {
 
   /** @return Stored Interest Rate */
   async interestRate(): Promise<NumberOrString> {
-    return this.fromBigNum(await this.contract._getInterestRate());
+    return this.fromBigNum(await this.contract.getPooledEthByShares(ONE_WEI));
   }
 
   /**
