@@ -18,8 +18,8 @@ describe("Lido Mock", () =>
   {
     it("Should have correct initial values", async () =>
     {
-      expect(await lido.totalSupply()).to.equal(0.0); // alias to getTotalPooledEther()
-      expect(await lido.getTotalShares()).to.equal(0.0);
+      expect(await lido.totalSupply()).to.equal(32.0); // alias to getTotalPooledEther()
+      expect(await lido.getTotalShares()).to.equal(32.0);
       expect(await lido.getPooledEthByShares(1.0)).to.equal(1.0);
       expect(await lido.getSharesByPooledEth(1.0)).to.equal(1.0);
     });
@@ -32,13 +32,13 @@ describe("Lido Mock", () =>
       await lido.sendToContract(owner, 4.0); // join Lido
       await lido.submit(user, 2.0); // join Lido
 
-      expect(await lido.totalSupply()).to.equal(6.0); // alias to getTotalPooledEther()
-      expect(await lido.getTotalShares()).to.equal(6.0);
+      expect(await lido.totalSupply()).to.equal(38.0); // alias to getTotalPooledEther()
+      expect(await lido.getTotalShares()).to.equal(38.0);
 
-      expect(await lido.balanceOf(owner)).to.equal(4.0);
+      expect(await lido.balanceOf(owner)).to.equal(36.0);
       expect(await lido.balanceOf(user)).to.equal(2.0);
 
-      expect(await lido.sharesOf(owner)).to.equal(4.0);
+      expect(await lido.sharesOf(owner)).to.equal(36.0);
       expect(await lido.sharesOf(user)).to.equal(2.0);
     });
 
@@ -51,13 +51,13 @@ describe("Lido Mock", () =>
     {
       await lido.submit(owner, 8.0);
       await lido.depositBufferedEther2(1);
-      expect(await lido.totalSupply()).to.equal(8.0);
-      expect(await lido.sharesOf(owner)).to.equal(8.0);
+      expect(await lido.totalSupply()).to.equal(40.0);
+      expect(await lido.sharesOf(owner)).to.equal(40.0);
       
       await lido.submit(owner, 32.0);
       await lido.depositBufferedEther();
-      expect(await lido.totalSupply()).to.equal(40.0);
-      expect(await lido.sharesOf(owner)).to.equal(40.0);
+      expect(await lido.totalSupply()).to.equal(72.0);
+      expect(await lido.sharesOf(owner)).to.equal(72.0);
     });
 
     it("Should increase account balances after rewards in fixed proportion", async () =>
@@ -73,12 +73,12 @@ describe("Lido Mock", () =>
       //await lido.printState("after pushBeaconRewards (1 eth)");
 
       expect(await lido.totalSupply()).to.equal(initial + rewards);
-      expect(await lido.getTotalShares()).to.equal('50.098231827111984282');
+      expect(await lido.getTotalShares()).to.equal('82.161100196463654223');
 
       const ownerBalance = await lido.balanceOf(owner);
       const userBalance  = await lido.balanceOf(user);
-      expect(ownerBalance).to.equal(10.18);
-      expect(userBalance).to.equal(40.72);
+      expect(ownerBalance).to.equal('26.070731707317073171');
+      expect(userBalance).to.equal('24.829268292682926829');
     });
   });
 
@@ -93,18 +93,18 @@ describe("Lido Mock", () =>
 
       // Three validators and total balance of 34, i.e accrued 2 eth of yield
       await lido.pushBeacon(owner, 1, 34.0);
-      expect(await lido.sharesOf(owner)).to.equal(32.0);
+      expect(await lido.sharesOf(owner)).to.equal(64.0);
       expect(await lido.sharesOf(user)).to.equal(66.0);
 
       // Withdraw some ether
       await lido.withdraw(owner, 32.0);
-      expect(await lido.sharesOf(owner)).to.equal(0.0);
+      expect(await lido.sharesOf(owner)).to.equal(32.0);
       expect(await lido.sharesOf(user)).to.equal(66.0);
 
       (await expectRevert(lido.withdraw(owner, 100.0)))
         .to.equal("Can only withdraw up to the buffered ether.");
 
-      (await expectRevert(lido.withdraw(owner, 1.0)))
+      (await expectRevert(lido.withdraw(owner, 33.0)))
         .to.equal("BURN_AMOUNT_EXCEEDS_BALANCE");
     });
 
