@@ -88,7 +88,7 @@ export class Lido extends ERC20 {
     await this.contract._setSharesAndEthBalance(totalShares, newETHSupply);
   }
 
-  async submit(signer:SignerOrAddress, amount:NumberOrString) {
+  async submit(signer:SignerOrAddress, amount:NumberOrString): Promise<NumberOrString> {
     const val = this.toBigNum(amount); // payable call, set value:
     return await this.connect(signer).submit(addressOf(signer), {value: val})
   }
