@@ -39,10 +39,11 @@ contract LidoTempusPool is TempusPool {
         require(msg.value == amount, "ETH value does not match provided amount");
 
         uint256 preDepositBalance = IERC20(yieldBearingToken).balanceOf(address(this));
-        lido.submit{value: msg.value}(address(0));
+        uint256 num = lido.submit{value: msg.value}(address(0));
 
         /// TODO: figure out why lido.submit returns a different value than this
         uint256 mintedTokens = IERC20(yieldBearingToken).balanceOf(address(this)) - preDepositBalance;
+        require(num == mintedTokens);
 
         return mintedTokens;
     }
