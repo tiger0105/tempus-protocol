@@ -55,6 +55,7 @@ export abstract class ITestPool {
   initialRate:number; // initial interest rate
   yieldEst:number; // initial estimated yield
   maturityTime:number; // UNIX timestamp in milliseconds
+  poolDuration:number; // pool duration in seconds
   names:TempusSharesNames;
 
   constructor(type:PoolType, yieldPeggedToAsset:boolean) { 
@@ -80,7 +81,7 @@ export abstract class ITestPool {
   /**
    * This must create the TempusPool instance
    */
-  abstract createTempusPool(initialRate:number, poolDurationSeconds:number): Promise<TempusPool>;
+  abstract createTempusPool(initialRate:number, poolDurationSeconds:number, yieldEst:number): Promise<TempusPool>;
 
   /**
    * @param rate Sets the Interest Rate for the underlying mock pool
@@ -198,7 +199,7 @@ export abstract class ITestPool {
    * Fast forwards time to after maturity and Finalized the pool
    */
   async fastForwardToMaturity(): Promise<void> {
-    await increaseTime(this.maturityTime);
+    await increaseTime(this.poolDuration);
     return this.tempus.finalize();
   }
 
@@ -236,7 +237,7 @@ export abstract class ITestPool {
 
   protected async createPool(
     initialRate:number,
-    poolDurationSeconds:number,
+    poolDuration:number,
     yieldEst:number,
     tpsName:string,
     tysName:string,
@@ -245,13 +246,14 @@ export abstract class ITestPool {
   ): Promise<TempusPool> {
     this.initialRate = initialRate;
     this.yieldEst = yieldEst;
+    this.poolDuration = poolDuration;
 
-    const signature = this.type+"|"+initialRate+"|"+poolDurationSeconds+"|"+yieldEst;
+    const signature = this.type+"|"+initialRate+"|"+poolDuration+"|"+yieldEst;
     let f:FixtureState = POOL_FIXTURES[signature];
 
     if (!f) // initialize a new fixture
     {
-      const maturityTime = await blockTimestamp() + poolDurationSeconds;
+      const maturityTime = await blockTimestamp() + poolDuration;
       const names = generateTempusSharesNames(tpsName, tysName, maturityTime);
       f = new FixtureState(maturityTime, names, deployments.createFixture(async () =>
       {

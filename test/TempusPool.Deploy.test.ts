@@ -1,5 +1,3 @@
-
-import { ethers } from "hardhat";
 import { utils } from "ethers";
 import { expect } from "chai";
 import { ITestPool } from "./pool-utils/ITestPool";
@@ -16,13 +14,13 @@ describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
 
   beforeEach(async () =>
   {
-    pool = await testPool.createTempusPool(/*initialRate:*/1.0, 60 * 60);
+    pool = await testPool.createTempusPool(/*initialRate:*/1.0, 60 * 60, /*yieldEst:*/0.1);
     [owner, user, user2] = testPool.signers;
   });
 
   it("Should revert if maturity is less than current time", async () =>
   {
-    (await expectRevert(testPool.createTempusPool(/*initialRate:*/1.0, -60))).to.equal("maturityTime is after startTime");
+    (await expectRevert(testPool.createTempusPool(/*initialRate:*/1.0, -60, /*yieldEst:*/0.1))).to.equal("maturityTime is after startTime");
   });
   
   it("Version is correct", async () =>

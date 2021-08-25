@@ -281,11 +281,3 @@ export class TempusPool extends ContractBase {
     await this.contract.connect(owner).transferFees(addressOf(recipient), this.toBigNum(amount));
   }
 }
-
-// DEPRECATED, use `ITestPool.userState()` and `state.expect()` to get actual test failure line #
-export async function expectUserState(pool:TempusPool, owner:SignerOrAddress, principalShares:number, yieldShares:number, yieldBearing:number) {
-  expect(await pool.principalShare.balanceOf(owner)).to.equal(principalShares);
-  expect(await pool.yieldShare.balanceOf(owner)).to.equal(yieldShares);
-  // BUG: this is wrong for Lido, which requires sharesOf() to get the YBT
-  expect(await pool.yieldBearing.balanceOf(owner)).to.equal(yieldBearing);
-}

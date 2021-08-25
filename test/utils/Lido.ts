@@ -27,7 +27,6 @@ export class Lido extends ERC20 {
     const pool = await ContractBase.deployContract("LidoMock");
     const lido = new Lido(pool, asset);
     if (initialRate != 1.0) {
-      console.log("setInterestRate", initialRate);
       await lido.setInterestRate(initialRate);
     }
     return lido;

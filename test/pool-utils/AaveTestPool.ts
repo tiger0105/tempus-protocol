@@ -26,8 +26,7 @@ export class AaveTestPool extends ITestPool {
     await this.aave.deposit(user, amount);
   }
 
-  async createTempusPool(initialRate:number, poolDuration:number): Promise<TempusPool> {
-    const yieldEst = 0.1;
+  async createTempusPool(initialRate:number, poolDuration:number, yieldEst:number): Promise<TempusPool> {
     this.tempus = await this.createPool(
       initialRate, poolDuration, yieldEst, 'TPS-AAT', 'TYS-AAT',
     async ():Promise<any> =>

@@ -28,8 +28,7 @@ export class CompoundTestPool extends ITestPool {
     await this.compound.mint(user, amount);
   }
 
-  async createTempusPool(initialRate:number, poolDuration:number): Promise<TempusPool> {
-    const yieldEst = 0.1;
+  async createTempusPool(initialRate:number, poolDuration:number, yieldEst:number): Promise<TempusPool> {
     this.tempus = await this.createPool(
       initialRate, poolDuration, yieldEst, 'TPS-cDAI', 'TYS-cDAI',
     async ():Promise<any> =>

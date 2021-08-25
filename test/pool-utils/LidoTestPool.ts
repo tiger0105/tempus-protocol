@@ -36,8 +36,7 @@ export class LidoTestPool extends ITestPool {
     return this.tempus.depositBackingToken(user, backingTokenAmount, recipient, /*ETH*/backingTokenAmount);
   }
 
-  async createTempusPool(initialRate:number, poolDuration:number): Promise<TempusPool> {
-    const yieldEst = 0.1;
+  async createTempusPool(initialRate:number, poolDuration:number, yieldEst:number): Promise<TempusPool> {
     this.tempus = await this.createPool(
       initialRate, poolDuration, yieldEst, 'TPS-stETH', 'TYS-stETH',
     async ():Promise<any> =>
