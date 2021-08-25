@@ -5,7 +5,7 @@ import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
 
 import { Signer } from "./utils/ContractBase";
 import { TempusPool } from "./utils/TempusPool";
-import { expectRevert, blockTimestamp, increaseTime } from "./utils/Utils";
+import { expectRevert, blockTimestamp } from "./utils/Utils";
 
 describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
 {
@@ -20,7 +20,8 @@ describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
 
   it("Should revert if maturity is less than current time", async () =>
   {
-    (await expectRevert(testPool.createTempusPool(/*initialRate:*/1.0, -60, /*yieldEst:*/0.1))).to.equal("maturityTime is after startTime");
+    (await expectRevert(testPool.createTempusPool(/*initialRate:*/1.0, -60, /*yieldEst:*/0.1)))
+      .to.equal("maturityTime is after startTime");
   });
   
   it("Version is correct", async () =>
@@ -59,16 +60,14 @@ describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
 
   it("Finalize on/after maturity", async () =>
   {
-    await increaseTime(60*60);
-    await pool.finalize();
+    await testPool.fastForwardToMaturity();
     expect(await pool.matured()).to.equal(true);
   });
 
   it("Finalizing multiple times", async () =>
   {
     (await expectRevert(pool.finalize())).to.equal("Maturity not been reached yet.");
-    await increaseTime(60*60);
-    await pool.finalize();
+    await testPool.fastForwardToMaturity();
     expect(await pool.matured()).to.equal(true);
     await pool.finalize();
     await pool.finalize();

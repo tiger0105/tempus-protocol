@@ -55,9 +55,7 @@ describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
     expect(await pool.tempus.contractBalance()).to.equal(100); // all 100 in the pool
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/400);
 
-    // finalize the pool
-    await increaseTime(60*60);
-    await pool.finalize();
+    await pool.fastForwardToMaturity();
     expect(await pool.tempus.matured()).to.be.true;
 
     await pool.redeemToYBT(user, 100, 100);

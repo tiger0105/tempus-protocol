@@ -1,13 +1,13 @@
 import { expect } from "chai";
 import { Transaction } from "ethers";
 import { ethers, deployments } from "hardhat";
-import { ContractBase, Signer, SignerOrAddress } from "../utils/ContractBase";
+import { Signer, SignerOrAddress } from "../utils/ContractBase";
 import { TempusPool, PoolType, TempusSharesNames, generateTempusSharesNames } from "../utils/TempusPool";
-import { blockTimestamp } from "../utils/Utils";
+import { blockTimestamp, setEvmTime } from "../utils/Utils";
 import { ERC20 } from "../utils/ERC20";
 import { PoolShare } from "../utils/PoolShare";
 import { NumberOrString } from "../utils/Decimal";
-import { getRevertMessage, increaseTime } from "../utils/Utils";
+import { getRevertMessage } from "../utils/Utils";
 
 export class UserState {
   principalShares:Number;
@@ -199,7 +199,7 @@ export abstract class ITestPool {
    * Fast forwards time to after maturity and Finalized the pool
    */
   async fastForwardToMaturity(): Promise<void> {
-    await increaseTime(this.poolDuration);
+    await setEvmTime(this.maturityTime + 1);
     return this.tempus.finalize();
   }
 

@@ -5,7 +5,6 @@ import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
 
 import { Signer } from "./utils/ContractBase";
 import { toWei } from "./utils/Decimal";
-import { increaseTime } from "./utils/Utils";
 
 describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
 {
@@ -124,8 +123,7 @@ describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
     await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);
     await pool.setupAccounts(owner, [[user, 500]]);
 
-    await increaseTime(60*60);
-    await pool.tempus.finalize();
+    await pool.fastForwardToMaturity();
     (await pool.expectDepositYBT(user, 100)).to.equal('Maturity reached.');
   });
 
