@@ -4,6 +4,8 @@ pragma solidity 0.8.6;
 import "../TempusPool.sol";
 import "../protocols/lido/ILido.sol";
 
+import "hardhat/console.sol";
+
 contract LidoTempusPool is TempusPool {
     ILido internal immutable lido;
     bytes32 public immutable override protocolName = "Lido";

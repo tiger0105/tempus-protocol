@@ -11,7 +11,7 @@ import "./StETH.sol";
 // - implements withdrawal (to simulate future conditions)
 contract LidoMock is StETH {
     // The current balance on the beacon chain.
-    uint256 internal beaconBalance = 0;
+    uint256 public beaconBalance = 0;
     // Pending ether for submissions to the deposit contract
     uint256 internal bufferedEther = 0;
     // Fee in basis points (0 <= fee <= 1000)

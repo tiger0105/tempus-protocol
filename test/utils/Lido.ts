@@ -72,30 +72,27 @@ export class Lido extends ERC20 {
    * @param interestRate New synthetic Interest Rate
    */
   async setInterestRate(interestRate:NumberOrString): Promise<void> {
-    let totalETHSupply:BigNumber = await this.contract.totalSupply();
-    // total ETH is 0, so we must actually deposit something, otherwise we can't manipulate the rate
+    const totalETHSupply:BigNumber = await this.contract.totalSupply();
     if (totalETHSupply.isZero()) {
-      totalETHSupply = this.toBigNum(1000);
-      await this.contract._setSharesAndEthBalance(this.toBigNum(1000), totalETHSupply); // 1.0 rate
+      // If the pool is empty, this is a no-op.
+      return;
     }
 
-    // figure out if newRate requires a change of stETH
-    const totalShares:BigNumber = await this.contract.getTotalShares();
-    const curRate = await this.contract._getInterestRate();
-    const newRate = this.toBigNum(interestRate);
-    // TODO: there's a precision issue here
-    const difference = newRate.mul(ONE_WEI).div(curRate).sub(ONE_WEI);
-    if (difference.isZero())
-      return;
+    const currentBalance = await this.beaconBalance();
+    const beaconValidators = currentBalance.div(ONE_WEI.mul(32));
+    const newBalance = currentBalance.mul(interestRate);
+    
+    console.log(currentBalance, beaconValidators, newBalance)
 
-    const change = totalETHSupply.mul(difference).div(ONE_WEI);
-    const newETHSupply = totalETHSupply.add(change);
-    await this.contract._setSharesAndEthBalance(totalShares, newETHSupply);
+    await this.contract.pushBeacon(beaconValidators, newBalance);
   }
 
   async submit(signer:SignerOrAddress, amount:NumberOrString): Promise<NumberOrString> {
     const val = this.toBigNum(amount); // payable call, set value:
     return await this.connect(signer).submit(addressOf(signer), {value: val})
+  }
+  async beaconBalance() {
+    return await this.contract.beaconBalance();
   }
   async depositBufferedEther() {
     // ethers.js does not resolve overloads, so need to call the function by string lookup
