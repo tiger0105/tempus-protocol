@@ -88,16 +88,16 @@ export class Lido extends ERC20 {
     await this.contract._setSharesAndEthBalance(totalShares, newETHSupply);
   }
 
-  async submit(signer:SignerOrAddress, amount:NumberOrString) {
+  async submit(signer:SignerOrAddress, amount:NumberOrString): Promise<NumberOrString> {
     const val = this.toBigNum(amount); // payable call, set value:
     return await this.connect(signer).submit(addressOf(signer), {value: val})
   }
-  async depositBufferedEther() {
+  async depositBufferedEther(): Promise<void> {
     // ethers.js does not resolve overloads, so need to call the function by string lookup
-    return await this.contract["depositBufferedEther()"]();
+    await this.contract["depositBufferedEther()"]();
   }
-  async depositBufferedEther2(maxDeposits:number) {
-    return await this.contract["depositBufferedEther(uint256)"](maxDeposits);
+  async depositBufferedEther2(maxDeposits:number): Promise<void> {
+    await this.contract["depositBufferedEther(uint256)"](maxDeposits);
   }
   /**
    * Updates the contract with information from ETH2 orcale
@@ -106,19 +106,19 @@ export class Lido extends ERC20 {
    *                   This could be different than # of depositBufferedEther(1) calls.
    * @param balance Actual balance in the ETH2 oracle
    */
-  async pushBeacon(owner:Signer, validators:number, balance:number) {
-    return await this.connect(owner).pushBeacon(validators, toWei(balance));
+  async pushBeacon(owner:Signer, validators:number, balance:number): Promise<void> {
+    await this.connect(owner).pushBeacon(validators, toWei(balance));
   }
   // pushes balance to achieve certain amount of `totalRewards`
-  async pushBeaconRewards(owner:Signer, validators:number, rewards:number) {
+  async pushBeaconRewards(owner:Signer, validators:number, rewards:number): Promise<void> {
     // push X eth reward, rewards = balance - 32*validators
     const balance = rewards + 32*validators;
-    return await this.pushBeacon(owner, validators, balance);
+    await this.pushBeacon(owner, validators, balance);
   }
-  async withdraw(signer:Signer, shareAmount:Number) {
+  async withdraw(signer:Signer, shareAmount:Number): Promise<void> {
     // We ignore the pubKeyHash.
-    const hash =  ethers.utils.formatBytes32String("");
-    return await this.connect(signer).withdraw(toWei(shareAmount), hash);
+    const hash = ethers.utils.formatBytes32String("");
+    await this.connect(signer).withdraw(toWei(shareAmount), hash);
   }
   async printState(title: string, owner: string, user: string) {
     console.log("State:", title);
