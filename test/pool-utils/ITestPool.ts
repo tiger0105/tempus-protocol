@@ -247,7 +247,7 @@ export abstract class ITestPool {
    */
   async setupAccounts(owner:Signer, depositors:[Signer,number][]): Promise<void> {
     if (!this.tempus)
-      throw new Error('setupAccounts: setup not called');
+      throw new Error('setupAccounts: createPool() not called');
     
     const totalDeposit = depositors.reduce((sum, current) => sum + current[1], 100);
     await this.deposit(owner, totalDeposit);
