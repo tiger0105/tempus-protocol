@@ -73,8 +73,8 @@ export class Lido extends ERC20 {
    */
   async setInterestRate(interestRate:NumberOrString): Promise<void> {
     const rate = await this.interestRate();
-//    const newRate = ONE_WEI.mul(interestRate)
-    console.log('pre rate', interestRate, this.toBigNum(interestRate).toString(), rate, this.toBigNum(rate).toString())
+    console.log('pre rate', rate, this.toBigNum(rate).toString())
+    console.log('wished rate', interestRate, this.toBigNum(interestRate).toString())
 
     if (rate === interestRate) {
       // No rate change, no-op.
@@ -85,19 +85,21 @@ export class Lido extends ERC20 {
     // Flush pending
     await this.safeDepositBuffered();
 
-    const totalETHSupply:BigNumber = await this.contract.totalSupply();
-    if (totalETHSupply.isZero()) {
+    const totalSupply = await this.totalSupply();
+    if (totalSupply === 0) {
       // If the pool is empty, this is a no-op.
       return;
     }
 
-    const currentBalance = await this.beaconBalance();
-    const beaconValidators = currentBalance.div(ONE_WEI.mul(32));
-    const newBalance = currentBalance.mul(this.toBigNum(interestRate));
+    const currentBalance:BigNumber = this.toBigNum(totalSupply);
+    const beaconBalance:BigNumber = await this.beaconBalance();
+    const beaconValidators:BigNumber = beaconBalance.div(ONE_WEI.mul(32));
+    const newBeaconBalance:BigNumber = currentBalance.mul(this.toBigNum(interestRate)).div(ONE_WEI);
 
-    console.log('post rate', await this.interestRate(), this.fromBigNum(currentBalance).toString(), this.fromBigNum(beaconValidators).toString(), this.fromBigNum(newBalance).toString())
+    console.log('pushBeacon', currentBalance.toString(), newBeaconBalance.toString(), this.fromBigNum(beaconValidators).toString(), this.fromBigNum(newBeaconBalance).toString())
+    await this.contract.pushBeacon(beaconValidators, newBeaconBalance);
 
-    await this.contract.pushBeacon(beaconValidators, newBalance);
+    console.log('post rate', await this.interestRate(), this.toBigNum(interestRate).toString())
   }
 
   async submit(signer:SignerOrAddress, amount:NumberOrString): Promise<NumberOrString> {
@@ -123,10 +125,10 @@ export class Lido extends ERC20 {
     console.log("  totalShares:", await this.getTotalShares());
 
     // Total supply includes pending deposits
-    const totalSupply = await this.totalSupply();
-    const beaconValidators = this.toBigNum(totalSupply).div(ONE_WEI.mul(32))
-    const beaconBalance = beaconValidators.mul(ONE_WEI.mul(32))
-    console.log("Total balance", this.toBigNum(totalSupply).toString(), "validators", beaconValidators.toString(), beaconBalance.toString())
+    const totalSupply:BigNumber = this.toBigNum(await this.totalSupply());
+    const beaconValidators:BigNumber = totalSupply.div(ONE_WEI.mul(32))
+    const beaconBalance:BigNumber = beaconValidators.mul(ONE_WEI.mul(32))
+    console.log("Total balance", totalSupply.toString(), "validators", beaconValidators.toString(), beaconBalance.toString())
 
     // Flush pending deposits
     await this.depositBufferedEther2(Number(beaconValidators.toString()));

@@ -10,6 +10,8 @@ import "./StETH.sol";
 // - having a reward scheme
 // - implements withdrawal (to simulate future conditions)
 contract LidoMock is StETH {
+    // The current number of validators on the beacon chain.
+    uint256 public beaconValidators = 0;
     // The current balance on the beacon chain.
     uint256 public beaconBalance = 0;
     // Pending ether for submissions to the deposit contract
@@ -58,6 +60,7 @@ contract LidoMock is StETH {
     // This can be only called by LidoOracle.
     function pushBeacon(uint256 _beaconValidators, uint256 _beaconBalance) external {
         // Update holdings.
+        beaconValidators = _beaconValidators;
         beaconBalance = _beaconBalance;
 
         // Simplified.
