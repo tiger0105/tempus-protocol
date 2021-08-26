@@ -73,15 +73,18 @@ export class Lido extends ERC20 {
    */
   async setInterestRate(interestRate:NumberOrString): Promise<void> {
     const rate = await this.interestRate();
-    const newRate = ONE_WEI.mul(interestRate)
-    console.log(interestRate, rate, this.toBigNum(rate).toString(), newRate)
-        
+//    const newRate = ONE_WEI.mul(interestRate)
+    console.log('pre rate', interestRate, this.toBigNum(interestRate).toString(), rate, this.toBigNum(rate).toString())
+
     if (rate === interestRate) {
       // No rate change, no-op.
       console.log('no rate change')
       return;
     }
-  
+
+    // Flush pending
+    await this.safeDepositBuffered();
+
     const totalETHSupply:BigNumber = await this.contract.totalSupply();
     if (totalETHSupply.isZero()) {
       // If the pool is empty, this is a no-op.
@@ -92,7 +95,7 @@ export class Lido extends ERC20 {
     const beaconValidators = currentBalance.div(ONE_WEI.mul(32));
     const newBalance = currentBalance.mul(this.toBigNum(interestRate));
 
-    console.log(this.fromBigNum(currentBalance), this.fromBigNum(beaconValidators), this.fromBigNum(newBalance))
+    console.log('post rate', await this.interestRate(), this.fromBigNum(currentBalance).toString(), this.fromBigNum(beaconValidators).toString(), this.fromBigNum(newBalance).toString())
 
     await this.contract.pushBeacon(beaconValidators, newBalance);
   }
@@ -104,12 +107,36 @@ export class Lido extends ERC20 {
   async beaconBalance(): Promise<BigNumber> {
     return await this.contract.beaconBalance();
   }
-  async depositBufferedEther() {
+  async depositBufferedEther(): Promise<void> {
     // ethers.js does not resolve overloads, so need to call the function by string lookup
     return await this.contract["depositBufferedEther()"]();
   }
-  async depositBufferedEther2(maxDeposits:number) {
+  async depositBufferedEther2(maxDeposits:number): Promise<void> {
     return await this.contract["depositBufferedEther(uint256)"](maxDeposits);
+  }
+  /**
+   * Flushes buffered deposits in a safe manner.
+   */
+  async safeDepositBuffered() {
+    console.log("  beaconBalance:", await this.beaconBalance());
+    console.log("  totalSupply:", await this.totalSupply());
+    console.log("  totalShares:", await this.getTotalShares());
+
+    // Total supply includes pending deposits
+    const totalSupply = await this.totalSupply();
+    const beaconValidators = this.toBigNum(totalSupply).div(ONE_WEI.mul(32))
+    const beaconBalance = beaconValidators.mul(ONE_WEI.mul(32))
+    console.log("Total balance", this.toBigNum(totalSupply).toString(), "validators", beaconValidators.toString(), beaconBalance.toString())
+
+    // Flush pending deposits
+    await this.depositBufferedEther2(Number(beaconValidators.toString()));
+
+    // Update to reflect beacon balance
+    await this.contract.pushBeacon(beaconValidators, beaconBalance)
+
+    console.log("  beaconBalance:", await this.beaconBalance());
+    console.log("  totalSupply:", await this.totalSupply());
+    console.log("  totalShares:", await this.getTotalShares());
   }
   /**
    * Updates the contract with information from ETH2 orcale
