@@ -131,6 +131,11 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         _setAmplificationData(initialAmp);
     }
 
+    modifier beforeMaturity() {
+        require(!tempusPool.matured(), "Pool already finalized!");
+        _;
+    }
+
     function getLastInvariant() external view returns (uint256 lastInvariant, uint256 lastInvariantAmp) {
         lastInvariant = _lastInvariant;
         lastInvariantAmp = _lastInvariantAmp;
@@ -145,7 +150,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         uint256[] memory balances,
         uint256 indexIn,
         uint256 indexOut
-    ) internal virtual override whenNotPaused returns (uint256) {
+    ) internal virtual override whenNotPaused beforeMaturity returns (uint256) {
         (uint256 currentAmp, ) = _getAmplificationParameter();
         (IPoolShare tokenIn, IPoolShare tokenOut) = indexIn == 0 ? (_token0, _token1) : (_token1, _token0);
 
@@ -164,7 +169,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         uint256[] memory balances,
         uint256 indexIn,
         uint256 indexOut
-    ) internal virtual override whenNotPaused returns (uint256) {
+    ) internal virtual override whenNotPaused beforeMaturity returns (uint256) {
         (uint256 currentAmp, ) = _getAmplificationParameter();
         (IPoolShare tokenIn, IPoolShare tokenOut) = indexIn == 0 ? (_token0, _token1) : (_token1, _token0);
 
@@ -250,7 +255,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         address,
         uint256[] memory scalingFactors,
         bytes memory userData
-    ) internal virtual override whenNotPaused returns (uint256, uint256[] memory) {
+    ) internal virtual override whenNotPaused beforeMaturity returns (uint256, uint256[] memory) {
         // It would be strange for the Pool to be paused before it is initialized, but for consistency we prevent
         // initialization in this case.
         TempusAMM.JoinKind kind = userData.joinKind();
@@ -260,17 +265,16 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         InputHelpers.ensureInputLengthMatch(amountsIn.length, _getTotalTokens());
         _upscaleArray(amountsIn, scalingFactors);
 
+        _rateAdjustBalances(amountsIn);
         (uint256 currentAmp, ) = _getAmplificationParameter();
-        uint256 invariantAfterJoin = StableMath._calculateInvariant(
-            currentAmp,
-            _rateAdjustBalancesCopy(amountsIn),
-            true
-        );
+        uint256 invariantAfterJoin = StableMath._calculateInvariant(currentAmp, amountsIn, true);
 
         // Set the initial BPT to the value of the invariant.
         uint256 bptAmountOut = invariantAfterJoin;
 
         _updateLastInvariant(invariantAfterJoin, currentAmp);
+
+        _undoRateAdjustBalances(amountsIn);
 
         return (bptAmountOut, amountsIn);
     }
@@ -291,12 +295,15 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         virtual
         override
         whenNotPaused
+        beforeMaturity
         returns (
             uint256,
             uint256[] memory,
             uint256[] memory
         )
     {
+        _rateAdjustBalances(balances);
+
         // Due protocol swap fee amounts are computed by measuring the growth of the invariant between the previous join
         // or exit event and now - the invariant's growth is due exclusively to swap fees. This avoids spending gas to
         // calculate the fee amounts during each individual swap.
@@ -309,6 +316,9 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         // Update the invariant with the balances the Pool will have after the join, in order to compute the
         // protocol swap fee amounts due in future joins and exits.
         _updateInvariantAfterJoin(balances, amountsIn);
+
+        _undoRateAdjustBalances(amountsIn);
+        _undoRateAdjustBalances(dueProtocolFeeAmounts);
 
         return (bptAmountOut, amountsIn, dueProtocolFeeAmounts);
     }
@@ -338,10 +348,12 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         _upscaleArray(amountsIn, scalingFactors);
 
         (uint256 currentAmp, ) = _getAmplificationParameter();
+
+        _rateAdjustBalances(amountsIn);
         uint256 bptAmountOut = StableMath._calcBptOutGivenExactTokensIn(
             currentAmp,
-            _rateAdjustBalancesCopy(balances),
-            _rateAdjustBalancesCopy(amountsIn),
+            balances,
+            amountsIn,
             totalSupply(),
             getSwapFeePercentage()
         );
@@ -372,6 +384,8 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
             uint256[] memory dueProtocolFeeAmounts
         )
     {
+        _rateAdjustBalances(balances);
+
         // Exits are not completely disabled while the contract is paused: proportional exits (exact BPT in for tokens
         // out) remain functional.
 
@@ -394,6 +408,9 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         // Update the invariant with the balances the Pool will have after the exit, in order to compute the
         // protocol swap fee amounts due in future joins and exits.
         _updateInvariantAfterExit(balances, amountsOut);
+
+        _undoRateAdjustBalances(amountsOut);
+        _undoRateAdjustBalances(dueProtocolFeeAmounts);
 
         return (bptAmountIn, amountsOut, dueProtocolFeeAmounts);
     }
@@ -426,30 +443,28 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         uint256 bptAmountIn = userData.exactBptInForTokensOut();
         // Note that there is no minimum amountOut parameter: this is handled by `IVault.exitPool`.
 
-        uint256[] memory amountsOut = StableMath._calcTokensOutGivenExactBptIn(
-            _rateAdjustBalancesCopy(balances),
-            bptAmountIn,
-            totalSupply()
-        );
-        return (bptAmountIn, _undoRateAdjustBalancesCopy(amountsOut));
+        uint256[] memory amountsOut = StableMath._calcTokensOutGivenExactBptIn(balances, bptAmountIn, totalSupply());
+        return (bptAmountIn, amountsOut);
     }
 
     function _exitBPTInForExactTokensOut(
         uint256[] memory balances,
         uint256[] memory scalingFactors,
         bytes memory userData
-    ) private whenNotPaused returns (uint256, uint256[] memory) {
+    ) private whenNotPaused beforeMaturity returns (uint256, uint256[] memory) {
         // This exit function is disabled if the contract is paused.
 
         (uint256[] memory amountsOut, uint256 maxBPTAmountIn) = userData.bptInForExactTokensOut();
         InputHelpers.ensureInputLengthMatch(amountsOut.length, _getTotalTokens());
         _upscaleArray(amountsOut, scalingFactors);
 
+        _rateAdjustBalances(amountsOut);
+
         (uint256 currentAmp, ) = _getAmplificationParameter();
         uint256 bptAmountIn = StableMath._calcBptInGivenExactTokensOut(
             currentAmp,
-            _rateAdjustBalancesCopy(balances),
-            _rateAdjustBalancesCopy(amountsOut),
+            balances,
+            amountsOut,
             totalSupply(),
             getSwapFeePercentage()
         );
@@ -489,7 +504,6 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         // token joined/exited, and the token in which fees will be paid).
 
         // The protocol fee is charged using the token with the highest balance in the pool.
-        _rateAdjustBalances(balances);
         uint256 chosenTokenIndex = 0;
         uint256 maxBalance = balances[0];
         for (uint256 i = 1; i < _getTotalTokens(); ++i) {
@@ -509,7 +523,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
             protocolSwapFeePercentage
         );
 
-        return _undoRateAdjustBalancesCopy(dueProtocolFeeAmounts);
+        return dueProtocolFeeAmounts;
     }
 
     /**
@@ -522,10 +536,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         (uint256 currentAmp, ) = _getAmplificationParameter();
         // This invariant is used only to compute the final balance when calculating the protocol fees. These are
         // rounded down, so we round the invariant up.
-        _updateLastInvariant(
-            StableMath._calculateInvariant(currentAmp, _rateAdjustBalancesCopy(balances), true),
-            currentAmp
-        );
+        _updateLastInvariant(StableMath._calculateInvariant(currentAmp, balances, true), currentAmp);
     }
 
     /**
@@ -538,10 +549,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         (uint256 currentAmp, ) = _getAmplificationParameter();
         // This invariant is used only to compute the final balance when calculating the protocol fees. These are
         // rounded down, so we round the invariant up.
-        _updateLastInvariant(
-            StableMath._calculateInvariant(currentAmp, _rateAdjustBalancesCopy(balances), true),
-            currentAmp
-        );
+        _updateLastInvariant(StableMath._calculateInvariant(currentAmp, balances, true), currentAmp);
     }
 
     /**
@@ -557,28 +565,6 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         for (uint256 i = 0; i < _getTotalTokens(); ++i) {
             toMutate[i] = mutation(toMutate[i], arguments[i]);
         }
-    }
-
-    // TODO: add docs
-    function _rateAdjustBalancesCopy(uint256[] memory balances) private returns (uint256[] memory) {
-        uint256[] memory newBalances = new uint256[](balances.length);
-        for (uint256 i = 0; i < balances.length; i++) {
-            newBalances[i] = balances[i];
-        }
-        _rateAdjustBalances(newBalances);
-
-        return newBalances;
-    }
-
-    // TODO: Add docs
-    function _rateAdjustBalancesStoredCopy(uint256[] memory balances) private view returns (uint256[] memory) {
-        uint256[] memory newBalances = new uint256[](balances.length);
-        for (uint256 i = 0; i < balances.length; i++) {
-            newBalances[i] = balances[i];
-        }
-        _rateAdjustBalancesStored(newBalances);
-
-        return newBalances;
     }
 
     // TODO: add docs
@@ -601,16 +587,6 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
     function _mutateBalanceWithRate(uint256 balance, uint256 rate) private pure returns (uint256) {
         return (balance * rate) / _TEMPUS_SHARE_PRECISION;
-    }
-
-    // TODO: add docs
-    function _undoRateAdjustBalancesCopy(uint256[] memory balances) private returns (uint256[] memory) {
-        uint256[] memory newBalances = new uint256[](balances.length);
-        for (uint256 i = 0; i < balances.length; i++) {
-            newBalances[i] = balances[i];
-        }
-        _undoRateAdjustBalances(newBalances);
-        return newBalances;
     }
 
     // TODO: add docs
@@ -639,7 +615,8 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
         _upscaleArray(balances, _scalingFactors());
 
-        uint256 invariant = StableMath._calculateInvariant(currentAmp, _rateAdjustBalancesStoredCopy(balances), false);
+        _rateAdjustBalancesStored(balances);
+        uint256 invariant = StableMath._calculateInvariant(currentAmp, balances, false);
         return invariant.divDown(totalSupply());
     }
 
