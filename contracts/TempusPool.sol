@@ -324,12 +324,10 @@ abstract contract TempusPool is ITempusPool, Ownable {
             uint256 interestRate
         )
     {
-        interestRate = currentRate;
-
-        // in case of negative yield after maturity, we use lower rate for redemption
-        // so, we need to change from currentRate to maturity rate only if maturity rate is lower
-        if (matured && currentRate > maturityInterestRate) {
-            interestRate = maturityInterestRate;
+        if (matured) {
+            interestRate = (currentRate < maturityInterestRate) ? currentRate : maturityInterestRate;
+        } else {
+            interestRate = currentRate;
         }
 
         if (interestRate < initialInterestRate) {
