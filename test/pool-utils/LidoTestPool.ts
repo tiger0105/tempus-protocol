@@ -28,6 +28,9 @@ export class LidoTestPool extends ITestPool {
   async setInterestRate(rate:number): Promise<void> {
     await this.lido.setInterestRate(rate);
   }
+  async forceFailNextDepositOrRedeem(): Promise<void> {
+    await this.lido.contract.setFailNextDepositOrRedeem(true);
+  }
   async deposit(user:Signer, amount:number): Promise<void> {
     await this.lido.submit(user, amount);
   }

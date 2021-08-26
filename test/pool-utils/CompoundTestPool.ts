@@ -23,6 +23,9 @@ export class CompoundTestPool extends ITestPool {
   async setInterestRate(rate:number): Promise<void> {
     await this.compound.setExchangeRate(rate);
   }
+  async forceFailNextDepositOrRedeem(): Promise<void> {
+    await this.compound.contract.setFailNextDepositOrRedeem(true);
+  }
   async deposit(user:Signer, amount:number): Promise<void> {
     await this.compound.enterMarkets(user);
     await this.compound.mint(user, amount);

@@ -10,6 +10,9 @@ import "./ComptrollerStorage.sol";
 contract ComptrollerMock is ComptrollerStorage, ComptrollerInterface {
     uint public exchangeRate; // current exchange rate as 1e18 decimal
 
+    // used for mocks, it will force-fail the next deposit or redeem
+    bool public mockFailNextDepositOrRedeem;
+
     constructor() {
         exchangeRate = 1e18; // 1.0
     }
@@ -17,6 +20,11 @@ contract ComptrollerMock is ComptrollerStorage, ComptrollerInterface {
     /// @notice MOCK ONLY
     function setExchangeRate(uint rate) public {
         exchangeRate = rate;
+    }
+
+    /// @notice MOCK ONLY
+    function setFailNextDepositOrRedeem(bool fail) public {
+        mockFailNextDepositOrRedeem = fail;
     }
 
     /// @notice Add assets to be included in account liquidity calculation

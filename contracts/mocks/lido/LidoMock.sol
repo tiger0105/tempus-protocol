@@ -20,6 +20,14 @@ contract LidoMock is StETH {
     uint256 internal constant DEPOSIT_SIZE = 32 ether;
     uint256 internal constant DEFAULT_MAX_DEPOSITS_PER_CALL = 16;
 
+    // used for mocks, it will force-fail the next deposit or redeem
+    bool public mockFailNextDepositOrRedeem;
+
+    /// @notice MOCK ONLY
+    function setFailNextDepositOrRedeem(bool fail) public {
+        mockFailNextDepositOrRedeem = fail;
+    }
+
     /// @notice Send funds to the pool
     /// @dev Users are able to submit their funds by transacting to the fallback function.
     /// Unlike vanilla Eth2.0 Deposit contract, accepting only 32-Ether transactions, Lido
@@ -66,6 +74,11 @@ contract LidoMock is StETH {
         uint256 _amount,
         bytes32 /*_pubkeyHash*/
     ) external {
+        if (mockFailNextDepositOrRedeem) {
+            setFailNextDepositOrRedeem(false);
+            revert("random mock failure from lido");
+        }
+
         uint256 redeemable = StETH.getPooledEthByShares(_amount);
 
         // Simplification: only allow withdrawing buffered ether.
@@ -91,6 +104,11 @@ contract LidoMock is StETH {
     function _submit(
         address /*_referral*/
     ) internal returns (uint256) {
+        if (mockFailNextDepositOrRedeem) {
+            setFailNextDepositOrRedeem(false);
+            revert("random mock failure from lido");
+        }
+
         address sender = msg.sender;
         uint256 deposit = msg.value;
         require(deposit != 0, "ZERO_DEPOSIT");

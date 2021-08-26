@@ -75,7 +75,7 @@ describe("Compound Mock", async () => {
         expect(await pool.isParticipant(user)).to.be.true;
         expect(await pool.mintAllowed(user, 10)).to.be.true;
         await pool.exitMarket(user);
-        (await expectRevert(pool.exitMarket(user))).to.not.equal('TX_NOT_REVERTED'); // calling it twice should revert
+        (await expectRevert(pool.exitMarket(user))).to.not.equal('success'); // calling it twice should revert
         expect(await pool.isParticipant(user)).to.be.false;
         expect(await pool.mintAllowed(user, 10)).to.be.false;
         (await expectRevert(pool.mint(user, 4))).to.equal("mint is not allowed");
