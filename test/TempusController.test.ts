@@ -114,13 +114,13 @@ describe("TempusController", async () => {
 
         // pre-initialize AMM liquidity
         await tempusController.depositYieldBearing(owner, tempusPool, 10000, owner);
-        await tempusAMM.provideLiquidity(owner, 12.34567, 1234.5678912, TempusAMMJoinKind.INIT);
+        await tempusAMM.provideLiquidity(owner, 120, 1200, TempusAMMJoinKind.INIT);
         
         const vaultPrincipalShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(tempusAMM.vault.address);
         const vaultYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(tempusAMM.vault.address);
         const preDepositAMMBalancesRatio = ONE_WEI.mul(toWei(vaultPrincipalShareBalancePreDeposit)).div(toWei(vaultYieldShareBalancePreDeposit));
         
-        await tempusController.depositAndProvideLiquidity(user, tempusAMM, 5234.456789, false);
+        await tempusController.depositAndProvideLiquidity(user, tempusAMM, 500, false);
         
         const userPoolTokensBalancePostDeposit = await tempusAMM.balanceOf(user);
         const userPrincpialShareBalancePostDeposit = await tempusPool.principalShare.balanceOf(user);
@@ -144,18 +144,13 @@ describe("TempusController", async () => {
 
         // pre-initialize AMM liquidity
         await tempusController.depositYieldBearing(owner, tempusPool, 10000, owner);
-        await tempusAMM.provideLiquidity(owner, 12.34567, 123.45678912, TempusAMMJoinKind.INIT);
+        await tempusAMM.provideLiquidity(owner, 120, 1200, TempusAMMJoinKind.INIT);
         
         const vaultPrincipalShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(tempusAMM.vault.address);
         const vaultYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(tempusAMM.vault.address);
         const preDepositAMMBalancesRatio = ONE_WEI.mul(toWei(vaultPrincipalShareBalancePreDeposit)).div(toWei(vaultYieldShareBalancePreDeposit));
         
-        await tempusController.depositAndProvideLiquidity(
-            user,
-            tempusAMM,
-            5234.456789,
-            true
-        ); 
+        await tempusController.depositAndProvideLiquidity(user, tempusAMM, 500, true); 
         const userPoolTokensBalancePostDeposit = await tempusAMM.balanceOf(user);
         const userPrincpialShareBalancePostDeposit = await tempusPool.principalShare.balanceOf(user);
         const userYieldShareBalancePostDeposit = await tempusPool.yieldShare.balanceOf(user);
@@ -172,14 +167,14 @@ describe("TempusController", async () => {
 
       it("deposit ETH BT and provide liquidity to a pre-initialized AMM", async () => {
         const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupLido();
-        const amount = 52.456789;
+        const amount = 50;
 
         const userPoolTokensBalancePreDeposit = await tempusAMM.balanceOf(user);
         expect(Number(userPoolTokensBalancePreDeposit)).to.be.equal(0);
         
         // pre-initialize AMM liquidity
         await tempusController.depositYieldBearing(owner, tempusPool, 100, owner);
-        await tempusAMM.provideLiquidity(owner, 1.234567, 12.345678912, TempusAMMJoinKind.INIT);
+        await tempusAMM.provideLiquidity(owner, 1.2, 12, TempusAMMJoinKind.INIT);
         
         const vaultPrincipalShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(tempusAMM.vault.address);
         const vaultYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(tempusAMM.vault.address);
@@ -216,7 +211,7 @@ describe("TempusController", async () => {
 
         // pre-initialize AMM liquidity
         await tempusController.depositYieldBearing(owner, tempusPool, 10000, owner);
-        await tempusAMM.provideLiquidity(owner, 123.45678, 1.2345678, TempusAMMJoinKind.INIT);
+        await tempusAMM.provideLiquidity(owner, 120, 12, TempusAMMJoinKind.INIT);
         
         const vaultPrincipalShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(tempusAMM.vault.address);
         const vaultYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(tempusAMM.vault.address);
@@ -225,7 +220,7 @@ describe("TempusController", async () => {
         await tempusController.depositAndProvideLiquidity(
             user,
             tempusAMM,
-            5234.456789,
+            500,
             false
         ); 
         const userPoolTokensBalancePostDeposit = await tempusAMM.balanceOf(user);

@@ -151,6 +151,14 @@ describe("TempusAMM", async () => {
     (await expectRevert(tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.EXACT_BPT_OUT_FOR_TOKEN_IN)));
   });
 
+  it("revert on join after maturity", async () => {
+    const tempusPool = await setupAndDepositToTempusPool(owner, 0.1, await blockTimestamp() + 60*60);
+    const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, tempusPool);
+    await increaseTime(60*60);
+    await tempusPool.finalize();
+    (await expectRevert(tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT)));
+  });
+
   it("checks LP exiting pool", async () => {    
     const tempusPool = await setupAndDepositToTempusPool(owner, 0.1, await blockTimestamp() + 60*60*24*30);
     const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, tempusPool);
