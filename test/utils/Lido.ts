@@ -73,8 +73,9 @@ export class Lido extends ERC20 {
    */
   async setInterestRate(interestRate:NumberOrString): Promise<void> {
     const rate = await this.interestRate();
-    console.log(interestRate, rate, this.toBigNum(rate).toString())
-    
+    const newRate = ONE_WEI.mul(interestRate)
+    console.log(interestRate, rate, this.toBigNum(rate).toString(), newRate)
+        
     if (rate === interestRate) {
       // No rate change, no-op.
       console.log('no rate change')
