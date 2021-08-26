@@ -1,6 +1,7 @@
 import { blockTimestamp } from "./../test/utils/Utils";
 import { Aave } from "../test/utils/Aave";
 import { generateTempusSharesNames, TempusPool } from "./../test/utils/TempusPool";
+import { TempusController } from "./../test/utils/TempusController";
 
 async function deployAavePool(
   backingTokenSupply: Number,
@@ -23,7 +24,8 @@ async function deployATokenTempusPool(aave: Aave, poolDurationSeconds: number) {
   
   const names = generateTempusSharesNames("aToken", "aTKN", maturityTime);
   const yieldEst = 0.1;
-  const pool:TempusPool = await TempusPool.deployAave(aave.yieldToken, maturityTime, yieldEst, names);
+  const controller: TempusController = await TempusController.deploy();
+  const pool:TempusPool = await TempusPool.deployAave(aave.yieldToken, controller, maturityTime, yieldEst, names);
 
   console.log('AToken TempusPool deployed with length %i sec to: %s', poolDurationSeconds, pool.address);
 }

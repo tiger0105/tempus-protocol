@@ -9,6 +9,7 @@ import { generateTempusSharesNames, TempusPool } from "./../utils/TempusPool";
 import { Aave } from "./../utils/Aave";
 import { ITestPool } from "./../pool-utils/ITestPool";
 import exp = require("constants");
+import { TempusController } from "./../utils/TempusController";
 
 interface SwapTestRun {
   amplification:number;
@@ -29,8 +30,9 @@ async function setupAndDepositToTempusPool(owner: SignerWithAddress, yieldEstima
   await underlyingProtocol.asset.approve(owner, underlyingProtocol.address, 1000000);
   await underlyingProtocol.deposit(owner, 1000000);
   const names = generateTempusSharesNames("aToken", "aTKN", maturityTime);
-  const tempusPool = await TempusPool.deployAave(underlyingProtocol.yieldToken, maturityTime, yieldEstimate, names);
-  tempusPool.deposit(owner, 1000000, owner);
+  const controller = await TempusController.deploy();
+  const tempusPool = await TempusPool.deployAave(underlyingProtocol.yieldToken, controller, maturityTime, yieldEstimate, names);
+  await controller.depositYieldBearing(owner, tempusPool, 1000000, owner);
   return tempusPool;
 }
 
@@ -233,7 +235,7 @@ describe("TempusAMM", async () => {
     await tempusAMM.provideLiquidity(user1, 100, 1000, TempusAMMJoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT);
     
     expect(+await tempusAMM.balanceOf(user1)).to.be.within(180, 181);
-    expect(+await tempusAMM.getRate()).to.be.equal(1.0060218027482357);
+    expect(+await tempusAMM.getRate()).to.be.within(1.006, 1.0061);
   });
 
   it("test swaps principal in with balances aligned with Interest Rate", async () => {

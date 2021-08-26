@@ -16,6 +16,7 @@ contract AaveTempusPool is TempusPool {
 
     constructor(
         IAToken token,
+        address controller,
         uint256 maturity,
         uint256 estYield,
         string memory principalName,
@@ -26,6 +27,7 @@ contract AaveTempusPool is TempusPool {
         TempusPool(
             address(token),
             token.UNDERLYING_ASSET_ADDRESS(),
+            controller,
             maturity,
             updateInterestRate(address(token)),
             estYield,

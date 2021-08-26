@@ -18,6 +18,7 @@ contract CompoundTempusPool is TempusPool {
 
     constructor(
         ICErc20 token,
+        address controller,
         uint256 maturity,
         uint256 estYield,
         string memory principalName,
@@ -28,6 +29,7 @@ contract CompoundTempusPool is TempusPool {
         TempusPool(
             address(token),
             token.underlying(),
+            controller,
             maturity,
             updateInterestRate(address(token)),
             estYield,

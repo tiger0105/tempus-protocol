@@ -7,6 +7,7 @@ import { blockTimestamp, expectRevert } from "./utils/Utils";
 import { Aave } from "./utils/Aave";
 import { generateTempusSharesNames, TempusPool } from "./utils/TempusPool";
 import { Lido } from "./utils/Lido";
+import { TempusController } from "./utils/TempusController";
 
 const SWAP_LIMIT_ERROR_MESSAGE = "BAL#507";
 
@@ -20,11 +21,11 @@ const _setup = underlyingProtocolSetup => (deployments.createFixture(async () =>
 
   const [owner, user] = await ethers.getSigners();
 
-  const { underlyingProtocol, underlyingProtocol1, tempusPool, tempusPool1 } = await underlyingProtocolSetup(owner, user);
+  const tempusController = await TempusController.deploy();
+  const { underlyingProtocol, underlyingProtocol1, tempusPool, tempusPool1 } = await underlyingProtocolSetup(tempusController, owner, user);
   
   const tempusAMM = await TempusAMM.create(owner, ammAmplification, ammFee, tempusPool);
   
-  const tempusController = await ContractBase.deployContract('TempusController');
   await underlyingProtocol.yieldToken.approve(owner, tempusController.address, 1000000);
   await underlyingProtocol.yieldToken.approve(user, tempusController.address, 1000000);
   await underlyingProtocol.asset.approve(owner, tempusController.address, 10000000);
@@ -46,7 +47,7 @@ const _setup = underlyingProtocolSetup => (deployments.createFixture(async () =>
   };
 }));
 
-const setupAave = _setup(async (owner, user) => {
+const setupAave = _setup(async (controller, owner, user) => {
   const underlyingProtocol = await Aave.create(100000000);
   const underlyingProtocol1 = await Aave.create(100000000);
 
@@ -60,13 +61,13 @@ const setupAave = _setup(async (owner, user) => {
 
   const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
   const names = generateTempusSharesNames("aToken", "aTKN", maturityTime);
-  const tempusPool = await TempusPool.deployAave(underlyingProtocol.yieldToken, maturityTime, 0.1, names);
-  const tempusPool1 = await TempusPool.deployAave(underlyingProtocol1.yieldToken, maturityTime, 0.1, names);
+  const tempusPool = await TempusPool.deployAave(underlyingProtocol.yieldToken, controller, maturityTime, 0.1, names);
+  const tempusPool1 = await TempusPool.deployAave(underlyingProtocol1.yieldToken, controller, maturityTime, 0.1, names);
 
   return { underlyingProtocol, underlyingProtocol1, tempusPool, tempusPool1 };
 });
 
-const setupLido = _setup(async (owner, user) => {
+const setupLido = _setup(async (controller, owner, user) => {
   const underlyingProtocol = await Lido.create(1000000);
   const underlyingProtocol1 = await Lido.create(1000000);
   
@@ -77,8 +78,8 @@ const setupLido = _setup(async (owner, user) => {
 
   const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
   const names = generateTempusSharesNames("Lido staked token", "stTKN", maturityTime);
-  const tempusPool = await TempusPool.deployLido(underlyingProtocol.yieldToken, maturityTime, 0.1, names);
-  const tempusPool1 = await TempusPool.deployLido(underlyingProtocol1.yieldToken, maturityTime, 0.1, names);
+  const tempusPool = await TempusPool.deployLido(underlyingProtocol.yieldToken, controller, maturityTime, 0.1, names);
+  const tempusPool1 = await TempusPool.deployLido(underlyingProtocol1.yieldToken, controller, maturityTime, 0.1, names);
 
   return { tempusPool, tempusPool1, underlyingProtocol, underlyingProtocol1 };
 });
@@ -112,18 +113,15 @@ describe("TempusController", async () => {
         expect(Number(userPoolTokensBalancePreDeposit)).to.be.equal(0);
 
         // pre-initialize AMM liquidity
-        await tempusPool.deposit(owner, 10000, owner);
+        await tempusController.depositYieldBearing(owner, tempusPool, 10000, owner);
         await tempusAMM.provideLiquidity(owner, 12.34567, 1234.5678912, TempusAMMJoinKind.INIT);
         
         const vaultPrincipalShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(tempusAMM.vault.address);
         const vaultYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(tempusAMM.vault.address);
         const preDepositAMMBalancesRatio = ONE_WEI.mul(toWei(vaultPrincipalShareBalancePreDeposit)).div(toWei(vaultYieldShareBalancePreDeposit));
         
-        await tempusController.connect(user).depositAndProvideLiquidity(
-            tempusAMM.address,
-            toWei(5234.456789),
-            false
-        ); 
+        await tempusController.depositAndProvideLiquidity(user, tempusAMM, 5234.456789, false);
+        
         const userPoolTokensBalancePostDeposit = await tempusAMM.balanceOf(user);
         const userPrincpialShareBalancePostDeposit = await tempusPool.principalShare.balanceOf(user);
         const userYieldShareBalancePostDeposit = await tempusPool.yieldShare.balanceOf(user);
@@ -145,16 +143,17 @@ describe("TempusController", async () => {
         expect(Number(userPoolTokensBalancePreDeposit)).to.be.equal(0);
 
         // pre-initialize AMM liquidity
-        await tempusPool.deposit(owner, 10000, owner);
+        await tempusController.depositYieldBearing(owner, tempusPool, 10000, owner);
         await tempusAMM.provideLiquidity(owner, 12.34567, 123.45678912, TempusAMMJoinKind.INIT);
         
         const vaultPrincipalShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(tempusAMM.vault.address);
         const vaultYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(tempusAMM.vault.address);
         const preDepositAMMBalancesRatio = ONE_WEI.mul(toWei(vaultPrincipalShareBalancePreDeposit)).div(toWei(vaultYieldShareBalancePreDeposit));
         
-        await tempusController.connect(user).depositAndProvideLiquidity(
-            tempusAMM.address,
-            toWei(5234.456789),
+        await tempusController.depositAndProvideLiquidity(
+            user,
+            tempusAMM,
+            5234.456789,
             true
         ); 
         const userPoolTokensBalancePostDeposit = await tempusAMM.balanceOf(user);
@@ -173,23 +172,25 @@ describe("TempusController", async () => {
 
       it("deposit ETH BT and provide liquidity to a pre-initialized AMM", async () => {
         const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupLido();
+        const amount = 52.456789;
 
         const userPoolTokensBalancePreDeposit = await tempusAMM.balanceOf(user);
         expect(Number(userPoolTokensBalancePreDeposit)).to.be.equal(0);
         
         // pre-initialize AMM liquidity
-        await tempusPool.deposit(owner, 100, owner);
+        await tempusController.depositYieldBearing(owner, tempusPool, 100, owner);
         await tempusAMM.provideLiquidity(owner, 1.234567, 12.345678912, TempusAMMJoinKind.INIT);
         
         const vaultPrincipalShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(tempusAMM.vault.address);
         const vaultYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(tempusAMM.vault.address);
         const preDepositAMMBalancesRatio = ONE_WEI.mul(toWei(vaultPrincipalShareBalancePreDeposit)).div(toWei(vaultYieldShareBalancePreDeposit));
         
-        await tempusController.connect(user).depositAndProvideLiquidity(
-            tempusAMM.address,
-            toWei(52.456789),
+        await tempusController.depositAndProvideLiquidity(
+            user,
+            tempusAMM,
+            amount,
             true,
-            { value: toWei(52.456789) }
+            amount
         );
         const userPoolTokensBalancePostDeposit = await tempusAMM.balanceOf(user);
         const userPrincpialShareBalancePostDeposit = await tempusPool.principalShare.balanceOf(user);
@@ -214,16 +215,17 @@ describe("TempusController", async () => {
         underlyingProtocol.setLiquidityIndex(10.0);
 
         // pre-initialize AMM liquidity
-        await tempusPool.deposit(owner, 10000, owner);
+        await tempusController.depositYieldBearing(owner, tempusPool, 10000, owner);
         await tempusAMM.provideLiquidity(owner, 123.45678, 1.2345678, TempusAMMJoinKind.INIT);
         
         const vaultPrincipalShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(tempusAMM.vault.address);
         const vaultYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(tempusAMM.vault.address);
         const preDepositAMMBalancesRatio = ONE_WEI.mul(toWei(vaultPrincipalShareBalancePreDeposit)).div(toWei(vaultYieldShareBalancePreDeposit));
         
-        await tempusController.connect(user).depositAndProvideLiquidity(
-            tempusAMM.address,
-            toWei(5234.456789),
+        await tempusController.depositAndProvideLiquidity(
+            user,
+            tempusAMM,
+            5234.456789,
             false
         ); 
         const userPoolTokensBalancePostDeposit = await tempusAMM.balanceOf(user);
@@ -242,9 +244,10 @@ describe("TempusController", async () => {
       it("verifies depositing YBT and providing liquidity to a non initialized AMM reverts", async () => {
         const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupAave();
         
-        const invalidAction = tempusController.connect(user).depositAndProvideLiquidity(
-            tempusAMM.address,
-            toWei(123),
+        const invalidAction = tempusController.depositAndProvideLiquidity(
+            user,
+            tempusAMM,
+            123,
             false
         );
         (await expectRevert(invalidAction)).to.equal("AMM not initialized");
@@ -253,9 +256,10 @@ describe("TempusController", async () => {
       it("verifies depositing ERC20 BT and providing liquidity to a non initialized AMM reverts", async () => {
         const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupAave();
         
-        const invalidAction = tempusController.connect(user).depositAndProvideLiquidity(
-            tempusAMM.address,
-            toWei(123),
+        const invalidAction = tempusController.depositAndProvideLiquidity(
+            user,
+            tempusAMM,
+            123,
             true
         );
         (await expectRevert(invalidAction)).to.equal("AMM not initialized");
@@ -264,11 +268,12 @@ describe("TempusController", async () => {
       it("verifies depositing 0 YBT and providing liquidity reverts", async () => {
         const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupAave();
         
-        await tempusPool.deposit(owner, 10000, owner);
+        await tempusController.depositYieldBearing(owner, tempusPool, 10000, owner);
         await tempusAMM.provideLiquidity(owner, 12.34567, 1234.5678912, TempusAMMJoinKind.INIT);
         
-        const invalidAction = tempusController.connect(user).depositAndProvideLiquidity(
-            tempusAMM.address,
+        const invalidAction = tempusController.depositAndProvideLiquidity(
+            user,
+            tempusAMM,
             0,
             false
         );
@@ -279,15 +284,16 @@ describe("TempusController", async () => {
     describe("depositAndFix", async () => {
       it("verifies tx reverts if provided minimum TYS rate requirement is not met", async () => {
         const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupAave();
-        const minTYSRate = toWei("0.11000001"); // 10.000001%
+        const minTYSRate = "0.11000001"; // 10.000001%
 
         // pre-initialize AMM liquidity
-        await tempusPool.deposit(owner, 10000, owner);
+        await tempusController.depositYieldBearing(owner, tempusPool, 10000, owner);
         await tempusAMM.provideLiquidity(owner, 200, 2000, TempusAMMJoinKind.INIT); // 10% rate
   
-        const invalidAction = tempusController.connect(user).depositAndFix(
-            tempusAMM.address,
-            toWei(5.456789),
+        const invalidAction = tempusController.depositAndFix(
+            user,
+            tempusAMM,
+            5.456789,
             false,
             minTYSRate
         ); 
@@ -297,7 +303,7 @@ describe("TempusController", async () => {
 
       it("verifies depositing YBT succeeds if provided minimum TYS rate requirement is met", async () => {
         const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupAave();
-        const minTYSRate = toWei("0.097"); // 9.7% (fee + slippage)
+        const minTYSRate = "0.097"; // 9.7% (fee + slippage)
         
         const userPrincpialShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(user);
         const userYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(user);
@@ -305,12 +311,13 @@ describe("TempusController", async () => {
         expect(Number(userYieldShareBalancePreDeposit)).to.be.equal(0);
         
         // pre-initialize AMM liquidity
-        await tempusPool.deposit(owner, 10000, owner);
+        await tempusController.depositYieldBearing(owner, tempusPool, 10000, owner);
         await tempusAMM.provideLiquidity(owner, 200, 2000, TempusAMMJoinKind.INIT); // 10% rate
   
-        await tempusController.connect(user).depositAndFix(
-            tempusAMM.address,
-            toWei(5.456789),
+        await tempusController.depositAndFix(
+            user,
+            tempusAMM,
+            5.456789,
             false,
             minTYSRate
         ); 
@@ -325,7 +332,7 @@ describe("TempusController", async () => {
 
       it("verifies depositing ERC20 BT succeeds if provided minimum TYS rate requirement is met", async () => {
         const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupAave();
-        const minTYSRate = toWei("0.097"); // 9.7% (fee + slippage)
+        const minTYSRate = "0.097"; // 9.7% (fee + slippage)
         
         const userPrincpialShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(user);
         const userYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(user);
@@ -333,12 +340,13 @@ describe("TempusController", async () => {
         expect(Number(userYieldShareBalancePreDeposit)).to.be.equal(0);
         
         // pre-initialize AMM liquidity
-        await tempusPool.deposit(owner, 10000, owner);
+        await tempusController.depositYieldBearing(owner, tempusPool, 10000, owner);
         await tempusAMM.provideLiquidity(owner, 200, 2000, TempusAMMJoinKind.INIT); // 10% rate
   
-        await tempusController.connect(user).depositAndFix(
-            tempusAMM.address,
-            toWei(5.456789),
+        await tempusController.depositAndFix(
+            user,
+            tempusAMM,
+            5.456789,
             true,
             minTYSRate
         ); 
@@ -353,23 +361,25 @@ describe("TempusController", async () => {
 
       it("verifies depositing ETH BT succeeds if provided minimum TYS rate requirement is met", async () => {
         const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupLido();
-        const minTYSRate = toWei("0.097"); // 9.7% (fee + slippage)
-        
+        const minTYSRate = "0.097"; // 9.7% (fee + slippage)
+        const amount = 5.456789;
+
         const userPrincpialShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(user);
         const userYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(user);
         expect(Number(userPrincpialShareBalancePreDeposit)).to.be.equal(0);
         expect(Number(userYieldShareBalancePreDeposit)).to.be.equal(0);
         
         // pre-initialize AMM liquidity
-        await tempusPool.deposit(owner, 1000, owner);
+        await tempusController.depositYieldBearing(owner, tempusPool, 1000, owner);
         await tempusAMM.provideLiquidity(owner, 20, 200, TempusAMMJoinKind.INIT); // 10% rate
   
-        await tempusController.connect(user).depositAndFix(
-            tempusAMM.address,
-            toWei(5.456789),
+        await tempusController.depositAndFix(
+            user,
+            tempusAMM,
+            amount,
             true,
             minTYSRate,
-            { value: toWei(5.456789) }
+            amount
         ); 
 
         const userPrincpialShareBalancePostDeposit = await tempusPool.principalShare.balanceOf(user);

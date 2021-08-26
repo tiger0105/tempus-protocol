@@ -33,7 +33,7 @@ export class LidoTestPool extends ITestPool {
   }
   async depositBT(user:Signer, backingTokenAmount:number, recipient:Signer = user): Promise<Transaction> {
     // sends ETH value with tx
-    return this.tempus.depositBackingToken(user, backingTokenAmount, recipient, /*ETH*/backingTokenAmount);
+    return this.tempus.controller.depositBacking(user, this.tempus, backingTokenAmount, recipient, backingTokenAmount);
   }
 
   async createTempusPool(initialRate:number, poolDuration:number, yieldEst:number): Promise<TempusPool> {

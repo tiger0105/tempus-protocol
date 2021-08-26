@@ -10,6 +10,7 @@ contract LidoTempusPool is TempusPool {
 
     constructor(
         ILido token,
+        address controller,
         uint256 maturity,
         uint256 estYield,
         string memory principalName,
@@ -20,6 +21,7 @@ contract LidoTempusPool is TempusPool {
         TempusPool(
             address(token),
             address(0),
+            controller,
             maturity,
             updateInterestRate(address(token)),
             estYield,

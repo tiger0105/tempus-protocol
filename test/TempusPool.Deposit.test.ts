@@ -5,6 +5,7 @@ import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
 
 import { Signer } from "./utils/ContractBase";
 import { toWei } from "./utils/Decimal";
+import { expectRevert } from "./utils/Utils";
 
 describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
 {
@@ -19,7 +20,8 @@ describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
   {
     await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);
     await pool.setupAccounts(owner, [[user, 100]]);
-    await expect(pool.depositYBT(user, 100)).to.emit(pool.tempus.contract, 'Deposited').withArgs(
+    await expect(pool.depositYBT(user, 100)).to.emit(pool.tempus.controller.contract, 'Deposited').withArgs(
+      pool.tempus.address,
       user.address,
       user.address,
       toWei(100),
@@ -76,6 +78,14 @@ describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
     await pool.setInterestRate(0.8);
 
     (await pool.expectDepositYBT(user, 100)).to.equal('Negative yield!');
+  });
+
+  it("Should revert when trying to deposit directly into the TempusPool (not via the TempusController)", async () => 
+  {
+    await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);
+    await pool.setupAccounts(owner, [[user, 500]]);
+    
+    (await expectRevert(pool.tempus.deposit(user, 1, user))).to.equal("Only callable by TempusController");
   });
 
   it("Should increase YBT 2x after changing rate to 2.0", async () =>

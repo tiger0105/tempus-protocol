@@ -8,6 +8,7 @@ import { blockTimestamp } from '../test/utils/Utils';
 import { generateTempusSharesNames, TempusPool } from "../test/utils/TempusPool";
 import { ERC20 } from "../test/utils/ERC20";
 import { calculateMintedSharesOnDeposit } from "../test/utils/TempusMath";
+import { TempusController } from "../test/utils/TempusController";
 
 const setup = deployments.createFixture(async () => {
   await deployments.fixture(undefined, {
@@ -25,7 +26,8 @@ const setup = deployments.createFixture(async () => {
   const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
   const names = generateTempusSharesNames("aDai aave token", "aDai", maturityTime);
   const yieldEst = 0.1;
-  const tempusPool = await TempusPool.deployAave(aDaiYieldToken, maturityTime, yieldEst, names);
+  const controller: TempusController = await TempusController.deploy();
+  const tempusPool = await TempusPool.deployAave(aDaiYieldToken, controller, maturityTime, yieldEst, names);
   
   return {
     contracts: {
