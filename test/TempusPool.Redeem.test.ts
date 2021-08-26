@@ -4,6 +4,7 @@ import { ITestPool } from "./pool-utils/ITestPool";
 import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
 import { Signer } from "./utils/ContractBase";
 import { toWei } from "./utils/Decimal";
+import { expectRevert } from "./utils/Utils";
 
 describeForEachPool("TempusPool Redeem", (pool:ITestPool) =>
 {
@@ -20,7 +21,8 @@ describeForEachPool("TempusPool Redeem", (pool:ITestPool) =>
     await pool.setupAccounts(owner, [[user, 100]]);
 
     await pool.depositYBT(user, 100);
-    await expect(pool.redeemToYBT(user, 100, 100)).to.emit(pool.tempus.contract, 'Redeemed').withArgs(
+    await expect(pool.redeemToYBT(user, 100, 100)).to.emit(pool.tempus.controller.contract, 'Redeemed').withArgs(
+      pool.tempus.address, // pool
       user.address, // redeemer
       toWei(100), // principal amount
       toWei(100), // yield amount
@@ -56,7 +58,7 @@ describeForEachPool("TempusPool Redeem", (pool:ITestPool) =>
     (await pool.expectRedeemYBT(user, 150, 150)).to.equal("Insufficient principals.");
   });
 
-  it("Should fail before maturity with uneqal shares", async () =>
+  it("Should fail before maturity with unequal shares", async () =>
   {
     await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);
     await pool.setupAccounts(owner, [[user, 200]]);
@@ -290,6 +292,13 @@ describeForEachPool("TempusPool Redeem", (pool:ITestPool) =>
         await pool.redeemToYBT(user2, 200, 200);
         (await pool.userState(user2)).expect(0, 0, /*yieldBearing:*/500);
     }
+  });
+  it("Should revert when trying to call redeem directly on TempusPool (not via the TempusController)", async () => 
+  {
+    await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);
+    await pool.setupAccounts(owner, [[user, 500]]);
+    
+    (await expectRevert(pool.tempus.redeem(user, 1, 1))).to.equal("Only callable by TempusController");
   });
 
 });

@@ -13,40 +13,6 @@ interface ITempusPool {
         uint256 matureRedeemPercent;
     }
 
-    /// @dev Event emitted on successful TempusPool deposit().
-    /// @param depositor Address of user who deposits Yield Bearing Tokens to mint
-    ///                  Tempus Principal Share (TPS) and Tempus Yield Shares
-    /// @param recipient Address of the recipient who will receive TPS and TYS tokens
-    /// @param yieldTokenAmount Amount of yield tokens received from underlying pool
-    /// @param backingTokenValue Value of @param yieldTokenAmount expressed in backing tokens
-    /// @param shareAmounts Number of Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS) granted to `recipient`
-    /// @param interestRate Interest Rate of the underlying pool from Yield Bearing Tokens to the underlying asset
-    event Deposited(
-        address depositor,
-        address recipient,
-        uint256 yieldTokenAmount,
-        uint256 backingTokenValue,
-        uint256 shareAmounts,
-        uint256 interestRate
-    );
-
-    /// @dev Event emitted on successful TempusPool redeem().
-    /// @param redeemer Address of the user who wants to redeem Tempus Principal Shares (TPS)
-    ///                 and Tempus Yield Shares (TYS) to Yield Bearing Tokens (YBT).
-    /// @param principalShareAmount Number of Tempus Principal Shares (TPS) to redeem into the Yield Bearing Token (YBT)
-    /// @param yieldShareAmount Number of Tempus Yield Shares (TYS) to redeem into the Yield Bearing Token (YBT)
-    /// @param yieldBearingAmount Number of Yield bearing tokens redeemed from the pool
-    /// @param backingTokenValue Value of @param yieldBearingAmount expressed in backing tokens
-    /// @param interestRate Interest Rate of the underlying pool from Yield Bearing Tokens to the underlying asset
-    event Redeemed(
-        address redeemer,
-        uint256 principalShareAmount,
-        uint256 yieldShareAmount,
-        uint256 yieldBearingAmount,
-        uint256 backingTokenValue,
-        uint256 interestRate
-    );
-
     /// @return The version of the pool.
     function version() external view returns (uint);
 
@@ -69,6 +35,9 @@ interface ITempusPool {
     /// @return This TempusPool's Tempus Yield Share (TYS)
     function yieldShare() external view returns (IPoolShare);
 
+    /// @return The TempusController address that is authorized to perform restricted actions
+    function controller() external view returns (address);
+
     /// @return Start time of the pool.
     function startTime() external view returns (uint256);
 
@@ -90,30 +59,79 @@ interface ITempusPool {
     /// @notice Deposit will fail if maturity has been reached.
     /// @param yieldTokenAmount Amount of yield bearing tokens to deposit
     /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
-    /// @return Amount of TPS and TYS minted to `recipient`
-    function deposit(uint256 yieldTokenAmount, address recipient) external returns (uint256);
+    /// @return mintedShares Amount of TPS and TYS minted to `recipient`
+    /// @return depositedBT The YBT value deposited, denominated as Backing Tokens
+    /// @return rate The interest rate at the time of the deposit
+    function deposit(uint256 yieldTokenAmount, address recipient)
+        external
+        returns (
+            uint256 mintedShares,
+            uint256 depositedBT,
+            uint256 rate
+        );
 
     /// @dev Deposits backing token to the underlying protocol, and then to Tempus Pool.
     /// @param backingTokenAmount amount of Backing Tokens to be deposit into the underlying protocol
-    /// @return Amount of TPS and TYS minted to `msg.sender`
-    function depositBackingToken(uint256 backingTokenAmount, address recipient) external payable returns (uint256);
+    /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
+    /// @return mintedShares Amount of TPS and TYS minted to `recipient`
+    /// @return depositedYBT The BT value deposited, denominated as Yield Bearing Tokens
+    /// @return rate The interest rate at the time of the deposit
+    function depositBacking(uint256 backingTokenAmount, address recipient)
+        external
+        payable
+        returns (
+            uint256 mintedShares,
+            uint256 depositedYBT,
+            uint256 rate
+        );
 
     /// @dev Redeem yield bearing tokens from this TempusPool
     ///      msg.sender will receive the YBT
     ///      NOTE Before maturity, principalAmount must equal to yieldAmount.
+    /// @param from Address to redeem its Tempus Shares
     /// @param principalAmount Amount of Tempus Principal Shares (TPS) to redeem for YBT
     /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem for YBT
-    /// @return Amount of Yield Bearing Tokens redeemed to `msg.sender`
-    function redeem(uint256 principalAmount, uint256 yieldAmount) external returns (uint256);
+    /// @param recipient Address to which redeemed YBT will be sent
+    /// @return redeemableYieldTokens Amount of Yield Bearing Tokens redeemed to `recipient`
+    /// @return redeemableBackingTokens Amount of Yield Bearing Tokens redeemed to `recipient`, denominated in BT
+    /// @return rate The interest rate at the time of the redemption
+    function redeem(
+        address from,
+        uint256 principalAmount,
+        uint256 yieldAmount,
+        address recipient
+    )
+        external
+        returns (
+            uint256 redeemableYieldTokens,
+            uint256 redeemableBackingTokens,
+            uint256 rate
+        );
 
     /// @dev Redeem TPS+TYS held by msg.sender into backing tokens
     ///      `msg.sender` must approve TPS and TYS amounts to this TempusPool.
     ///      `msg.sender` will receive the backing tokens
     ///      NOTE Before maturity, principalAmount must equal to yieldAmount.
+    /// @param from Address to redeem its Tempus Shares
     /// @param principalAmount Amount of Tempus Principal Shares (TPS) to redeem
     /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem
-    /// @return Amount of backing tokens redeemed to `msg.sender`
-    function redeemToBackingToken(uint256 principalAmount, uint256 yieldAmount) external payable returns (uint256);
+    /// @param recipient Address to which redeemed BT will be sent
+    /// @return redeemableYieldTokens Amount of Backing Tokens redeemed to `recipient`, denominated in YBT
+    /// @return redeemableBackingTokens Amount of Backing Tokens redeemed to `recipient`
+    /// @return rate The interest rate at the time of the redemption
+    function redeemToBacking(
+        address from,
+        uint256 principalAmount,
+        uint256 yieldAmount,
+        address recipient
+    )
+        external
+        payable
+        returns (
+            uint256 redeemableYieldTokens,
+            uint256 redeemableBackingTokens,
+            uint256 rate
+        );
 
     /// The current interest rate of the underlying pool
     /// Calling this can accrue interest in the underlying pool

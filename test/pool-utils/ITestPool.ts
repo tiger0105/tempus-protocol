@@ -8,6 +8,7 @@ import { ERC20 } from "../utils/ERC20";
 import { PoolShare } from "../utils/PoolShare";
 import { NumberOrString } from "../utils/Decimal";
 import { getRevertMessage } from "../utils/Utils";
+import { TempusController } from "../utils/TempusController";
 
 export class UserState {
   principalShares:Number;
@@ -97,28 +98,28 @@ export abstract class ITestPool {
    * Deposit YieldBearingTokens into TempusPool
    */
   async depositYBT(user:Signer, yieldBearingAmount:number, recipient:Signer = user): Promise<Transaction> {
-    return this.tempus.deposit(user, yieldBearingAmount, recipient);
+    return this.tempus.controller.depositYieldBearing(user, this.tempus, yieldBearingAmount, recipient);
   }
 
   /**
    * Deposit BackingTokens into TempusPool
    */
    async depositBT(user:Signer, backingTokenAmount:number, recipient:Signer = user): Promise<Transaction> {
-    return this.tempus.depositBackingToken(user, backingTokenAmount, recipient);
+    return this.tempus.controller.depositBacking(user, this.tempus, backingTokenAmount, recipient);
   }
 
   /**
    * Redeems TempusShares to YieldBearingTokens
    */
-   async redeemToYBT(user:Signer, principalShares:number, yieldShares:number): Promise<Transaction> {
-    return this.tempus.redeem(user, principalShares, yieldShares);
+   async redeemToYBT(user:Signer, principalAmount:number, yieldAmount:number): Promise<Transaction> {
+    return this.tempus.controller.redeemToYieldBearing(user, this.tempus, principalAmount, yieldAmount);
   }
 
   /**
    * Redeems TempusShares to BackingTokens
    */
    async redeemToBT(user:Signer, principalAmount:number, yieldAmount:number): Promise<Transaction> {
-    return this.tempus.redeemToBackingToken(user, principalAmount, yieldAmount);
+    return this.tempus.controller.redeemToBacking(user, this.tempus, principalAmount, yieldAmount);
   }
 
   /**
@@ -211,7 +212,7 @@ export abstract class ITestPool {
    */
   async setupAccounts(owner:Signer, depositors:[Signer,number][]): Promise<void> {
     if (!this.tempus)
-      throw new Error('setupAccounts: createTempusPool not called');
+      throw new Error('setupAccounts: setup not called');
     
     const totalDeposit = depositors.reduce((sum, current) => sum + current[1], 100);
     await this.deposit(owner, totalDeposit);
@@ -260,11 +261,18 @@ export abstract class ITestPool {
         await deployments.fixture(undefined, { keepExistingDeployments: true, });
         // Note: for fixtures, all contracts must be initialized inside this callback
         const contracts = await newPool();
-        const t = await TempusPool.deploy(this.type, this.yieldToken(), maturityTime, yieldEst, names);
+        const controller = await TempusController.deploy();
+        const t = await TempusPool.deploy(this.type, controller, this.yieldToken(), maturityTime, yieldEst, names);
         const [owner,user,user2] = await ethers.getSigners();
         return {
           signers: { owner:owner, user:user, user2:user2 },
-          contracts: { ...contracts, tc:t.contract, tps:t.principalShare.contract, tys:t.yieldShare.contract}
+          contracts: { 
+            ...contracts,
+            tc:t.contract,
+            tps:t.principalShare.contract,
+            tys:t.yieldShare.contract,
+            controller: controller
+          }
         };
       }));
       POOL_FIXTURES[signature] = f; // save for later use
@@ -279,7 +287,7 @@ export abstract class ITestPool {
     restorePool(s.contracts);
     const principals = new PoolShare("PrincipalShare", s.contracts.tps);
     const yields = new PoolShare("YieldShare", s.contracts.tys);
-    return new TempusPool(this.type, s.contracts.tc, this.yieldToken(), principals, yields);
+    return new TempusPool(this.type, s.contracts.tc, s.contracts.controller, this.yieldToken(), principals, yields);
   }
 }
 

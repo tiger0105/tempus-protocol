@@ -5,6 +5,7 @@ import { ethers, network, getNamedAccounts } from 'hardhat';
 import { ERC20 } from '../test/utils/ERC20';
 import { generateTempusSharesNames, TempusPool } from '../test/utils/TempusPool';
 import { ContractBase } from '../test/utils/ContractBase';
+import { TempusController } from '../test/utils/TempusController';
 
 class DeployLocalForked {
   static readonly SECONDS_IN_A_DAY = 86400;
@@ -22,7 +23,8 @@ class DeployLocalForked {
     // Deploy Tempus pool backed by Aave (aDAI Token)
     const names = generateTempusSharesNames("aDai aave token", "aDai", maturityTime);
     const yieldEst = 0.1;
-    const tempusPool = await TempusPool.deployAave(aDaiToken, maturityTime, yieldEst, names);
+    const controller: TempusController = await TempusController.deploy();
+    const tempusPool = await TempusPool.deployAave(aDaiToken, controller, maturityTime, yieldEst, names);
 
     // Deploy stats contract
     const statistics = await ContractBase.deployContract("Stats");
@@ -48,8 +50,8 @@ class DeployLocalForked {
     const fromSigner = await ethers.getSigner(from);
   
     await token.approve(fromSigner, fromSigner, amount);
-    await pool.deposit(fromSigner, amount, fromSigner);
-
+    await pool.controller.depositYieldBearing(fromSigner, pool, amount, fromSigner);
+    
     await network.provider.request({
       method: "hardhat_stopImpersonatingAccount",
       params: [from],

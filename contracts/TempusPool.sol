@@ -28,6 +28,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
     uint256 public maturityInterestRate;
     IPoolShare public immutable override principalShare;
     IPoolShare public immutable override yieldShare;
+    address public immutable override controller;
 
     uint256 private immutable initialEstimatedYield;
 
@@ -41,6 +42,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
     /// Constructs Pool with underlying token, start and maturity date
     /// @param token underlying yield bearing token
     /// @param bToken backing token (or zero address if ETH)
+    /// @param ctrl The authorized TempusController of the pool
     /// @param maturity maturity time of this pool
     /// @param initInterestRate initial interest rate of the pool
     /// @param estimatedFinalYield estimated yield for the whole lifetime of the pool
@@ -51,6 +53,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
     constructor(
         address token,
         address bToken,
+        address ctrl,
         uint256 maturity,
         uint256 initInterestRate,
         uint256 estimatedFinalYield,
@@ -63,6 +66,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
 
         yieldBearingToken = token;
         backingToken = bToken;
+        controller = ctrl;
         startTime = block.timestamp;
         maturityTime = maturity;
         initialInterestRate = initInterestRate;
@@ -70,6 +74,11 @@ abstract contract TempusPool is ITempusPool, Ownable {
 
         principalShare = new PrincipalShare(this, principalName, principalSymbol);
         yieldShare = new YieldShare(this, yieldName, yieldSymbol);
+    }
+
+    modifier onlyController() {
+        require(msg.sender == controller, "Only callable by TempusController");
+        _;
     }
 
     function depositToUnderlying(uint256 amount) internal virtual returns (uint256 mintedYieldTokenAmount);
@@ -114,38 +123,66 @@ abstract contract TempusPool is ITempusPool, Ownable {
     }
 
     /// @dev Deposits backing token to the underlying protocol, and then to Tempus Pool.
+    ///      NOTE This function can only be called by TempusController
     /// @param backingTokenAmount amount of Backing Tokens to be deposit into the underlying protocol
-    /// @return Amount of TPS and TYS minted to `msg.sender`
-    function depositBackingToken(uint256 backingTokenAmount, address recipient)
+    /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
+    /// @return mintedShares Amount of TPS and TYS minted to `recipient`
+    /// @return depositedYBT The BT value deposited, denominated as Yield Bearing Tokens
+    /// @return rate The interest rate at the time of the deposit
+    function depositBacking(uint256 backingTokenAmount, address recipient)
         public
         payable
         override
-        returns (uint256)
+        onlyController
+        returns (
+            uint256 mintedShares,
+            uint256 depositedYBT,
+            uint256 rate
+        )
     {
         require(backingTokenAmount > 0, "backingTokenAmount must be greater than 0");
 
-        uint256 mintedYieldTokenAmount = depositToUnderlying(backingTokenAmount);
-        assert(mintedYieldTokenAmount > 0);
+        depositedYBT = depositToUnderlying(backingTokenAmount);
+        assert(depositedYBT > 0);
 
-        return _deposit(mintedYieldTokenAmount, recipient);
+        (mintedShares, , rate) = _deposit(depositedYBT, recipient);
     }
 
     /// @dev Deposits yield bearing tokens (such as cDAI) into TempusPool
     ///      msg.sender must approve @param yieldTokenAmount to this TempusPool
+    ///      NOTE This function can only be called by TempusController
     /// @param yieldTokenAmount Amount of yield bearing tokens to deposit
     /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
-    /// @return Amount of TPS and TYS minted to `recipient`
-    function deposit(uint256 yieldTokenAmount, address recipient) public override returns (uint256) {
+    /// @return mintedShares Amount of TPS and TYS minted to `recipient`
+    /// @return depositedBT The YBT value deposited, denominated as Backing Tokens
+    /// @return rate The interest rate at the time of the deposit
+    function deposit(uint256 yieldTokenAmount, address recipient)
+        public
+        override
+        onlyController
+        returns (
+            uint256 mintedShares,
+            uint256 depositedBT,
+            uint256 rate
+        )
+    {
         require(yieldTokenAmount > 0, "yieldTokenAmount must be greater than 0");
         // Collect the deposit
         IERC20(yieldBearingToken).safeTransferFrom(msg.sender, address(this), yieldTokenAmount);
 
-        return _deposit(yieldTokenAmount, recipient);
+        (mintedShares, depositedBT, rate) = _deposit(yieldTokenAmount, recipient);
     }
 
-    function _deposit(uint256 yieldTokenAmount, address recipient) internal returns (uint256) {
+    function _deposit(uint256 yieldTokenAmount, address recipient)
+        internal
+        returns (
+            uint256 mintedShares,
+            uint256 depositedBT,
+            uint256 rate
+        )
+    {
         require(!matured, "Maturity reached.");
-        uint256 rate = updateInterestRate(yieldBearingToken);
+        rate = updateInterestRate(yieldBearingToken);
         require(rate >= initialInterestRate, "Negative yield!");
 
         // Collect fees if they are set, reducing the number of tokens for the sender
@@ -159,62 +196,99 @@ abstract contract TempusPool is ITempusPool, Ownable {
         }
 
         // Issue appropriate shares
-        uint256 backingTokenDepositAmount = numAssetsPerYieldToken(tokenAmount, rate);
-        uint256 tokensToIssue = (backingTokenDepositAmount * initialInterestRate) / rate;
+        depositedBT = numAssetsPerYieldToken(tokenAmount, rate);
+        mintedShares = (depositedBT * initialInterestRate) / rate;
 
-        PrincipalShare(address(principalShare)).mint(recipient, tokensToIssue);
-        YieldShare(address(yieldShare)).mint(recipient, tokensToIssue);
-
-        emit Deposited(msg.sender, recipient, tokenAmount, backingTokenDepositAmount, tokensToIssue, rate);
-
-        return tokensToIssue;
+        PrincipalShare(address(principalShare)).mint(recipient, mintedShares);
+        YieldShare(address(yieldShare)).mint(recipient, mintedShares);
     }
 
     /// @dev Redeem TPS+TYS held by msg.sender into backing tokens
     ///      `msg.sender` must approve TPS and TYS amounts to this TempusPool.
     ///      `msg.sender` will receive the backing tokens
-    ///      NOTE Before maturity, principalAmount must equal to yieldAmount.
+    ///      NOTE #1 Before maturity, principalAmount must equal to yieldAmount.
+    ///      NOTE #2 This function can only be called by TempusController
+    /// @param from Address to redeem its Tempus Shares
     /// @param principalAmount Amount of Tempus Principal Shares (TPS) to redeem
     /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem
-    /// @return Amount of backing tokens redeemed to `msg.sender`
-    function redeemToBackingToken(uint256 principalAmount, uint256 yieldAmount)
+    /// @param recipient Address to which redeemed BT will be sent
+    /// @return redeemableYieldTokens Amount of Backing Tokens redeemed to `recipient`, denominated in YBT
+    /// @return redeemableBackingTokens Amount of Backing Tokens redeemed to `recipient`
+    /// @return rate The interest rate at the time of the redemption
+    function redeemToBacking(
+        address from,
+        uint256 principalAmount,
+        uint256 yieldAmount,
+        address recipient
+    )
         public
         payable
         override
-        returns (uint256)
+        onlyController
+        returns (
+            uint256 redeemableYieldTokens,
+            uint256 redeemableBackingTokens,
+            uint256 rate
+        )
     {
-        (uint256 redeemableYieldTokens, uint256 redeemableBackingTokens) = burnShares(principalAmount, yieldAmount);
+        (redeemableYieldTokens, redeemableBackingTokens, rate) = burnShares(from, principalAmount, yieldAmount);
 
-        uint256 backingTokensReceived = withdrawFromUnderlyingProtocol(redeemableYieldTokens, msg.sender);
+        uint256 backingTokensReceived = withdrawFromUnderlyingProtocol(redeemableYieldTokens, recipient);
         assert(backingTokensReceived == redeemableBackingTokens);
-
-        return backingTokensReceived;
     }
 
     /// @dev Redeem yield bearing tokens from this TempusPool
     ///      msg.sender will receive the YBT
-    ///      NOTE Before maturity, principalAmount must equal to yieldAmount.
+    ///      NOTE #1 Before maturity, principalAmount must equal to yieldAmount.
+    ///      NOTE #2 This function can only be called by TempusController
+    /// @param from Address to redeem its Tempus Shares
     /// @param principalAmount Amount of Tempus Principal Shares (TPS) to redeem for YBT
     /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem for YBT
-    /// @return Amount of Yield Bearing Tokens redeemed to `msg.sender`
-    function redeem(uint256 principalAmount, uint256 yieldAmount) public override returns (uint256) {
-        (uint256 redeemableYieldTokens, ) = burnShares(principalAmount, yieldAmount);
+    /// @param recipient Address to which redeemed YBT will be sent
+    /// @return redeemableYieldTokens Amount of Yield Bearing Tokens redeemed to `recipient`
+    /// @return redeemableBackingTokens Amount of Yield Bearing Tokens redeemed to `recipient`, denominated in BT
+    /// @return rate The interest rate at the time of the redemption
+    function redeem(
+        address from,
+        uint256 principalAmount,
+        uint256 yieldAmount,
+        address recipient
+    )
+        public
+        override
+        onlyController
+        returns (
+            uint256 redeemableYieldTokens,
+            uint256 redeemableBackingTokens,
+            uint256 rate
+        )
+    {
+        (redeemableYieldTokens, redeemableBackingTokens, rate) = burnShares(from, principalAmount, yieldAmount);
 
-        IERC20(yieldBearingToken).safeTransfer(msg.sender, redeemableYieldTokens);
-
-        return redeemableYieldTokens;
+        IERC20(yieldBearingToken).safeTransfer(recipient, redeemableYieldTokens);
     }
 
-    function burnShares(uint256 principalAmount, uint256 yieldAmount) internal returns (uint256, uint256) {
-        require(IERC20(address(principalShare)).balanceOf(msg.sender) >= principalAmount, "Insufficient principals.");
-        require(IERC20(address(yieldShare)).balanceOf(msg.sender) >= yieldAmount, "Insufficient yields.");
+    function burnShares(
+        address from,
+        uint256 principalAmount,
+        uint256 yieldAmount
+    )
+        internal
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        require(IERC20(address(principalShare)).balanceOf(from) >= principalAmount, "Insufficient principals.");
+        require(IERC20(address(yieldShare)).balanceOf(from) >= yieldAmount, "Insufficient yields.");
 
         // Redeeming prior to maturity is only allowed in equal amounts.
         require(matured || (principalAmount == yieldAmount), "Inequal redemption not allowed before maturity.");
 
         // Burn the appropriate shares
-        PrincipalShare(address(principalShare)).burn(msg.sender, principalAmount);
-        YieldShare(address(yieldShare)).burn(msg.sender, yieldAmount);
+        PrincipalShare(address(principalShare)).burn(from, principalAmount);
+        YieldShare(address(yieldShare)).burn(from, yieldAmount);
 
         uint256 currentRate = updateInterestRate(yieldBearingToken);
         (uint256 redeemableYieldTokens, uint256 redeemableBackingTokens, uint256 interestRate) = getRedemptionAmounts(
@@ -234,16 +308,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
             totalFees += yieldTokensFee;
         }
 
-        emit Redeemed(
-            msg.sender,
-            principalAmount,
-            yieldAmount,
-            redeemableYieldTokens,
-            redeemableBackingTokens,
-            interestRate
-        );
-
-        return (redeemableYieldTokens, redeemableBackingTokens);
+        return (redeemableYieldTokens, redeemableBackingTokens, interestRate);
     }
 
     function getRedemptionAmounts(
