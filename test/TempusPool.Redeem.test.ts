@@ -32,6 +32,12 @@ describeForEachPool("TempusPool Redeem", (pool:ITestPool) =>
     );
   });
 
+  it("Should revert on redeem with no balance", async () =>
+  {
+    await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);
+    (await pool.expectRedeemBT(owner, 1, 1)).to.not.be.equal('success');
+  });
+
   it("Should redeem exactly equal to deposit if no yield and no fees", async () =>
   {
     await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);
