@@ -287,6 +287,7 @@ export abstract class ITestPool {
 
     if (!f) // initialize a new fixture
     {
+      const controller = await TempusController.instance();
       const maturityTime = await blockTimestamp() + this.poolDuration;
       const names = generateTempusSharesNames(tpsName, tysName, maturityTime);
       f = new FixtureState(maturityTime, names, deployments.createFixture(async () =>
@@ -296,7 +297,6 @@ export abstract class ITestPool {
         const [owner,user,user2] = await ethers.getSigners();
         const pool = await newPool();
         const ybt = (pool as any).yieldToken;
-        const controller = await TempusController.deploy();
         const tempus = await TempusPool.deploy(this.type, controller, ybt, maturityTime, p.yieldEst, names);
         const amm = await TempusAMM.create(owner, p.ammAmplification, p.ammSwapFee, tempus);
         return {

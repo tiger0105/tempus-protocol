@@ -9,13 +9,28 @@ import { TempusAMM } from "./TempusAMM";
  */
 export class TempusController extends ContractBase {
   private static _contractName = "TempusController";
+  private static _instance:TempusController = null;
+  
   constructor(contractName: string, controller: Contract) {
     super(contractName, 18, controller);
   }
 
+  /**
+   * @returns The singleton instance of TempusController
+   * @warning This cannot be used inside Test Fixture callback
+   */
+  static async instance(): Promise<TempusController> {
+    if (TempusController._instance === null) {
+      TempusController._instance = await this.deploy();
+    }
+    return TempusController._instance;
+  }
+
+  /**
+   * Deploys a new instance of TempusController
+   */
   static async deploy(): Promise<TempusController> {
     const controller = await ContractBase.deployContract(TempusController._contractName);
-
     return new TempusController(TempusController._contractName, controller);
   }
 
