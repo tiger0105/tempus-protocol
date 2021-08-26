@@ -1,4 +1,3 @@
-import { ethers } from "hardhat";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { fromWei } from "../utils/Decimal";
@@ -19,24 +18,37 @@ interface SwapTestRun {
   swapAmountOut: number;
 }
 
+interface CreateParams {
+  yieldEst:number;
+  duration:number;
+  amplify:number;
+}
+
 describe("TempusAMM", async () => {
   let owner:Signer, user:Signer, user1:Signer;
-  const SWAP_FEE_PERC:Number = 0.02;
+  const SWAP_FEE_PERC:number = 0.02;
+
   let testPool:AaveTestPool;
+  let tempusPool:TempusPool;
+  let tempusAMM:TempusAMM;
   
-  async function setupAndDepositToTempusPool(yieldEst:number, poolDuration:number): Promise<TempusPool> {
-    [owner, user, user1] = await ethers.getSigners();
+  async function createPools(params:CreateParams): Promise<void> {
     testPool = new AaveTestPool();
-    await testPool.createTempusPool(1.0, poolDuration, yieldEst);
+    tempusPool = await testPool.createWithAMM({
+      initialRate:1.0, poolDuration:params.duration, yieldEst:params.yieldEst,
+      ammSwapFee:SWAP_FEE_PERC, ammAmplification: params.amplify
+    });
+
+    tempusAMM = testPool.amm;
+    [owner, user, user1] = testPool.signers;
+
     await testPool.deposit(owner, 1000000);
-    await testPool.tempus.controller.depositYieldBearing(owner, testPool.tempus, 1000000, owner);
-    return testPool.tempus;
+    await tempusPool.controller.depositYieldBearing(owner, tempusPool, 1000000, owner);
   }
 
   async function checkSwap(owner:Signer, swapTest:SwapTestRun, principalIn:boolean, givenIn:boolean) {
     const yieldEst = swapTest.pricePerYield / swapTest.pricePerPrincipal;
-    const tempusPool = await setupAndDepositToTempusPool(yieldEst, 60*60*24*31);
-    const tempusAMM = await TempusAMM.create(owner, swapTest.amplification, SWAP_FEE_PERC, tempusPool);
+    await createPools({yieldEst:yieldEst, duration:60*60*24*31, amplify:swapTest.amplification});
     await tempusAMM.provideLiquidity(owner, swapTest.balancePrincipal, swapTest.balanceYield, TempusAMMJoinKind.INIT);
   
     const [tokenIn, tokenOut] = 
@@ -60,13 +72,9 @@ describe("TempusAMM", async () => {
     expect(+fromWei(postSwapTokenOutBalance.sub(preSwapTokenOutBalance))).to.be.within(swapTest.swapAmountOut * 0.9999, swapTest.swapAmountOut * 1.0001);
   }
 
-  beforeEach(async () => {
-    [owner, user, user1] = await ethers.getSigners();
-  });
-
-  it("checks amplification and invariant in multiple stages", async () => {
-    const tempusPool = await setupAndDepositToTempusPool(0.1, 60*60*24*31);
-    const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, tempusPool);
+  it("checks amplification and invariant in multiple stages", async () =>
+  {
+    await createPools({yieldEst:0.1, duration:60*60*24*31, amplify:5});
     let ampInv = await tempusAMM.getLastInvariant();
     expect(ampInv.invariant).to.equal(0);
     expect(ampInv.amplification).to.equal(0);
@@ -76,9 +84,9 @@ describe("TempusAMM", async () => {
     expect(ampInv.amplification).to.equal(5000);
   });
 
-  it("checks amplification increases over time", async () => {
-    const tempusPool = await setupAndDepositToTempusPool(0.1, 60*60*24*30);
-    const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, tempusPool);
+  it("checks amplification increases over time", async () =>
+  {
+    await createPools({yieldEst:0.1, duration:60*60*24*30, amplify:5});
     await tempusAMM.startAmplificationUpdate(95, testPool.maturityTime);
     await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
     let ampInv = await tempusAMM.getLastInvariant();
@@ -102,10 +110,10 @@ describe("TempusAMM", async () => {
     expect(ampInv.amplification).to.equal(95000);
   });
 
-  it("checks amplification update reverts with invalid args", async () => {
-    const tempusPool = await setupAndDepositToTempusPool(0.1, 60*60*24*30);
-    const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, tempusPool);
-    
+  it("checks amplification update reverts with invalid args", async () =>
+  {
+    await createPools({yieldEst:0.1, duration:60*60*24*30, amplify:5});
+
     // min amp 
     let invalidAmpUpdate = tempusAMM.startAmplificationUpdate(0, (await blockTimestamp()) + 0);
     (await expectRevert(invalidAmpUpdate)).to.equal("BAL#300");
@@ -136,24 +144,23 @@ describe("TempusAMM", async () => {
     expect(ampInv.amplification).to.equal(35000);
   });
 
-  it("revert on invalid join kind", async () => {
-    const tempusPool = await setupAndDepositToTempusPool(0.1, 60*60*24*30);
-    const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, tempusPool);
+  it("revert on invalid join kind", async () =>
+  {
+    await createPools({yieldEst:0.1, duration:60*60*24*30, amplify:5});
     await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
     (await expectRevert(tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.EXACT_BPT_OUT_FOR_TOKEN_IN)));
   });
 
-  it("revert on join after maturity", async () => {
-    const tempusPool = await setupAndDepositToTempusPool(0.1, 60*60);
-    const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, tempusPool);
-    await increaseTime(60*60);
-    await tempusPool.finalize();
+  it("revert on join after maturity", async () =>
+  {
+    await createPools({yieldEst:0.1, duration:60*60, amplify:5});
+    await testPool.fastForwardToMaturity();
     (await expectRevert(tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT)));
   });
 
-  it("checks LP exiting pool", async () => {
-    const tempusPool = await setupAndDepositToTempusPool(0.1, 60*60*24*30);
-    const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, tempusPool);
+  it("checks LP exiting pool", async () =>
+  {
+    await createPools({yieldEst:0.1, duration:60*60*24*30, amplify:5});
     await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
     const preYieldBalance = +await tempusAMM.yieldShare.balanceOf(owner);
     const prePrincipalBalance = +await tempusAMM.principalShare.balanceOf(owner);
@@ -166,9 +173,9 @@ describe("TempusAMM", async () => {
     expect(postYieldBalance - preYieldBalance).to.be.within(550, 551);
   });
 
-  it("checks LP exiting pool with exact tokens out", async () => {
-    const tempusPool = await setupAndDepositToTempusPool(0.1, 60*60*24*30);
-    const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, tempusPool);
+  it("checks LP exiting pool with exact tokens out", async () =>
+  {
+    await createPools({yieldEst:0.1, duration:60*60*24*30, amplify:5});
     await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
     const preYieldBalance = +await tempusAMM.yieldShare.balanceOf(owner);
     const prePrincipalBalance = +await tempusAMM.principalShare.balanceOf(owner);
@@ -181,16 +188,16 @@ describe("TempusAMM", async () => {
     expect(postYieldBalance - preYieldBalance).to.equal(500);
   });
 
-  it("checks LP exiting pool for one token reverts", async () => {
-    const tempusPool = await setupAndDepositToTempusPool(0.1, 60*60*24*30);
-    const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, tempusPool);
+  it("checks LP exiting pool for one token reverts", async () =>
+  {
+    await createPools({yieldEst:0.1, duration:60*60*24*30, amplify:5});
     await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
     await expectRevert(tempusAMM.exitPoolExactLpAmountIn(owner, 100, true));
   });
 
-  it("checks second LP's pool token balance without swaps between", async () => {
-    const tempusPool = await setupAndDepositToTempusPool(0.1, 60*60*24*30);
-    const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, tempusPool);
+  it("checks second LP's pool token balance without swaps between", async () =>
+  {
+    await createPools({yieldEst:0.1, duration:60*60*24*30, amplify:5});
     await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
 
     await tempusAMM.principalShare.transfer(owner, user.address, 1000);
@@ -202,9 +209,9 @@ describe("TempusAMM", async () => {
     expect(balanceOwner).to.be.within(balanceUser * 0.99999, balanceUser * 1.000001);
   });
 
-  it("checks rate and second LP's pool token balance with swaps between", async () => {
-    const tempusPool = await setupAndDepositToTempusPool(0.1, 60*60*24*30);
-    const tempusAMM = await TempusAMM.create(owner, 5 /*amp*/, SWAP_FEE_PERC, tempusPool);
+  it("checks rate and second LP's pool token balance with swaps between", async () =>
+  {
+    await createPools({yieldEst:0.1, duration:60*60*24*30, amplify:5});
     await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
 
     expect(+await tempusAMM.balanceOf(owner)).to.be.within(181, 182);
@@ -239,7 +246,8 @@ describe("TempusAMM", async () => {
     expect(+await tempusAMM.getRate()).to.be.within(1.006, 1.0061);
   });
 
-  it("test swaps principal in with balances aligned with Interest Rate", async () => {
+  describe("test swaps principal in with balances aligned with Interest Rate", () =>
+  {
     const swapsTests:SwapTestRun[] = [
       // basic swap with Interest Rate aligned to balances with increasing amplification
       {amplification: 5, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 9.784051829755239},
@@ -249,11 +257,14 @@ describe("TempusAMM", async () => {
       {amplification: 95, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 50, swapAmountOut: 486.76343807350116}
     ];
     for (let i:number = 0; i < swapsTests.length; ++i) {
-      await checkSwap(owner, swapsTests[i], true, true);
+      it("check swap aligned "+(i+1)+"/"+swapsTests.length, async () => {
+        await checkSwap(owner, swapsTests[i], true, true);
+      });
     }
   });
 
-  it("tests swaps principal in with balances not aligned with Interest Rate", async () => {
+  describe("tests swaps principal in with balances not aligned with Interest Rate", () =>
+  {
     const swapsTests:SwapTestRun[] = [
       // Interest Rate doesn't match balances with increasing amplification
       {amplification: 2, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 6.272332951557398},
@@ -272,11 +283,14 @@ describe("TempusAMM", async () => {
       {amplification: 95, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 50, swapAmountOut: 245.97438693083}
     ];
     for (let i:number = 0; i < swapsTests.length; ++i) {
-      await checkSwap(owner, swapsTests[i], true, true);
+      it("check swap misaligned "+(i+1)+"/"+swapsTests.length, async () => {
+        await checkSwap(owner, swapsTests[i], true, true);
+      });
     }
   });
 
-  it("tests swaps principal in with balances not aligned with Interest Rate - different direction", async () => {
+  describe("tests swaps principal in with balances not aligned with Interest Rate - different direction", () =>
+  {
     const swapsTests:SwapTestRun[] = [
       // Interest Rate doesn't match balances (different direction) with increasing amplification
       {amplification: 1, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 5.3317755638575175},
@@ -296,11 +310,14 @@ describe("TempusAMM", async () => {
       {amplification: 95, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 9.620544606819651},
     ];
     for (let i:number = 0; i < swapsTests.length; ++i) {
-      await checkSwap(owner, swapsTests[i], true, true);
+      it("check swap misaligned "+(i+1)+"/"+swapsTests.length, async () => {
+        await checkSwap(owner, swapsTests[i], true, true);
+      });
     }
   });
 
-  it("tests various swaps yield in", async () => {
+  describe("tests various swaps yield in", () =>
+  {
     const swapsTests:SwapTestRun[] = [
       // basic swap with Interest Rate aligned to balances with increasing amplification
       {amplification: 5, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 0.9784018372524833},
@@ -328,10 +345,14 @@ describe("TempusAMM", async () => {
       {amplification: 100, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 0.996990344244073}
     ];
     for (let i:number = 0; i < swapsTests.length; ++i) {
-      await checkSwap(owner, swapsTests[i], false, true);
+      it("check swap in "+(i+1)+"/"+swapsTests.length, async () => {
+        await checkSwap(owner, swapsTests[i], false, true);
+      });
     }
   });
-  it("test swaps principal in with given out", async () => {
+
+  describe("test swaps principal in with given out", () =>
+  {
     const swapsTests:SwapTestRun[] = [
       {amplification: 50, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1.020604192005178, swapAmountOut: 10},
       {amplification: 1, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 2.519192149555226, swapAmountOut: 10},
@@ -340,7 +361,9 @@ describe("TempusAMM", async () => {
       {amplification: 60, pricePerPrincipal: 1, pricePerYield: 0.3, balancePrincipal: 200, balanceYield: 1000, swapAmountIn: 3.0403023467562296, swapAmountOut: 10}
     ];
     for (let i:number = 0; i < swapsTests.length; ++i) {
-      await checkSwap(owner, swapsTests[i], true, false);
+      it("check swap out "+(i+1)+"/"+swapsTests.length, async () => {
+        await checkSwap(owner, swapsTests[i], true, false);
+      });
     }
   });
 });
