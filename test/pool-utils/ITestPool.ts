@@ -1,14 +1,14 @@
 import { expect } from "chai";
 import { Transaction } from "ethers";
 import { ethers, deployments } from "hardhat";
-import { Signer, SignerOrAddress } from "../utils/ContractBase";
+import { ContractBase, Signer, SignerOrAddress } from "../utils/ContractBase";
 import { TempusPool, PoolType, TempusSharesNames, generateTempusSharesNames } from "../utils/TempusPool";
 import { blockTimestamp, setEvmTime } from "../utils/Utils";
 import { ERC20 } from "../utils/ERC20";
-import { PoolShare } from "../utils/PoolShare";
 import { NumberOrString } from "../utils/Decimal";
 import { getRevertMessage } from "../utils/Utils";
 import { TempusController } from "../utils/TempusController";
+import { TempusAMM } from "../utils/TempusAMM";
 
 export class UserState {
   principalShares:Number;
@@ -36,6 +36,20 @@ export class FixtureState {
   }
 }
 
+export interface TempusParams {
+  initialRate:number; // Initial interest rate
+  poolDuration:number; // Pool lifetime duration in seconds
+  yieldEst:number; // Estimated initial yield of the pool
+}
+
+export interface TempusAMMParams {
+  initialRate:number; // Initial interest rate
+  poolDuration:number; // Pool lifetime duration in seconds
+  yieldEst:number; // Estimated initial yield of the pool
+  ammSwapFee:number; // Swap fee percentage for TempusAMM
+  ammAmplification:number; // Amplification parameter for TempusAMM
+}
+
 // When we create TestPool fixtures with different parameters,
 // each parameter set is kept separately here
 const POOL_FIXTURES: { [signature: string]: FixtureState } = {};
@@ -48,8 +62,9 @@ export abstract class ITestPool {
   // ex false: deposit(100) with rate 1.2 will yield 120 TPS and TYS
   yieldPeggedToAsset:boolean;
 
-  // initialized by createTempusPool()
+  // initialized by initPool()
   tempus:TempusPool;
+  amm:TempusAMM;
   signers:Signer[];
 
   // common state reset when a fixture is instantiated
@@ -80,9 +95,24 @@ export abstract class ITestPool {
   abstract yieldTokenBalance(user:SignerOrAddress): Promise<NumberOrString>;
 
   /**
-   * This must create the TempusPool instance
+   * This will create TempusPool, TempusAMM and TempusController instances.
+   * @param params Parameters for Pool, AMM and 
    */
-  abstract createTempusPool(initialRate:number, poolDurationSeconds:number, yieldEst:number): Promise<TempusPool>;
+  abstract createWithAMM(params:TempusAMMParams): Promise<TempusPool>;
+
+  /**
+   * Simplified overload for createPoolWithAMM, giving default parameters for AMM
+   */
+  public create(params:TempusParams): Promise<TempusPool> {
+    return this.createWithAMM({ ...params, ammSwapFee:0.02, ammAmplification:5 });
+  }
+
+  /**
+   * Super-simplified overload for create, sets default parameters
+   */
+  public createDefault(): Promise<TempusPool> {
+    return this.create({ initialRate:1.0, poolDuration:60*60, yieldEst:0.1 });
+  }
 
   /**
    * @param rate Sets the Interest Rate for the underlying mock pool
@@ -241,46 +271,40 @@ export abstract class ITestPool {
     return state;
   }
 
-  protected async createPool(
-    initialRate:number,
-    poolDuration:number,
-    yieldEst:number,
+  protected async initPool(
+    p:TempusAMMParams,
     tpsName:string,
     tysName:string,
-    newPool: ()=>Promise<any>,
-    restorePool: (contracts:any)=>void
+    newPool:()=>Promise<ContractBase>,
+    setPool:(pool:ContractBase)=>void
   ): Promise<TempusPool> {
-    this.initialRate = initialRate;
-    this.yieldEst = yieldEst;
-    this.poolDuration = poolDuration;
+    this.initialRate = p.initialRate;
+    this.poolDuration = p.poolDuration;
+    this.yieldEst = p.yieldEst;
 
-    const signature = this.type+"|"+initialRate+"|"+poolDuration+"|"+yieldEst;
-    let f:FixtureState = POOL_FIXTURES[signature];
+    const sig = [this.type, p.initialRate, p.poolDuration, p.yieldEst, p.ammSwapFee, p.ammAmplification].join("|");
+    let f:FixtureState = POOL_FIXTURES[sig];
 
     if (!f) // initialize a new fixture
     {
-      const maturityTime = await blockTimestamp() + poolDuration;
+      const maturityTime = await blockTimestamp() + this.poolDuration;
       const names = generateTempusSharesNames(tpsName, tysName, maturityTime);
       f = new FixtureState(maturityTime, names, deployments.createFixture(async () =>
       {
         await deployments.fixture(undefined, { keepExistingDeployments: true, });
         // Note: for fixtures, all contracts must be initialized inside this callback
-        const contracts = await newPool();
-        const controller = await TempusController.deploy();
-        const t = await TempusPool.deploy(this.type, controller, this.yieldToken(), maturityTime, yieldEst, names);
         const [owner,user,user2] = await ethers.getSigners();
+        const pool = await newPool();
+        const ybt = (pool as any).yieldToken;
+        const controller = await TempusController.deploy();
+        const tempus = await TempusPool.deploy(this.type, controller, ybt, maturityTime, p.yieldEst, names);
+        const amm = await TempusAMM.create(owner, p.ammAmplification, p.ammSwapFee, tempus);
         return {
           signers: { owner:owner, user:user, user2:user2 },
-          contracts: { 
-            ...contracts,
-            tc:t.contract,
-            tps:t.principalShare.contract,
-            tys:t.yieldShare.contract,
-            controller: controller
-          }
+          contracts: { pool:pool, tempus:tempus, amm: amm },
         };
       }));
-      POOL_FIXTURES[signature] = f; // save for later use
+      POOL_FIXTURES[sig] = f; // save for later use
     }
 
     // always restore pool from fixture (that's just the way the fixture approach works bro)
@@ -289,10 +313,10 @@ export abstract class ITestPool {
     this.names = f.names;
     this.signers = [s.signers.owner, s.signers.user, s.signers.user2];
 
-    restorePool(s.contracts);
-    const principals = new PoolShare("PrincipalShare", s.contracts.tps);
-    const yields = new PoolShare("YieldShare", s.contracts.tys);
-    return new TempusPool(this.type, s.contracts.tc, s.contracts.controller, this.yieldToken(), principals, yields);
+    setPool(s.contracts.pool);
+    this.tempus = s.contracts.tempus;
+    this.amm = s.contracts.amm;
+    return this.tempus;
   }
 }
 

@@ -1,7 +1,7 @@
 import { Transaction } from "ethers";
 import { ethers } from "hardhat";
-import { ITestPool } from "./ITestPool";
-import { Signer, SignerOrAddress } from "../utils/ContractBase";
+import { ITestPool, TempusAMMParams } from "./ITestPool";
+import { ContractBase, Signer, SignerOrAddress } from "../utils/ContractBase";
 import { ERC20 } from "../utils/ERC20";
 import { TempusPool, PoolType } from "../utils/TempusPool";
 import { Lido } from "../utils/Lido";
@@ -39,19 +39,11 @@ export class LidoTestPool extends ITestPool {
     return this.tempus.controller.depositBacking(user, this.tempus, backingTokenAmount, recipient, backingTokenAmount);
   }
 
-  async createTempusPool(initialRate:number, poolDuration:number, yieldEst:number): Promise<TempusPool> {
-    this.tempus = await this.createPool(
-      initialRate, poolDuration, yieldEst, 'TPS-stETH', 'TYS-stETH',
-    async ():Promise<any> =>
-    {
-      this.lido = await Lido.create(1000000, this.initialRate);
-      return { lido:this.lido.contract, lidoAsset:this.lido.asset.contract };
-    },
-    (contracts:any) =>
-    {
-      let mockAsset = new ERC20("ERC20FixedSupply", contracts.lidoAsset);
-      this.lido = new Lido(contracts.lido, mockAsset);
+  async createWithAMM(params:TempusAMMParams): Promise<TempusPool> {
+    return await this.initPool(params, 'TPS-stETH', 'TYS-stETH', async () => {
+      return await Lido.create(1000000, this.initialRate);
+    }, (pool:ContractBase) => {
+      this.lido = (pool as Lido);
     });
-    return this.tempus;
   }
 }

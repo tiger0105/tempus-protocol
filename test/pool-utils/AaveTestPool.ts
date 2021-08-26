@@ -1,5 +1,5 @@
-import { ITestPool } from "./ITestPool";
-import { Signer, SignerOrAddress } from "../utils/ContractBase";
+import { ITestPool, TempusAMMParams } from "./ITestPool";
+import { ContractBase, Signer, SignerOrAddress } from "../utils/ContractBase";
 import { ERC20 } from "../utils/ERC20";
 import { TempusPool, PoolType } from "../utils/TempusPool";
 import { Aave } from "../utils/Aave";
@@ -29,21 +29,11 @@ export class AaveTestPool extends ITestPool {
     await this.aave.deposit(user, amount);
   }
 
-  async createTempusPool(initialRate:number, poolDuration:number, yieldEst:number): Promise<TempusPool> {
-    this.tempus = await this.createPool(
-      initialRate, poolDuration, yieldEst, 'TPS-AAT', 'TYS-AAT',
-    async ():Promise<any> =>
-    {
-      this.aave = await Aave.create(1000000, this.initialRate);
-      const a = this.aave;
-      return { aave:a.contract, aaveAsset:a.asset.contract, aaveYield:a.yieldToken.contract };
-    },
-    (contracts:any) =>
-    {
-      let asset = new ERC20("ERC20FixedSupply", contracts.aaveAsset);
-      let yieldToken = new ERC20("ATokenMock", contracts.aaveYield);
-      this.aave = new Aave(contracts.aave, asset, yieldToken);
+  async createWithAMM(params:TempusAMMParams): Promise<TempusPool> {
+    return await this.initPool(params, 'TPS-AAT', 'TYS-AAT', async () => {
+      return await Aave.create(1000000, this.initialRate);
+    }, (pool:ContractBase) => {
+      this.aave = (pool as Aave);
     });
-    return this.tempus;
   }
 }

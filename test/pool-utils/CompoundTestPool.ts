@@ -1,5 +1,5 @@
-import { ITestPool } from "./ITestPool";
-import { Signer, SignerOrAddress } from "../utils/ContractBase";
+import { ITestPool, TempusAMMParams } from "./ITestPool";
+import { ContractBase, Signer, SignerOrAddress } from "../utils/ContractBase";
 import { ERC20 } from "../utils/ERC20";
 import { TempusPool, PoolType } from "../utils/TempusPool";
 import { Comptroller } from "../utils/Comptroller";
@@ -31,21 +31,11 @@ export class CompoundTestPool extends ITestPool {
     await this.compound.mint(user, amount);
   }
 
-  async createTempusPool(initialRate:number, poolDuration:number, yieldEst:number): Promise<TempusPool> {
-    this.tempus = await this.createPool(
-      initialRate, poolDuration, yieldEst, 'TPS-cDAI', 'TYS-cDAI',
-    async ():Promise<any> =>
-    {
-      this.compound = await Comptroller.create(1000000, this.initialRate);
-      const c = this.compound;
-      return { comp:c.contract, compAsset:c.asset.contract, compYield:c.yieldToken.contract };
-    },
-    (contracts:any) =>
-    {
-      let asset = new ERC20("ERC20FixedSupply", contracts.compAsset);
-      let yieldToken = new ERC20("CErc20", contracts.compYield);
-      this.compound = new Comptroller(contracts.comp, asset, yieldToken);
+  async createWithAMM(params:TempusAMMParams): Promise<TempusPool> {
+    return await this.initPool(params, 'TPS-cDAI', 'TYS-cDAI', async () => {
+      return await Comptroller.create(1000000, this.initialRate);
+    }, (pool:ContractBase) => {
+      this.compound = (pool as Comptroller);
     });
-    return this.tempus;
   }
 }

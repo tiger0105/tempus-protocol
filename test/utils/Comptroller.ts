@@ -1,6 +1,6 @@
-import { Contract, BigNumber, ethers } from "ethers";
-import { NumberOrString, toWei, formatDecimal } from "./Decimal";
-import { addressOf, ContractBase, SignerOrAddress, Signer } from "./ContractBase";
+import { Contract, BigNumber } from "ethers";
+import { NumberOrString, toWei } from "./Decimal";
+import { addressOf, ContractBase, SignerOrAddress } from "./ContractBase";
 import { ERC20 } from "./ERC20";
 
 export class Comptroller extends ContractBase {
