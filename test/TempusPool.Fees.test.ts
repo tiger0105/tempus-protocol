@@ -4,7 +4,6 @@ import { ITestPool } from "./pool-utils/ITestPool";
 import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
 
 import { Signer } from "./utils/ContractBase";
-import { increaseTime } from "./utils/Utils";
 import { MAX_UINT256 } from "./utils/Decimal";
 
 describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
@@ -18,7 +17,7 @@ describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
 
   it("Should collect tokens as fees during deposit() if fees != 0", async () =>
   {
-    await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);
+    await pool.createDefault();
     await pool.setupAccounts(owner, [[user, 500]]);
 
     await pool.tempus.setFeesConfig(owner, 0.01, 0.0, 0.0);
@@ -31,7 +30,7 @@ describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
 
   it("Should collect tokens as fees during EARLY redeem() if fees != 0", async () =>
   {
-    await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);
+    await pool.createDefault();
     await pool.setupAccounts(owner, [[user, 500]]);
 
     await pool.tempus.setFeesConfig(owner, 0.0, 0.01, 0.0);
@@ -47,7 +46,7 @@ describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
 
   it("Should collect tokens as fees during MATURE redeem() if fees != 0", async () =>
   {
-    await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);
+    await pool.createDefault();
     await pool.setupAccounts(owner, [[user, 500]]);
 
     await pool.tempus.setFeesConfig(owner, 0.0, 0.0, 0.02);
@@ -66,7 +65,7 @@ describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
 
   it("Should transfer fees to specified account", async () =>
   {
-    await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);
+    await pool.createDefault();
     await pool.setupAccounts(owner, [[user, 500]]);
 
     await pool.tempus.setFeesConfig(owner, 0.10, 0.0, 0.0);

@@ -1,6 +1,4 @@
-import { ethers } from "hardhat";
 import { expect } from "chai";
-import { Signer } from "./utils/ContractBase";
 import { PoolType } from "./utils/TempusPool";
 import { ITestPool } from "./pool-utils/ITestPool";
 import { describeForEachPool, describeForEachPoolType } from "./pool-utils/MultiPoolTestSuite";
@@ -8,16 +6,10 @@ import { expectRevert } from "./utils/Utils";
 
 describeForEachPoolType("TempusPool Redeem", [PoolType.Aave, PoolType.Compound], (pool:ITestPool) =>
 {
-  let owner:Signer, user:Signer, user2:Signer;
-
-  beforeEach(async () =>
-  {
-    [owner, user, user2] = await ethers.getSigners();
-  });
-
   it("Should redeem correct BackingTokens after depositing BackingTokens", async () =>
   {
-    await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);
+    await pool.createDefault();
+    let [owner, user] = pool.signers;
     await pool.asset().transfer(owner, user, 1000);
 
     await pool.asset().approve(user, pool.tempus.controller.address, 100);
@@ -34,7 +26,8 @@ describeForEachPoolType("TempusPool Redeem", [PoolType.Aave, PoolType.Compound],
 
   it("Should redeem more BackingTokens after changing rate to 2.0", async () =>
   {
-    await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);
+    await pool.createDefault();
+    let [owner, user] = pool.signers;
     await pool.asset().transfer(owner, user, 1000);
     await pool.asset().approve(user, pool.tempus.controller.address, 100);
     (await pool.expectDepositBT(user, 100)).to.equal('success');
@@ -54,17 +47,12 @@ describeForEachPoolType("TempusPool Redeem", [PoolType.Aave, PoolType.Compound],
   });
 });
 
-describeForEachPool("TempusPool Redeem", (pool: ITestPool) => {
-  let owner:Signer, user:Signer, user2:Signer;
-
-  beforeEach(async () =>
-  {
-    [owner, user, user2] = await ethers.getSigners();
-  });
-  
+describeForEachPool("TempusPool Redeem", (pool: ITestPool) =>
+{
   it("Should revert when trying to call redeem BT directly on TempusPool (not via the TempusController)", async () => 
   {
-    await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);
+    await pool.createDefault();
+    let [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 500]]);
     
     (await expectRevert(pool.tempus.redeemToBacking(user, 1, 1))).to.equal("Only callable by TempusController");
@@ -73,16 +61,10 @@ describeForEachPool("TempusPool Redeem", (pool: ITestPool) => {
 
 describeForEachPoolType("TempusPool Redeem", [PoolType.Lido], (pool:ITestPool) =>
 {
-  let owner:Signer, user:Signer, user2:Signer;
-
-  beforeEach(async () =>
-  {
-    [owner, user, user2] = await ethers.getSigners();
-  });
-
   it("Should revert on redeem", async () =>
   {
-    await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);
+    await pool.createDefault();
+    let [owner, user] = pool.signers;
     await pool.asset().transfer(owner, user, 1000);
     await pool.asset().approve(user, pool.tempus.controller.address, 100);
     (await pool.expectDepositBT(user, 100)).to.equal('success');

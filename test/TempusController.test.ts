@@ -2,7 +2,6 @@ import { deployments, ethers } from "hardhat";
 import { expect } from "chai";
 import { ONE_WEI, toWei } from "./utils/Decimal";
 import { TempusAMM, TempusAMMJoinKind } from "./utils/TempusAMM";
-import { ContractBase } from "./utils/ContractBase";
 import { blockTimestamp, expectRevert } from "./utils/Utils";
 import { Aave } from "./utils/Aave";
 import { generateTempusSharesNames, TempusPool } from "./utils/TempusPool";

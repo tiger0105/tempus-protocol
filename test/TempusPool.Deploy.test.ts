@@ -2,25 +2,21 @@ import { utils } from "ethers";
 import { expect } from "chai";
 import { ITestPool } from "./pool-utils/ITestPool";
 import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
-
-import { Signer } from "./utils/ContractBase";
 import { TempusPool } from "./utils/TempusPool";
 import { expectRevert, blockTimestamp } from "./utils/Utils";
 
 describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
 {
-  let owner:Signer, user:Signer, user2:Signer;
   let pool:TempusPool;
 
   beforeEach(async () =>
   {
-    pool = await testPool.createTempusPool(/*initialRate:*/1.0, 60 * 60, /*yieldEst:*/0.1);
-    [owner, user, user2] = testPool.signers;
+    pool = await testPool.createDefault();
   });
 
   it("Should revert if maturity is less than current time", async () =>
   {
-    (await expectRevert(testPool.createTempusPool(/*initialRate:*/1.0, -60, /*yieldEst:*/0.1)))
+    (await expectRevert(testPool.create({ initialRate:1.0, poolDuration:-60, yieldEst:0.1 })))
       .to.equal("maturityTime is after startTime");
   });
   
@@ -91,6 +87,7 @@ describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
 
   it("Should revert on collecting fees as there is no fees", async () => 
   {
+    let [owner] = testPool.signers;
     (await expectRevert(pool.transferFees(owner, owner, 1))).to.equal("not enough accumulated fees");
   });
 });
