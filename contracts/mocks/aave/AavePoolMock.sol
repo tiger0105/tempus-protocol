@@ -14,6 +14,9 @@ contract AavePoolMock is ILendingPool {
     ATokenMock public yieldToken; // aDAI
     uint128 private liquidityIndex; // the liquidity index in Ray (init:1ray=1e27)
 
+    // used for mocks, it will force-fail the next deposit or redeem
+    bool public mockFailNextDepositOrRedeem;
+
     /// @dev Initialize AAVE Mock with a single supported reserve.
     /// We only support 1 reserve right now.
     /// @param asset The single ERC20 reserve token, such as DAI
@@ -28,6 +31,11 @@ contract AavePoolMock is ILendingPool {
     /// @param index Asset liquidity index. Expressed in ray (1e27)
     function setLiquidityIndex(uint128 index) public {
         liquidityIndex = index;
+    }
+
+    /// @notice MOCK ONLY
+    function setFailNextDepositOrRedeem(bool fail) public {
+        mockFailNextDepositOrRedeem = fail;
     }
 
     /// @dev Returns the normalized income per unit of asset
@@ -53,6 +61,11 @@ contract AavePoolMock is ILendingPool {
     ) public override {
         require(address(assetToken) == asset, "invalid reserve asset");
 
+        if (mockFailNextDepositOrRedeem) {
+            setFailNextDepositOrRedeem(false);
+            require(false, "random mock failure from aave");
+        }
+
         // The AToken holds the asset
         address assetOwner = address(yieldToken);
         require(assetToken.transferFrom(msg.sender, assetOwner, amount), "transfer failed");
@@ -77,6 +90,11 @@ contract AavePoolMock is ILendingPool {
         address to
     ) external override returns (uint256) {
         require(address(assetToken) == asset, "invalid reserve asset");
+
+        if (mockFailNextDepositOrRedeem) {
+            setFailNextDepositOrRedeem(false);
+            require(false, "random failure from aave");
+        }
 
         yieldToken.burn(msg.sender, to, amount, uint256(liquidityIndex));
         return amount;

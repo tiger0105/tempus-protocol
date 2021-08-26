@@ -25,6 +25,11 @@ contract CErc20 is CTokenMock, CErc20Interface {
     /// @param mintAmount The amount of the underlying asset to supply
     /// @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
     function mint(uint mintAmount) external override returns (uint) {
+        ComptrollerMock mock = ComptrollerMock(address(comptroller));
+        if (mock.mockFailNextDepositOrRedeem()) {
+            mock.setFailNextDepositOrRedeem(false);
+            return 1;
+        }
         (uint err, ) = mintInternal(mintAmount);
         return err;
     }
@@ -34,6 +39,12 @@ contract CErc20 is CTokenMock, CErc20Interface {
     /// @param redeemTokens The number of cTokens to redeem into underlying
     /// @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
     function redeem(uint redeemTokens) external override returns (uint) {
+        ComptrollerMock mock = ComptrollerMock(address(comptroller));
+        if (mock.mockFailNextDepositOrRedeem()) {
+            mock.setFailNextDepositOrRedeem(false);
+            return 1;
+        }
+
         // Amount of underlying asset to be redeemed:
         //  redeemAmount = redeemTokens x exchangeRate
         uint256 exchangeRate = exchangeRateStored();
