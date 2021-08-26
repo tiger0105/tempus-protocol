@@ -324,11 +324,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
             uint256 interestRate
         )
     {
-        if (matured) {
-            interestRate = (currentRate < maturityInterestRate) ? currentRate : maturityInterestRate;
-        } else {
-            interestRate = currentRate;
-        }
+        interestRate = effectiveRate(currentRate);
 
         if (interestRate < initialInterestRate) {
             redeemableBackingTokens = (principalAmount * interestRate) / initialInterestRate;
@@ -349,14 +345,16 @@ abstract contract TempusPool is ITempusPool, Ownable {
         return storedInterestRate(yieldBearingToken);
     }
 
-    function currentYield(uint256 interestRate) private view returns (uint256) {
-        uint256 currentRate = interestRate;
-        if (matured && currentRate > maturityInterestRate) {
-            currentRate = maturityInterestRate;
+    function effectiveRate(uint256 currentRate) private view returns (uint256) {
+        if (matured) {
+            return (currentRate < maturityInterestRate) ? currentRate : maturityInterestRate;
+        } else {
+            return currentRate;
         }
+    }
 
-        uint256 rate = (currentRate - initialInterestRate).divf18(initialInterestRate);
-        return rate;
+    function currentYield(uint256 interestRate) private view returns (uint256) {
+        return (effectiveRate(interestRate) - initialInterestRate).divf18(initialInterestRate);
     }
 
     function currentYield() private returns (uint256) {
