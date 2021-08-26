@@ -47,7 +47,7 @@ export function getRevertMessage(e:Error): string {
 export async function expectRevert(promise: Promise<any>): Promise<Chai.Assertion> {
   try {
     await promise;
-    return expect('TX_NOT_REVERTED');
+    return expect('success');
   } catch (e) {
     return expect(getRevertMessage(e));
   }

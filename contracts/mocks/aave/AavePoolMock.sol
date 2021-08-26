@@ -63,7 +63,7 @@ contract AavePoolMock is ILendingPool {
 
         if (mockFailNextDepositOrRedeem) {
             setFailNextDepositOrRedeem(false);
-            require(false, "random mock failure from aave");
+            revert("random mock failure from aave");
         }
 
         // The AToken holds the asset
@@ -93,7 +93,7 @@ contract AavePoolMock is ILendingPool {
 
         if (mockFailNextDepositOrRedeem) {
             setFailNextDepositOrRedeem(false);
-            require(false, "random failure from aave");
+            revert("random failure from aave");
         }
 
         yieldToken.burn(msg.sender, to, amount, uint256(liquidityIndex));

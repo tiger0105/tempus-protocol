@@ -119,5 +119,12 @@ describe("Lido Mock", () =>
       const redeemable = await lido.getPooledEthByShares(10);
       expect(redeemable).to.equal(12.5, "redeemable ETH should increase by 1.25x with interestRate 1.25x");
     });
+
+    it("Should revert if underlying pool has a random error", async () =>
+    {
+      await lido.submit(owner, 32.0);
+      await lido.contract.setFailNextDepositOrRedeem(true);
+      (await expectRevert(lido.withdraw(owner, 32.0))).to.not.equal('success');
+    });
   });
 });

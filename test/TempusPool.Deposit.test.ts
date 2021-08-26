@@ -41,7 +41,9 @@ describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
   {
     await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);
     await pool.forceFailNextDepositOrRedeem();
-    (await pool.expectDepositBT(user, 100)).to.not.be.equal('success');
+
+    await pool.asset().approve(owner, pool.tempus.controller.address, 100);
+    (await pool.expectDepositBT(owner, 100)).to.not.equal('success');
   });
 
   it("Should allow depositing 100 (initialRate=1.0)", async () =>

@@ -45,7 +45,7 @@ describeForEachPool("TempusPool Redeem", (pool:ITestPool) =>
     await pool.depositYBT(user, 100, /*recipient:*/user);
 
     await pool.forceFailNextDepositOrRedeem();
-    (await pool.expectRedeemBT(user, 100, 100)).to.not.be.equal('success');
+    (await pool.expectRedeemBT(user, 100, 100)).to.not.equal('success');
   });
 
   it("Should redeem exactly equal to deposit if no yield and no fees", async () =>

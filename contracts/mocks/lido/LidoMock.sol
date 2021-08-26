@@ -76,7 +76,7 @@ contract LidoMock is StETH {
     ) external {
         if (mockFailNextDepositOrRedeem) {
             setFailNextDepositOrRedeem(false);
-            require(false, "random mock failure from lido");
+            revert("random mock failure from lido");
         }
 
         uint256 redeemable = StETH.getPooledEthByShares(_amount);
@@ -106,7 +106,7 @@ contract LidoMock is StETH {
     ) internal returns (uint256) {
         if (mockFailNextDepositOrRedeem) {
             setFailNextDepositOrRedeem(false);
-            require(false, "random mock failure from lido");
+            revert("random mock failure from lido");
         }
 
         address sender = msg.sender;
