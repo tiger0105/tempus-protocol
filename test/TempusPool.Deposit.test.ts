@@ -33,13 +33,13 @@ describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
 
   it("Should revert on deposit 0", async () =>
   {
-    await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);
+    await pool.createDefault();
     (await pool.expectDepositBT(owner, 0)).to.not.be.equal('success');
   });
 
   it("Should revert on random failure from backing pool", async () =>
   {
-    await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);
+    await pool.createDefault();
     await pool.forceFailNextDepositOrRedeem();
 
     await pool.asset().approve(owner, pool.tempus.controller.address, 100);
