@@ -38,6 +38,16 @@ describeForEachPool("TempusPool Redeem", (pool:ITestPool) =>
     (await pool.expectRedeemBT(owner, 1, 1)).to.not.be.equal('success');
   });
 
+  it("Should revert on random failure from backing pool", async () =>
+  {
+    await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);
+    await pool.setupAccounts(owner, [[user, 100]]);
+    await pool.depositYBT(user, 100, /*recipient:*/user);
+
+    await pool.forceFailNextDepositOrRedeem();
+    (await pool.expectRedeemBT(user, 100, 100)).to.not.be.equal('success');
+  });
+
   it("Should redeem exactly equal to deposit if no yield and no fees", async () =>
   {
     await pool.createTempusPool(/*initialRate*/1.0, 60*60 /*maturity in 1hr*/, /*yieldEst:*/0.1);

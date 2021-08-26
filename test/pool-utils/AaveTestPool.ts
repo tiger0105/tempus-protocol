@@ -22,6 +22,9 @@ export class AaveTestPool extends ITestPool {
   async setInterestRate(rate:number): Promise<void> {
     await this.aave.setLiquidityIndex(rate);
   }
+  async forceFailNextDepositOrRedeem(): Promise<void> {
+    await this.aave.contract.setFailNextDepositOrRedeem(true);
+  }
   async deposit(user:Signer, amount:number): Promise<void> {
     await this.aave.deposit(user, amount);
   }

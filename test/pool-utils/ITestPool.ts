@@ -95,6 +95,11 @@ export abstract class ITestPool {
   abstract deposit(user:Signer, amount:number): Promise<void>;
 
   /**
+   * Sets force fail on next deposit or redeem call
+   */
+  abstract forceFailNextDepositOrRedeem(): Promise<void>;
+
+  /**
    * Deposit YieldBearingTokens into TempusPool
    */
   async depositYBT(user:Signer, yieldBearingAmount:number, recipient:Signer = user): Promise<Transaction> {
