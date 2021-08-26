@@ -1,17 +1,22 @@
-import { ethers } from "hardhat";
 import { expect } from "chai";
 import { Lido } from "../../utils/Lido";
 import { Signer } from "../../utils/ContractBase";
 import { expectRevert } from "../../utils/Utils";
+import { LidoTestPool } from "../../pool-utils/LidoTestPool";
 
 describe("Lido Mock", () =>
 {
   let owner:Signer, user:Signer;
   let lido:Lido;
+  let testPool:LidoTestPool;
 
-  beforeEach(async () => {
-    [owner, user] = await ethers.getSigners();
-    lido = await Lido.create(1000000);
+  beforeEach(async () =>
+  {
+    testPool = new LidoTestPool();
+    await testPool.createDefault();
+    lido = testPool.lido;
+
+    [owner, user] = testPool.signers;
   });
 
   describe("Deploy", () =>

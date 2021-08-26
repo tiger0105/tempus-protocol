@@ -10,6 +10,9 @@ export class AaveTestPool extends ITestPool {
   constructor() {
     super(PoolType.Aave, /*yieldPeggedToAsset:*/true);
   }
+  public pool(): ContractBase {
+    return this.aave;
+  }
   public asset(): ERC20 {
     return this.aave.asset;
   }
@@ -33,7 +36,7 @@ export class AaveTestPool extends ITestPool {
     return await this.initPool(params, 'TPS-AAT', 'TYS-AAT', async () => {
       return await Aave.create(1000000, this.initialRate);
     }, (pool:ContractBase) => {
-      this.aave = (pool as Aave);
+      this.aave = <Aave>pool;
     });
   }
 }

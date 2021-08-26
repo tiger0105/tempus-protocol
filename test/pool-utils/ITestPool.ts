@@ -80,6 +80,11 @@ export abstract class ITestPool {
   }
 
   /**
+   * @return The underlying pool contract, such as Aave, Lido or Comptroller
+   */
+  abstract pool(): ContractBase;
+
+  /**
    * @return The underlying asset token of the backing pool
    */
   abstract asset(): ERC20;
