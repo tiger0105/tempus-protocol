@@ -72,6 +72,15 @@ export class Lido extends ERC20 {
    * @param interestRate New synthetic Interest Rate
    */
   async setInterestRate(interestRate:NumberOrString): Promise<void> {
+    const rate = await this.interestRate();
+    console.log(interestRate, rate, this.toBigNum(rate).toString())
+    
+    if (rate === interestRate) {
+      // No rate change, no-op.
+      console.log('no rate change')
+      return;
+    }
+  
     const totalETHSupply:BigNumber = await this.contract.totalSupply();
     if (totalETHSupply.isZero()) {
       // If the pool is empty, this is a no-op.
@@ -80,9 +89,9 @@ export class Lido extends ERC20 {
 
     const currentBalance = await this.beaconBalance();
     const beaconValidators = currentBalance.div(ONE_WEI.mul(32));
-    const newBalance = currentBalance.mul(interestRate);
-    
-    console.log(currentBalance, beaconValidators, newBalance)
+    const newBalance = currentBalance.mul(this.toBigNum(interestRate));
+
+    console.log(this.fromBigNum(currentBalance), this.fromBigNum(beaconValidators), this.fromBigNum(newBalance))
 
     await this.contract.pushBeacon(beaconValidators, newBalance);
   }
@@ -91,7 +100,7 @@ export class Lido extends ERC20 {
     const val = this.toBigNum(amount); // payable call, set value:
     return await this.connect(signer).submit(addressOf(signer), {value: val})
   }
-  async beaconBalance() {
+  async beaconBalance(): Promise<BigNumber> {
     return await this.contract.beaconBalance();
   }
   async depositBufferedEther() {
