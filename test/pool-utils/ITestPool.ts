@@ -245,6 +245,15 @@ export abstract class ITestPool {
   }
 
   /**
+   * Fast forwards time to certain point in time
+   */
+  async setTimeRelativeToPoolStart(percentDuration: number): Promise<void> {
+    const startTime:number = +await this.tempus.startTime();
+    const duration:number = this.maturityTime - startTime;
+    await setEvmTime(startTime + percentDuration * duration);
+  }
+
+  /**
    * Typical setup call for most tests
    * 1. Deposits Asset into underlying pool by Owner
    * 1. Transfers Assets from Owner to depositors[]
