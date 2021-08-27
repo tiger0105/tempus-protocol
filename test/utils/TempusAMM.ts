@@ -6,7 +6,7 @@ import { ERC20 } from "./ERC20";
 import { MockProvider } from "@ethereum-waffle/provider";
 import { deployMockContract } from "@ethereum-waffle/mock-contract";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signers";
-import { blockTimestamp } from "./Utils";
+import { blockTimestamp, setEvmTime } from "./Utils";
 import { TempusPool } from "./TempusPool";
 
 const WETH_ARTIFACTS = require("../../artifacts/@balancer-labs/v2-solidity-utils/contracts/misc/IWETH.sol/IWETH");
@@ -35,6 +35,10 @@ export class TempusAMM extends ContractBase {
   principalShare: ERC20;
   yieldShare: ERC20;
   tempusPool: TempusPool;
+  startAmp: number;
+  targetAmp: number;
+  startedAmpUpdateTime: number;
+  oneAmpUpdateTime: number;
 
   constructor(tempusAmmPool: Contract, vault: Contract, tempusPool: TempusPool) {
     super("TempusAMM", 18, tempusAmmPool);
@@ -212,8 +216,38 @@ export class TempusAMM extends ContractBase {
     await this.vault.connect(from).swap(singleSwap, fundManagement, maximumIn, deadline);
   }
 
-  async startAmplificationUpdate(ampTarget: number, endTime: number): Promise<Transaction> {
+  async startAmplificationUpdate(ampTarget: number, oneAmpUpdateTime: number): Promise<Transaction> {
+    this.targetAmp = ampTarget;
+    this.oneAmpUpdateTime = oneAmpUpdateTime;
+    this.startedAmpUpdateTime = await blockTimestamp();
+    const ampParam = await this.getAmplificationParam();
+    this.startAmp = +ampParam.value / +ampParam.precision;
+
+    const ampDiff = (ampTarget > this.startAmp) ? (ampTarget - this.startAmp) : (this.startAmp - ampTarget);
+    const endTime = this.startedAmpUpdateTime + ampDiff * oneAmpUpdateTime;
     return this.contract.startAmplificationParameterUpdate(ampTarget, endTime);
+  }
+
+  async forwardToAmplification(ampValue: number): Promise<void> {
+    let targetTimestamp: number;
+    if (this.startAmp == ampValue) {
+      targetTimestamp = 0;
+    }
+    else if (this.targetAmp > this.startAmp) {
+      if (ampValue > this.targetAmp || ampValue < this.startAmp) { 
+        throw console.error("Wrong amplification update!"); 
+      }
+      targetTimestamp = this.startedAmpUpdateTime + (ampValue - this.startAmp) * this.oneAmpUpdateTime;
+    } else {
+      if (ampValue < this.targetAmp || ampValue > this.startAmp) { 
+        throw console.error("Wrong amplification update!"); 
+      }
+      targetTimestamp = this.startedAmpUpdateTime + (this.startAmp - ampValue) * this.oneAmpUpdateTime;
+    }
+
+    if (targetTimestamp > 0) {
+      return setEvmTime(targetTimestamp);
+    }
   }
 
   async stopAmplificationUpdate(): Promise<Transaction> {
