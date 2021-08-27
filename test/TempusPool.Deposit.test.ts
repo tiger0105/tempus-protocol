@@ -16,6 +16,25 @@ describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
     [owner, user, user2] = await ethers.getSigners();
   });
 
+  // NOTE: keeping this separate because of rate=1.25 causing expensive fixture switch
+  it("Should get different yield tokens when depositing 100 (initialRate=1.25)", async () =>
+  {
+    await pool.create({ initialRate:1.25, poolDuration:60*60, yieldEst:0.1 });
+    await pool.setupAccounts(owner, [[user, 100]]);
+
+    (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/100);
+    (await pool.expectDepositYBT(user, 100)).to.equal('success');
+
+    if (pool.yieldPeggedToAsset) // Aave & Lido
+    {
+      (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/0, "deposit: YBT reduce by 100, TPS/TYS is N*1");
+    }
+    else // Compound
+    {
+      (await pool.userState(user)).expect(125, 125, /*yieldBearing:*/0, "deposit: YBT reduce by 100, TPS/TYS is N*interestRate");
+    }
+  });
+
   it("Should emit correct event on deposit", async () =>
   {
     await pool.createDefault();
@@ -66,24 +85,6 @@ describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
 
     (await pool.expectDepositYBT(user, 100)).to.equal('success');
     (await pool.userState(user)).expect(200, 200, /*yieldBearing:*/300, "deposit: YBT reduce by 100");
-  });
-
-  it("Should get different yield tokens when depositing 100 (initialRate=1.25)", async () =>
-  {
-    await pool.create({ initialRate:1.25, poolDuration:60*60, yieldEst:0.1 });
-    await pool.setupAccounts(owner, [[user, 100]]);
-
-    (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/100);
-    (await pool.expectDepositYBT(user, 100)).to.equal('success');
-
-    if (pool.yieldPeggedToAsset) // Aave & Lido
-    {
-      (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/0, "deposit: YBT reduce by 100, TPS/TYS is N*1");
-    }
-    else // Compound
-    {
-      (await pool.userState(user)).expect(125, 125, /*yieldBearing:*/0, "deposit: YBT reduce by 100, TPS/TYS is N*interestRate");
-    }
   });
 
   it("Should revert on negative yield during deposit", async () => 
