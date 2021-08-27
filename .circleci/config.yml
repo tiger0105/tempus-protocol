@@ -180,6 +180,24 @@ jobs:
           no_output_timeout: 30m
           command: yarn mythx-misc
 
+  slither:
+    executor:
+      name: node/default
+      tag: '15.11'
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: yarn
+      - run:
+          name: "Install slither"
+          command: |
+            sudo apt update
+            sudo apt install python3-pip
+            sudo pip3 install slither-analyzer
+      - run:
+          name: "Run slither"
+          command: yarn slither
+
 workflows:
   code_coverage:
     jobs:
@@ -219,6 +237,9 @@ workflows:
   mythx_misc:
     jobs:
       - runMythX-Misc
+  slither:
+    jobs:
+      - slither
 
 notify:
   webhooks:
