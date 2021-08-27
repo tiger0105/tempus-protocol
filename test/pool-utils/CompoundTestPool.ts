@@ -11,6 +11,9 @@ export class CompoundTestPool extends ITestPool {
   constructor() {
     super(PoolType.Compound, /*yieldPeggedToAsset:*/false);
   }
+  public pool(): ContractBase {
+    return this.compound;
+  }
   public asset(): ERC20 {
     return this.compound.asset;
   }
@@ -35,7 +38,7 @@ export class CompoundTestPool extends ITestPool {
     return await this.initPool(params, 'TPS-cDAI', 'TYS-cDAI', async () => {
       return await Comptroller.create(1000000, this.initialRate);
     }, (pool:ContractBase) => {
-      this.compound = (pool as Comptroller);
+      this.compound = <Comptroller>pool;
     });
   }
 }

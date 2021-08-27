@@ -1,18 +1,24 @@
-import { ethers } from "hardhat";
 import { expect } from "chai";
 import { Comptroller } from "../../utils/Comptroller";
 import { Signer } from "../../utils/ContractBase";
 import { expectRevert } from "../../utils/Utils";
+import { CompoundTestPool } from "../../pool-utils/CompoundTestPool";
 
-describe("Compound Mock", async () => {
+describe("Compound Mock", async () =>
+{
   let owner:Signer, user:Signer;
   let pool:Comptroller;
+  let testPool:CompoundTestPool;
 
   describe("Compound CErc20", async () =>
   {
-    beforeEach(async () => {
-      [owner, user] = await ethers.getSigners();
-      pool = await Comptroller.create(1000000); // cDAI
+    beforeEach(async () =>
+    {
+      testPool = new CompoundTestPool();
+      await testPool.createDefault();
+      pool = testPool.compound;
+
+      [owner, user] = testPool.signers;
       await pool.asset.transfer(owner, user, 10); // give user 10 asset coins
     });
 

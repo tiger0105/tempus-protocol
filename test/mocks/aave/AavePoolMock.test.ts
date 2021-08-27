@@ -1,15 +1,21 @@
-import { ethers } from "hardhat";
 import { expect } from "chai";
 import { Aave } from "../../utils/Aave";
 import { Signer } from "../../utils/ContractBase";
+import { AaveTestPool } from "../../pool-utils/AaveTestPool";
 
-describe("AAVE Mock", async () => {
+describe("AAVE Mock", async () =>
+{
   let owner:Signer, user:Signer;
   let pool: Aave;
+  let testPool: AaveTestPool;
 
-  beforeEach(async () => {
-    [owner, user] = await ethers.getSigners();
-    pool = await Aave.create(1000000);
+  beforeEach(async () =>
+  {
+    testPool = new AaveTestPool();
+    await testPool.createDefault();
+    pool = testPool.aave;
+
+    [owner, user] = testPool.signers;
     await pool.asset.transfer(owner, user, 10); // give user 10 asset coins
   });
 

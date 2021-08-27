@@ -12,6 +12,9 @@ export class LidoTestPool extends ITestPool {
   constructor() {
     super(PoolType.Lido, /*yieldPeggedToAsset:*/true);
   }
+  public pool(): ContractBase {
+    return this.lido;
+  }
   public asset(): ERC20 {
     return this.lido.asset;
   }
@@ -43,7 +46,7 @@ export class LidoTestPool extends ITestPool {
     return await this.initPool(params, 'TPS-stETH', 'TYS-stETH', async () => {
       return await Lido.create(1000000, this.initialRate);
     }, (pool:ContractBase) => {
-      this.lido = (pool as Lido);
+      this.lido = <Lido>pool;
     });
   }
 }
