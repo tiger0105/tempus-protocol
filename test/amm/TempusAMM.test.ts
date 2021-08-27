@@ -103,7 +103,7 @@ describeForEachPool("TempusAMM", (testFixture:ITestPool) =>
     expect(ampInv.amplification).to.equal(5000);
   });
 
-  it.only("checks invariant increases over time with adding liquidity", async () =>
+  it("checks invariant increases over time with adding liquidity", async () =>
   {
     await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, amplifyEnd: 95, oneAmpUpdate: (ONE_MONTH / 90)});
     await testFixture.amm.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
