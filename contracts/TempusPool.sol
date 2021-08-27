@@ -89,7 +89,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
         returns (uint256 backingTokenAmount);
 
     /// Finalize the pool after maturity.
-    function finalize() public override {
+    function finalize() external override {
         if (!matured) {
             require(block.timestamp >= maturityTime, "Maturity not been reached yet.");
             maturityInterestRate = currentInterestRate();
@@ -100,7 +100,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
     }
 
     /// @dev Sets the fees config for this pool. By default all fees are 0
-    function setFeesConfig(FeesConfig calldata newFeesConfig) public override onlyOwner {
+    function setFeesConfig(FeesConfig calldata newFeesConfig) external override onlyOwner {
         feesConfig = newFeesConfig;
     }
 
@@ -109,7 +109,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
     /// @param recipient Address which will receive the specified amount of YBT
     /// @param amount Amount of YBT to transfer, cannot be more than contract's `totalFees`
     ///               If amount is uint256.max, then all accumulated fees are transferred.
-    function transferFees(address recipient, uint256 amount) public onlyOwner {
+    function transferFees(address recipient, uint256 amount) external onlyOwner {
         if (amount == type(uint256).max) {
             amount = totalFees;
         } else {
@@ -130,7 +130,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
     /// @return depositedYBT The BT value deposited, denominated as Yield Bearing Tokens
     /// @return rate The interest rate at the time of the deposit
     function depositBacking(uint256 backingTokenAmount, address recipient)
-        public
+        external
         payable
         override
         onlyController
@@ -157,7 +157,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
     /// @return depositedBT The YBT value deposited, denominated as Backing Tokens
     /// @return rate The interest rate at the time of the deposit
     function deposit(uint256 yieldTokenAmount, address recipient)
-        public
+        external
         override
         onlyController
         returns (
@@ -221,7 +221,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
         uint256 yieldAmount,
         address recipient
     )
-        public
+        external
         payable
         override
         onlyController
@@ -254,7 +254,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
         uint256 yieldAmount,
         address recipient
     )
-        public
+        external
         override
         onlyController
         returns (
