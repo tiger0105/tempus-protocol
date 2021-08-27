@@ -204,6 +204,7 @@ contract TempusController is PermanentlyOwnable {
         address recipient
     ) public payable {
         require(backingTokenAmount > 0, "backingTokenAmount is 0");
+
         IERC20 backingToken = IERC20(targetPool.backingToken());
 
         if (msg.value == 0) {
@@ -240,8 +241,7 @@ contract TempusController is PermanentlyOwnable {
         uint256 principalAmount,
         uint256 yieldAmount
     ) public {
-        require(principalAmount > 0, "principalAmount is 0");
-        require(yieldAmount > 0, "yieldAmount is 0");
+        require((principalAmount > 0) || (yieldAmount > 0), "principalAmount and yieldAmount cannot both be 0");
 
         (uint256 redeemedYBT, uint256 redeemedBT, uint256 interestRate) = targetPool.redeem(
             msg.sender,
@@ -273,8 +273,7 @@ contract TempusController is PermanentlyOwnable {
         uint256 principalAmount,
         uint256 yieldAmount
     ) public {
-        require(principalAmount > 0, "principalAmount is 0");
-        require(yieldAmount > 0, "yieldAmount is 0");
+        require((principalAmount > 0) || (yieldAmount > 0), "principalAmount and yieldAmount cannot both be 0");
 
         (uint256 redeemedYBT, uint256 redeemedBT, uint256 interestRate) = targetPool.redeemToBacking(
             msg.sender,
