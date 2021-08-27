@@ -14,12 +14,6 @@ describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
     pool = await testPool.createDefault();
   });
 
-  it("Should revert if maturity is less than current time", async () =>
-  {
-    (await expectRevert(testPool.create({ initialRate:1.0, poolDuration:-60, yieldEst:0.1 })))
-      .to.equal("maturityTime is after startTime");
-  });
-  
   it("Version is correct", async () =>
   {
     expect(await pool.version()).to.equal(1);
@@ -89,5 +83,11 @@ describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
   {
     let [owner] = testPool.signers;
     (await expectRevert(pool.transferFees(owner, owner, 1))).to.equal("not enough accumulated fees");
+  });
+
+  it("Should revert if maturity is less than current time", async () =>
+  {
+    (await expectRevert(testPool.create({ initialRate:1.0, poolDuration:-60, yieldEst:0.1 })))
+      .to.equal("maturityTime is after startTime");
   });
 });
