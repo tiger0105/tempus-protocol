@@ -34,7 +34,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
 
     bool public override matured;
 
-    FeesConfig public override feesConfig;
+    FeesConfig feesConfig;
 
     /// total amount of fees accumulated in pool
     uint256 public override totalFees;
@@ -97,6 +97,10 @@ abstract contract TempusPool is ITempusPool, Ownable {
 
             assert(IERC20(address(principalShare)).totalSupply() == IERC20(address(yieldShare)).totalSupply());
         }
+    }
+
+    function getFeesConfig() external view override returns (FeesConfig memory) {
+        return feesConfig;
     }
 
     function setFeesConfig(FeesConfig calldata newFeesConfig) external override onlyOwner {

@@ -13,14 +13,7 @@ interface ITempusFees {
     }
 
     /// Returns the current fee configuration.
-    function feesConfig()
-        external
-        view
-        returns (
-            uint256 depositPercent,
-            uint256 earlyRedeemPercent,
-            uint256 matureRedeemPercent
-        );
+    function getFeesConfig() external view returns (FeesConfig memory);
 
     /// Replace the current fee configuration with a new one.
     /// By default all the fees are expected to be set to zero.
