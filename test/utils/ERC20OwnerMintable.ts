@@ -27,10 +27,18 @@ export class ERC20OwnerMintable extends ERC20 {
 
   /**
    * @param sender Account that is issuing the burn. Must be manager().
+   * @param amount Number of tokens to burn
+   */
+  async burn(sender:SignerOrAddress, amount:NumberOrString) {
+    await this.connect(sender).burn(this.toBigNum(amount));
+  }
+
+  /**
+   * @param sender Account that is issuing the burn. Must be manager().
    * @param account Source address to burn tokens from
    * @param amount Number of tokens to burn
    */
-  async burn(sender:SignerOrAddress, account:SignerOrAddress, amount:NumberOrString) {
-    await this.connect(sender).burn(addressOf(account), this.toBigNum(amount));
+  async burnFrom(sender:SignerOrAddress, account:SignerOrAddress, amount:NumberOrString) {
+    await this.connect(sender).burnFrom(addressOf(account), this.toBigNum(amount));
   }
 }
