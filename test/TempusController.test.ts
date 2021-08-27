@@ -1,387 +1,153 @@
-import { deployments, ethers } from "hardhat";
 import { expect } from "chai";
 import { ONE_WEI, toWei } from "./utils/Decimal";
+import { Signer } from "./utils/ContractBase";
 import { TempusAMM, TempusAMMJoinKind } from "./utils/TempusAMM";
-import { blockTimestamp, expectRevert } from "./utils/Utils";
-import { Aave } from "./utils/Aave";
-import { generateTempusSharesNames, TempusPool } from "./utils/TempusPool";
-import { Lido } from "./utils/Lido";
+import { expectRevert } from "./utils/Utils";
+import { PoolType, TempusPool } from "./utils/TempusPool";
 import { TempusController } from "./utils/TempusController";
+import { describeForEachPool, describeForEachPoolType } from "./pool-utils/MultiPoolTestSuite";
+import { ITestPool } from "./pool-utils/ITestPool";
+import { BigNumber } from "@ethersproject/bignumber";
 
 const SWAP_LIMIT_ERROR_MESSAGE = "BAL#507";
 
-const _setup = underlyingProtocolSetup => (deployments.createFixture(async () => {
-  await deployments.fixture(undefined, {
-    keepExistingDeployments: true, // global option to test network like that
+describeForEachPool("TempusController", (testPool:ITestPool) =>
+{
+  let owner:Signer, user1:Signer, user2:Signer;
+  let pool:TempusPool;
+  let amm:TempusAMM;
+  let controller:TempusController;
+
+  beforeEach(async () =>
+  {
+    pool = await testPool.createDefault();
+    [owner, user1, user2] = testPool.signers;
+
+    amm = testPool.amm;
+    controller = testPool.tempus.controller;
+    await testPool.setupAccounts(owner, [[user1,/*ybt*/2000],[user2,/*ybt*/2000]]);
   });
 
-  const ammAmplification = 5;
-  const ammFee = 0.02;
+  // TODO: refactor math (minimize toWei, fromWei, Number etc...). I think we should just use Decimal.js
+  async function getAMMBalancesRatio(): Promise<BigNumber>
+  {
+    const principals = await pool.principalShare.balanceOf(amm.vault.address);
+    const yields = await pool.yieldShare.balanceOf(amm.vault.address);
+    return ONE_WEI.mul(toWei(principals)).div(toWei(yields));
+  }
 
-  const [owner, user] = await ethers.getSigners();
+  // pre-initialize AMM liquidity
+  async function initAMM(user:Signer, ybtDeposit:number, principals:number, yields:number)
+  {
+    await controller.depositYieldBearing(user, pool, ybtDeposit, user);
+    await amm.provideLiquidity(user1, principals, yields, TempusAMMJoinKind.INIT);
+  }
 
-  const tempusController = await TempusController.deploy();
-  const { underlyingProtocol, underlyingProtocol1, tempusPool, tempusPool1 } = await underlyingProtocolSetup(tempusController, owner, user);
-  
-  const tempusAMM = await TempusAMM.create(owner, ammAmplification, ammFee, tempusPool);
-  
-  await underlyingProtocol.yieldToken.approve(owner, tempusController.address, 1000000);
-  await underlyingProtocol.yieldToken.approve(user, tempusController.address, 1000000);
-  await underlyingProtocol.asset.approve(owner, tempusController.address, 10000000);
-  await underlyingProtocol.asset.approve(user, tempusController.address, 1000000);
-
-  return {
-    contracts: {
-      underlyingProtocol, 
-      underlyingProtocol1,
-      tempusPool,
-      tempusPool1,
-      tempusAMM,
-      tempusController
-    },
-    signers: {
-      owner,
-      user
+  async function expectValidState(expectedAMMBalancesRatio:BigNumber = null)
+  {
+    if (expectedAMMBalancesRatio) {
+      expect(await getAMMBalancesRatio()).to.equal(expectedAMMBalancesRatio, "AMM balances must maintain the same ratio");
     }
-  };
-}));
-
-const setupAave = _setup(async (controller, owner, user) => {
-  const underlyingProtocol = await Aave.create(100000000);
-  const underlyingProtocol1 = await Aave.create(100000000);
-
-  for (const underlyingP of [underlyingProtocol, underlyingProtocol1]) {
-    await underlyingP.asset.transfer(owner, user, 10000000);
-    await underlyingP.asset.approve(owner, underlyingP.address, 10000000);
-    await underlyingP.asset.approve(user, underlyingP.address, 1000000);
-    await underlyingP.deposit(owner, 1000000);
-    await underlyingP.deposit(user, 1000000);
+    expect(+await pool.principalShare.balanceOf(controller.address)).to.equal(0, "No funds should remain in controller");
+    expect(+await pool.yieldShare.balanceOf(controller.address)).to.equal(0, "No funds should remain in controller");
   }
 
-  const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
-  const names = generateTempusSharesNames("aToken", "aTKN", maturityTime);
-  const tempusPool = await TempusPool.deployAave(underlyingProtocol.yieldToken, controller, maturityTime, 0.1, names);
-  const tempusPool1 = await TempusPool.deployAave(underlyingProtocol1.yieldToken, controller, maturityTime, 0.1, names);
+  describe("depositAndProvideLiquidity", () =>
+  {
+    it("deposit YBT and provide liquidity to a pre-initialized AMM", async () =>
+    {
+      await initAMM(user1, /*ybtDeposit*/1200, /*principals*/120, /*yields*/1200);
 
-  return { underlyingProtocol, underlyingProtocol1, tempusPool, tempusPool1 };
-});
-
-const setupLido = _setup(async (controller, owner, user) => {
-  const underlyingProtocol = await Lido.create(1000000);
-  const underlyingProtocol1 = await Lido.create(1000000);
-  
-  for (const underlyingP of [underlyingProtocol, underlyingProtocol1]) {
-    await underlyingP.submit(owner, 1000);
-    await underlyingP.submit(user, 1000);
-  }
-
-  const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
-  const names = generateTempusSharesNames("Lido staked token", "stTKN", maturityTime);
-  const tempusPool = await TempusPool.deployLido(underlyingProtocol.yieldToken, controller, maturityTime, 0.1, names);
-  const tempusPool1 = await TempusPool.deployLido(underlyingProtocol1.yieldToken, controller, maturityTime, 0.1, names);
-
-  return { tempusPool, tempusPool1, underlyingProtocol, underlyingProtocol1 };
-});
-
-  
-async function expectValidState(tempusController, tempusAMM, tempusPool, expectedAMMBalancesRatio = null) {
-  const controllerPrincpialShareBalancePostDeposit = await tempusPool.principalShare.balanceOf(tempusController.address);
-  const controllerYieldShareBalancePostDeposit = await tempusPool.yieldShare.balanceOf(tempusController.address);
-  
-  if (expectedAMMBalancesRatio) {
-    const vaultPrincipalShareBalancePostDeposit = await tempusPool.principalShare.balanceOf(tempusAMM.vault.address);
-    const vaultYieldShareBalancePostDeposit = await tempusPool.yieldShare.balanceOf(tempusAMM.vault.address);
-    const postDepositAMMBalancesRatio = ONE_WEI.mul(toWei(vaultPrincipalShareBalancePostDeposit)).div(toWei(vaultYieldShareBalancePostDeposit));
-    
-    // Makes sure AMM balances maintain the same ratio
-    expect(postDepositAMMBalancesRatio.toString()).to.equal(expectedAMMBalancesRatio.toString());
-  }
-
-  // makes sure no funds are left in the controller
-  expect(controllerPrincpialShareBalancePostDeposit).to.be.equal(0);
-  expect(controllerYieldShareBalancePostDeposit).to.be.equal(0);
-}
-
-describe("TempusController", async () => {
-    // TODO: refactor math (minimize toWei, fromWei, Number etc...). I think we should just use Decimal.js
-    describe("depositAndProvideLiquidity", async () => {
-      it("deposit YBT and provide liquidity to a pre-initialized AMM", async () => {
-        const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupAave();
-
-        const userPoolTokensBalancePreDeposit = await tempusAMM.balanceOf(user);
-        expect(Number(userPoolTokensBalancePreDeposit)).to.be.equal(0);
-
-        // pre-initialize AMM liquidity
-        await tempusController.depositYieldBearing(owner, tempusPool, 10000, owner);
-        await tempusAMM.provideLiquidity(owner, 120, 1200, TempusAMMJoinKind.INIT);
-        
-        const vaultPrincipalShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(tempusAMM.vault.address);
-        const vaultYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(tempusAMM.vault.address);
-        const preDepositAMMBalancesRatio = ONE_WEI.mul(toWei(vaultPrincipalShareBalancePreDeposit)).div(toWei(vaultYieldShareBalancePreDeposit));
-        
-        await tempusController.depositAndProvideLiquidity(user, tempusAMM, 500, false);
-        
-        const userPoolTokensBalancePostDeposit = await tempusAMM.balanceOf(user);
-        const userPrincpialShareBalancePostDeposit = await tempusPool.principalShare.balanceOf(user);
-        const userYieldShareBalancePostDeposit = await tempusPool.yieldShare.balanceOf(user);
-        
-        await expectValidState(tempusController, tempusAMM, tempusPool, preDepositAMMBalancesRatio);
-        
-        // Makes sure some pool tokens have been issued to the user
-        expect(Number(userPoolTokensBalancePostDeposit)).to.be.greaterThan(0);
-
-        // all TYS balance should be deposited into the AMM, and some TPS sent back to the user
-        expect(Number(userPrincpialShareBalancePostDeposit)).to.be.greaterThan(0);
-        expect(Number(userYieldShareBalancePostDeposit)).to.be.equal(0);
-      });
-
-      it("deposit ERC20 BT and provide liquidity to a pre-initialized AMM", async () => {
-        const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupAave();
-
-        const userPoolTokensBalancePreDeposit = await tempusAMM.balanceOf(user);
-        expect(Number(userPoolTokensBalancePreDeposit)).to.be.equal(0);
-
-        // pre-initialize AMM liquidity
-        await tempusController.depositYieldBearing(owner, tempusPool, 10000, owner);
-        await tempusAMM.provideLiquidity(owner, 120, 1200, TempusAMMJoinKind.INIT);
-        
-        const vaultPrincipalShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(tempusAMM.vault.address);
-        const vaultYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(tempusAMM.vault.address);
-        const preDepositAMMBalancesRatio = ONE_WEI.mul(toWei(vaultPrincipalShareBalancePreDeposit)).div(toWei(vaultYieldShareBalancePreDeposit));
-        
-        await tempusController.depositAndProvideLiquidity(user, tempusAMM, 500, true); 
-        const userPoolTokensBalancePostDeposit = await tempusAMM.balanceOf(user);
-        const userPrincpialShareBalancePostDeposit = await tempusPool.principalShare.balanceOf(user);
-        const userYieldShareBalancePostDeposit = await tempusPool.yieldShare.balanceOf(user);
-        
-        await expectValidState(tempusController, tempusAMM, tempusPool, preDepositAMMBalancesRatio);
-        
-        // Makes sure some pool tokens have been issued to the user
-        expect(Number(userPoolTokensBalancePostDeposit)).to.be.greaterThan(0);
-
-        // all TYS balance should be deposited into the AMM, and some TPS sent back to the user
-        expect(Number(userPrincpialShareBalancePostDeposit)).to.be.greaterThan(0);
-        expect(Number(userYieldShareBalancePostDeposit)).to.be.equal(0);
-      });
-
-      it("deposit ETH BT and provide liquidity to a pre-initialized AMM", async () => {
-        const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupLido();
-        const amount = 50;
-
-        const userPoolTokensBalancePreDeposit = await tempusAMM.balanceOf(user);
-        expect(Number(userPoolTokensBalancePreDeposit)).to.be.equal(0);
-        
-        // pre-initialize AMM liquidity
-        await tempusController.depositYieldBearing(owner, tempusPool, 100, owner);
-        await tempusAMM.provideLiquidity(owner, 1.2, 12, TempusAMMJoinKind.INIT);
-        
-        const vaultPrincipalShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(tempusAMM.vault.address);
-        const vaultYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(tempusAMM.vault.address);
-        const preDepositAMMBalancesRatio = ONE_WEI.mul(toWei(vaultPrincipalShareBalancePreDeposit)).div(toWei(vaultYieldShareBalancePreDeposit));
-        
-        await tempusController.depositAndProvideLiquidity(
-            user,
-            tempusAMM,
-            amount,
-            true,
-            amount
-        );
-        const userPoolTokensBalancePostDeposit = await tempusAMM.balanceOf(user);
-        const userPrincpialShareBalancePostDeposit = await tempusPool.principalShare.balanceOf(user);
-        const userYieldShareBalancePostDeposit = await tempusPool.yieldShare.balanceOf(user);
-        
-        await expectValidState(tempusController, tempusAMM, tempusPool, preDepositAMMBalancesRatio);
-        
-        // Makes sure some pool tokens have been issued to the user
-        expect(Number(userPoolTokensBalancePostDeposit)).to.be.greaterThan(0);
-
-        // all TYS balance should be deposited into the AMM, and some TPS sent back to the user
-        expect(Number(userPrincpialShareBalancePostDeposit)).to.be.greaterThan(0);
-        expect(Number(userYieldShareBalancePostDeposit)).to.be.equal(0);
-      });
-
-      it("deposit YBT and provide liquidity to a pre-initialized AMM with more then 100% yield estimate", async () => {
-        const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupAave();
-
-        const userPoolTokensBalancePreDeposit = await tempusAMM.balanceOf(user);
-        expect(Number(userPoolTokensBalancePreDeposit)).to.be.equal(0);
-
-        underlyingProtocol.setLiquidityIndex(10.0);
-
-        // pre-initialize AMM liquidity
-        await tempusController.depositYieldBearing(owner, tempusPool, 10000, owner);
-        await tempusAMM.provideLiquidity(owner, 120, 12, TempusAMMJoinKind.INIT);
-        
-        const vaultPrincipalShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(tempusAMM.vault.address);
-        const vaultYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(tempusAMM.vault.address);
-        const preDepositAMMBalancesRatio = ONE_WEI.mul(toWei(vaultPrincipalShareBalancePreDeposit)).div(toWei(vaultYieldShareBalancePreDeposit));
-        
-        await tempusController.depositAndProvideLiquidity(
-            user,
-            tempusAMM,
-            500,
-            false
-        ); 
-        const userPoolTokensBalancePostDeposit = await tempusAMM.balanceOf(user);
-        const userPrincpialShareBalancePostDeposit = await tempusPool.principalShare.balanceOf(user);
-        const userYieldShareBalancePostDeposit = await tempusPool.yieldShare.balanceOf(user);
-        
-        await expectValidState(tempusController, tempusAMM, tempusPool, preDepositAMMBalancesRatio);
-        // Makes sure some pool tokens have been issued to the user
-        expect(Number(userPoolTokensBalancePostDeposit)).to.be.greaterThan(0);
-
-        // all TYS balance should be deposited into the AMM, and some TPS sent back to the user
-        expect(Number(userPrincpialShareBalancePostDeposit)).to.be.equal(0);
-        expect(Number(userYieldShareBalancePostDeposit)).to.be.greaterThan(0);
-      });
-
-      it("verifies depositing YBT and providing liquidity to a non initialized AMM reverts", async () => {
-        const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupAave();
-        
-        const invalidAction = tempusController.depositAndProvideLiquidity(
-            user,
-            tempusAMM,
-            123,
-            false
-        );
-        (await expectRevert(invalidAction)).to.equal("AMM not initialized");
-      });
-
-      it("verifies depositing ERC20 BT and providing liquidity to a non initialized AMM reverts", async () => {
-        const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupAave();
-        
-        const invalidAction = tempusController.depositAndProvideLiquidity(
-            user,
-            tempusAMM,
-            123,
-            true
-        );
-        (await expectRevert(invalidAction)).to.equal("AMM not initialized");
-      });
-
-      it("verifies depositing 0 YBT and providing liquidity reverts", async () => {
-        const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupAave();
-        
-        await tempusController.depositYieldBearing(owner, tempusPool, 10000, owner);
-        await tempusAMM.provideLiquidity(owner, 12.34567, 1234.5678912, TempusAMMJoinKind.INIT);
-        
-        const invalidAction = tempusController.depositAndProvideLiquidity(
-            user,
-            tempusAMM,
-            0,
-            false
-        );
-        (await expectRevert(invalidAction)).to.equal("yieldTokenAmount is 0");
-      });
+      const ratioBefore = await getAMMBalancesRatio();
+      await controller.depositAndProvideLiquidity(testPool, user2, 500, /*isBackingToken:*/false);
+      await expectValidState(ratioBefore);
+      
+      expect(+await amm.balanceOf(user2)).to.be.greaterThan(0, "pool tokens must be issued to the user");
+      expect(+await pool.principalShare.balanceOf(user2)).to.be.greaterThan(0, "Some Principals should be returned to user");
+      expect(+await pool.yieldShare.balanceOf(user2)).to.be.equal(0, "ALL Yields should be deposited to AMM");
     });
 
-    describe("depositAndFix", async () => {
-      it("verifies tx reverts if provided minimum TYS rate requirement is not met", async () => {
-        const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupAave();
-        const minTYSRate = "0.11000001"; // 10.000001%
+    it("deposit BT and provide liquidity to a pre-initialized AMM", async () =>
+    {
+      await initAMM(user1, /*ybtDeposit*/100, /*principals*/1.2, /*yields*/12);
 
-        // pre-initialize AMM liquidity
-        await tempusController.depositYieldBearing(owner, tempusPool, 10000, owner);
-        await tempusAMM.provideLiquidity(owner, 200, 2000, TempusAMMJoinKind.INIT); // 10% rate
-  
-        const invalidAction = tempusController.depositAndFix(
-            user,
-            tempusAMM,
-            5.456789,
-            false,
-            minTYSRate
-        ); 
-  
-        (await expectRevert(invalidAction)).to.equal(SWAP_LIMIT_ERROR_MESSAGE);
-      });
+      const ratioBefore = await getAMMBalancesRatio();
+      const ethAmount = testPool.type == PoolType.Lido ? 50 : 0;
+      await controller.depositAndProvideLiquidity(testPool, user2, 50, true, ethAmount);
+      await expectValidState(ratioBefore);
 
-      it("verifies depositing YBT succeeds if provided minimum TYS rate requirement is met", async () => {
-        const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupAave();
-        const minTYSRate = "0.097"; // 9.7% (fee + slippage)
-        
-        const userPrincpialShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(user);
-        const userYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(user);
-        expect(Number(userPrincpialShareBalancePreDeposit)).to.be.equal(0);
-        expect(Number(userYieldShareBalancePreDeposit)).to.be.equal(0);
-        
-        // pre-initialize AMM liquidity
-        await tempusController.depositYieldBearing(owner, tempusPool, 10000, owner);
-        await tempusAMM.provideLiquidity(owner, 200, 2000, TempusAMMJoinKind.INIT); // 10% rate
-  
-        await tempusController.depositAndFix(
-            user,
-            tempusAMM,
-            5.456789,
-            false,
-            minTYSRate
-        ); 
-
-        const userPrincpialShareBalancePostDeposit = await tempusPool.principalShare.balanceOf(user);
-        const userYieldShareBalancePostDeposit = await tempusPool.yieldShare.balanceOf(user);
-        
-        await expectValidState(tempusController, tempusAMM, tempusPool);
-        expect(Number(userPrincpialShareBalancePostDeposit)).to.be.greaterThan(0);
-        expect(Number(userYieldShareBalancePostDeposit)).to.be.equal(0);
-      });
-
-      it("verifies depositing ERC20 BT succeeds if provided minimum TYS rate requirement is met", async () => {
-        const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupAave();
-        const minTYSRate = "0.097"; // 9.7% (fee + slippage)
-        
-        const userPrincpialShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(user);
-        const userYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(user);
-        expect(Number(userPrincpialShareBalancePreDeposit)).to.be.equal(0);
-        expect(Number(userYieldShareBalancePreDeposit)).to.be.equal(0);
-        
-        // pre-initialize AMM liquidity
-        await tempusController.depositYieldBearing(owner, tempusPool, 10000, owner);
-        await tempusAMM.provideLiquidity(owner, 200, 2000, TempusAMMJoinKind.INIT); // 10% rate
-  
-        await tempusController.depositAndFix(
-            user,
-            tempusAMM,
-            5.456789,
-            true,
-            minTYSRate
-        ); 
-
-        const userPrincpialShareBalancePostDeposit = await tempusPool.principalShare.balanceOf(user);
-        const userYieldShareBalancePostDeposit = await tempusPool.yieldShare.balanceOf(user);
-        
-        await expectValidState(tempusController, tempusAMM, tempusPool);
-        expect(Number(userPrincpialShareBalancePostDeposit)).to.be.greaterThan(0);
-        expect(Number(userYieldShareBalancePostDeposit)).to.be.equal(0);
-      });
-
-      it("verifies depositing ETH BT succeeds if provided minimum TYS rate requirement is met", async () => {
-        const { contracts: { underlyingProtocol, tempusAMM, tempusController, tempusPool, tempusPool1 }, signers: { owner, user } } = await setupLido();
-        const minTYSRate = "0.097"; // 9.7% (fee + slippage)
-        const amount = 5.456789;
-
-        const userPrincpialShareBalancePreDeposit = await tempusPool.principalShare.balanceOf(user);
-        const userYieldShareBalancePreDeposit = await tempusPool.yieldShare.balanceOf(user);
-        expect(Number(userPrincpialShareBalancePreDeposit)).to.be.equal(0);
-        expect(Number(userYieldShareBalancePreDeposit)).to.be.equal(0);
-        
-        // pre-initialize AMM liquidity
-        await tempusController.depositYieldBearing(owner, tempusPool, 1000, owner);
-        await tempusAMM.provideLiquidity(owner, 20, 200, TempusAMMJoinKind.INIT); // 10% rate
-  
-        await tempusController.depositAndFix(
-            user,
-            tempusAMM,
-            amount,
-            true,
-            minTYSRate,
-            amount
-        ); 
-
-        const userPrincpialShareBalancePostDeposit = await tempusPool.principalShare.balanceOf(user);
-        const userYieldShareBalancePostDeposit = await tempusPool.yieldShare.balanceOf(user);
-        
-        await expectValidState(tempusController, tempusAMM, tempusPool);
-        expect(Number(userPrincpialShareBalancePostDeposit)).to.be.greaterThan(0);
-        expect(Number(userYieldShareBalancePostDeposit)).to.be.equal(0);
-      });
+      expect(+await amm.balanceOf(user2)).to.be.greaterThan(0, "pool tokens must be issued to the user");
+      expect(+await pool.principalShare.balanceOf(user2)).to.be.greaterThan(0, "Some Principals should be returned to user");
+      expect(+await pool.yieldShare.balanceOf(user2)).to.be.equal(0, "ALL Yields should be deposited to AMM");
     });
+
+    it("deposit YBT and provide liquidity to a pre-initialized AMM with more then 100% yield estimate", async () =>
+    {
+      await initAMM(user1, /*ybtDeposit*/1200, /*principals*/120, /*yields*/12);
+      await testPool.setInterestRate(10.0);
+
+      const ratioBefore = await getAMMBalancesRatio();
+      await controller.depositAndProvideLiquidity(testPool, user2, 100, false); 
+      await expectValidState(ratioBefore);
+
+      expect(+await amm.balanceOf(user2)).to.be.greaterThan(0, "pool tokens must be issued to the user");
+      expect(+await pool.principalShare.balanceOf(user2)).to.be.equal(0, "ALL Principals should be deposited to AMM");
+      expect(+await pool.yieldShare.balanceOf(user2)).to.be.greaterThan(0, "Some Yields should be returned to user");
+    });
+
+    it("verifies depositing YBT and providing liquidity to a non initialized AMM reverts", async () =>
+    {
+      const invalidAction = controller.depositAndProvideLiquidity(testPool, user1, 123, false);
+      (await expectRevert(invalidAction)).to.equal("AMM not initialized");
+    });
+
+    it("verifies depositing ERC20 BT and providing liquidity to a non initialized AMM reverts", async () =>
+    {
+      const invalidAction = controller.depositAndProvideLiquidity(testPool, user1, 123, true);
+      (await expectRevert(invalidAction)).to.equal("AMM not initialized");
+    });
+
+    it("verifies depositing 0 YBT and providing liquidity reverts", async () =>
+    {
+      await initAMM(user1, /*ybtDeposit*/2000, /*principals*/12.34567, /*yields*/1234.5678912);
+      const invalidAction = controller.depositAndProvideLiquidity(testPool, user2, 0, false);
+      (await expectRevert(invalidAction)).to.equal("yieldTokenAmount is 0");
+    });
+  });
+
+  describe("depositAndFix", () =>
+  {
+    it("verifies tx reverts if provided minimum TYS rate requirement is not met", async () =>
+    {
+      await initAMM(user1, /*ybtDeposit*/2000, /*principals*/200, /*yields*/2000); // 10% rate
+      const minTYSRate = "0.11000001"; // 10.000001%
+      const invalidAction = controller.depositAndFix(testPool, user2, 5.456789, false, minTYSRate); 
+
+      (await expectRevert(invalidAction)).to.equal(SWAP_LIMIT_ERROR_MESSAGE);
+    });
+
+    it("verifies depositing YBT succeeds if provided minimum TYS rate requirement is met", async () =>
+    {
+      await initAMM(user1, /*ybtDeposit*/2000, /*principals*/200, /*yields*/2000); // 10% rate
+      const minTYSRate = "0.097"; // 9.7% (fee + slippage)
+      await controller.depositAndFix(testPool, user2, 5.456789, false, minTYSRate); 
+      await expectValidState();
+
+      expect(+await pool.principalShare.balanceOf(user2)).to.be.greaterThan(0, "Some Principals should be returned to user");
+      expect(+await pool.yieldShare.balanceOf(user2)).to.be.equal(0, "ALL Yields should be deposited to AMM");
+    });
+
+    it("verifies depositing BT succeeds if provided minimum TYS rate requirement is met", async () =>
+    {
+      await initAMM(user1, /*ybtDeposit*/2000, /*principals*/20, /*yields*/200); // 10% rate
+      const minTYSRate = "0.097"; // 9.7% (fee + slippage)
+      const amount = 5.456789;
+      const ethAmount = testPool.type == PoolType.Lido ? amount : 0;
+      await controller.depositAndFix(testPool, user2, 5.456789, true, minTYSRate, ethAmount); 
+      await expectValidState();
+
+      expect(+await pool.principalShare.balanceOf(user2)).to.be.greaterThan(0, "Some Principals should be returned to user");
+      expect(+await pool.yieldShare.balanceOf(user2)).to.be.equal(0, "ALL Yields should be deposited to AMM");
+    });
+  });
 });

@@ -247,7 +247,7 @@ export abstract class ITestPool {
    */
   async setupAccounts(owner:Signer, depositors:[Signer,number][]): Promise<void> {
     if (!this.tempus)
-      throw new Error('setupAccounts: setup not called');
+      throw new Error('setupAccounts: createPool() not called');
     
     const totalDeposit = depositors.reduce((sum, current) => sum + current[1], 100);
     await this.deposit(owner, totalDeposit);
@@ -287,6 +287,7 @@ export abstract class ITestPool {
 
     if (!f) // initialize a new fixture
     {
+      const controller = await TempusController.instance();
       const maturityTime = await blockTimestamp() + this.poolDuration;
       const names = generateTempusSharesNames(tpsName, tysName, maturityTime);
       f = new FixtureState(maturityTime, names, deployments.createFixture(async () =>
@@ -296,7 +297,6 @@ export abstract class ITestPool {
         const [owner,user,user2] = await ethers.getSigners();
         const pool = await newPool();
         const ybt = (pool as any).yieldToken;
-        const controller = await TempusController.deploy();
         const tempus = await TempusPool.deploy(this.type, controller, ybt, maturityTime, p.yieldEst, names);
         const amm = await TempusAMM.create(owner, p.ammAmplification, p.ammSwapFee, tempus);
         return {

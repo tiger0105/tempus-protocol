@@ -2,20 +2,35 @@ import { Contract, Transaction } from "ethers";
 import { NumberOrString, toWei } from "./Decimal";
 import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
 import { TempusPool } from "./TempusPool";
-import { TempusAMM } from "./TempusAMM";
+import { ITestPool } from "../pool-utils/ITestPool";
 
 /**
  * Wrapper around TempusController
  */
 export class TempusController extends ContractBase {
   private static _contractName = "TempusController";
+  private static _instance:TempusController = null;
+  
   constructor(contractName: string, controller: Contract) {
     super(contractName, 18, controller);
   }
 
+  /**
+   * @returns The singleton instance of TempusController
+   * @warning This cannot be used inside Test Fixture callback
+   */
+  static async instance(): Promise<TempusController> {
+    if (TempusController._instance === null) {
+      TempusController._instance = await this.deploy();
+    }
+    return TempusController._instance;
+  }
+
+  /**
+   * Deploys a new instance of TempusController
+   */
   static async deploy(): Promise<TempusController> {
     const controller = await ContractBase.deployContract(TempusController._contractName);
-
     return new TempusController(TempusController._contractName, controller);
   }
 
@@ -67,6 +82,14 @@ export class TempusController extends ContractBase {
   }
 
   /**
+   * Approves either BT or YBT transfer
+   */
+  async approve(pool:ITestPool, user:SignerOrAddress, amount:NumberOrString, isBackingToken:boolean) {
+    const token = isBackingToken ? pool.asset() : pool.yieldToken();
+    await token.approve(user, this.address, amount);
+  }
+
+  /**
    * Atomically deposits YBT/BT to TempusPool
    *  and provides liquidity to the corresponding Tempus AMM with the issued TYS & TPS
    * @param user The user to deposit on behalf of
@@ -75,17 +98,16 @@ export class TempusController extends ContractBase {
    * @param isBackingToken Specifies whether the deposited asset is YBT or BT
    * @param ethValue value of ETH to send with the tx
    */
-   async depositAndProvideLiquidity(
-     user: SignerOrAddress,
-     amm: TempusAMM,
-     tokenAmount: NumberOrString,
-     isBackingToken: boolean,
-     ethValue: NumberOrString = 0): Promise<Transaction> {
+  async depositAndProvideLiquidity(
+    pool: ITestPool,
+    user: SignerOrAddress,
+    tokenAmount: NumberOrString,
+    isBackingToken: boolean,
+    ethValue: NumberOrString = 0
+  ): Promise<Transaction> {
+    await this.approve(pool, user, tokenAmount, isBackingToken);
     return this.contract.connect(user).depositAndProvideLiquidity(
-      amm.address,
-      toWei(tokenAmount),
-      isBackingToken,
-      { value: toWei(ethValue) }
+      pool.amm.address, toWei(tokenAmount), isBackingToken, { value: toWei(ethValue) }
     );
   }
 
@@ -98,19 +120,17 @@ export class TempusController extends ContractBase {
    * @param minTYSRate Minimum TYS rate (denominated in TPS) to receive in exchange to TPS
    * @param ethValue value of ETH to send with the tx
    */
-   async depositAndFix(
-     user: SignerOrAddress,
-     amm: TempusAMM,
-     tokenAmount: NumberOrString,
-     isBackingToken: boolean,
-     minTYSRate: NumberOrString,
-     ethValue: NumberOrString = 0): Promise<Transaction> {
+  async depositAndFix(
+    pool: ITestPool,
+    user: SignerOrAddress,
+    tokenAmount: NumberOrString,
+    isBackingToken: boolean,
+    minTYSRate: NumberOrString,
+    ethValue: NumberOrString = 0
+  ): Promise<Transaction> {
+    await this.approve(pool, user, tokenAmount, isBackingToken);
     return this.contract.connect(user).depositAndFix(
-      amm.address,
-      toWei(tokenAmount),
-      isBackingToken,
-      toWei(minTYSRate),
-      { value: toWei(ethValue) }
+      pool.amm.address, toWei(tokenAmount), isBackingToken, toWei(minTYSRate), { value: toWei(ethValue) }
     );
   }
 }
