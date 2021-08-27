@@ -11,12 +11,21 @@ export class TempusToken extends ERC20 {
   }
 
   /**
-   * Allow token holders to burn their own tokens.
+   * Burn the token holder's own tokens.
+   * @param sender Account that is issuing the burn.
+   * @param amount Number of tokens to burn
+   */
+  async burn(sender:SignerOrAddress, amount:NumberOrString): Promise<void> {
+    await this.connect(sender).burn(this.toBigNum(amount));
+  }
+
+  /**
+   * Burn some other token holder's tokens.
    * @param sender Account that is issuing the burn.
    * @param account Token holder account
    * @param amount Number of tokens to burn
    */
-  async burn(sender:SignerOrAddress, account:SignerOrAddress, amount:NumberOrString) {
-    await this.connect(sender).burn(addressOf(account), this.toBigNum(amount));
+  async burnFrom(sender:SignerOrAddress, account:SignerOrAddress, amount:NumberOrString): Promise<void> {
+    await this.connect(sender).burnFrom(addressOf(account), this.toBigNum(amount));
   }
 }
