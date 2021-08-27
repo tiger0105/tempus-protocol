@@ -34,7 +34,7 @@ export class AaveTestPool extends ITestPool {
 
   async createWithAMM(params:TempusAMMParams): Promise<TempusPool> {
     return await this.initPool(params, 'TPS-AAT', 'TYS-AAT', async () => {
-      return await Aave.create(1000000, this.initialRate);
+      return await Aave.create(1000000000, this.initialRate);
     }, (pool:ContractBase) => {
       this.aave = <Aave>pool;
     });

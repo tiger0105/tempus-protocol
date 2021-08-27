@@ -8,25 +8,32 @@ import { TempusAMM, TempusAMMJoinKind } from "../utils/TempusAMM";
 import { blockTimestamp, expectRevert, increaseTime } from "../utils/Utils";
 import exp = require("constants");
 
+enum SwapType {
+  SWAP_GIVEN_IN,
+  SWAP_GIVEN_OUT
+}
+
 interface SwapTestRun {
   amplification:number;
-  pricePerPrincipal:number;
-  pricePerYield:number;
-  balancePrincipal:number;
-  balanceYield:number;
   swapAmountIn:number;
   swapAmountOut: number;
+  principalIn:boolean;
+  swapType:SwapType
 }
 
 interface CreateParams {
   yieldEst:number;
   duration:number;
-  amplify:number;
+  amplifyStart:number;
+  amplifyEnd?:number;
+  ammBalanceYield?: number;
+  ammBalancePrincipal?:number;
 }
 
 describe("TempusAMM", async () => {
   let owner:Signer, user:Signer, user1:Signer;
   const SWAP_FEE_PERC:number = 0.02;
+  const ONE_AMP_UPDATE_TIME:number = 60*60*24;
 
   let testPool:AaveTestPool;
   let tempusPool:TempusPool;
@@ -36,30 +43,34 @@ describe("TempusAMM", async () => {
     testPool = new AaveTestPool();
     tempusPool = await testPool.createWithAMM({
       initialRate:1.0, poolDuration:params.duration, yieldEst:params.yieldEst,
-      ammSwapFee:SWAP_FEE_PERC, ammAmplification: params.amplify
+      ammSwapFee:SWAP_FEE_PERC, ammAmplification: params.amplifyStart
     });
 
     tempusAMM = testPool.amm;
     [owner, user, user1] = testPool.signers;
 
-    await testPool.deposit(owner, 1000000);
-    await tempusPool.controller.depositYieldBearing(owner, tempusPool, 1000000, owner);
+    await testPool.deposit(owner, 1000000000);
+    await tempusPool.controller.depositYieldBearing(owner, tempusPool, 1000000000, owner);
+    if (params.ammBalanceYield != undefined && params.ammBalancePrincipal != undefined) {
+      await tempusAMM.provideLiquidity(owner, params.ammBalancePrincipal, params.ammBalanceYield, TempusAMMJoinKind.INIT);
+    }
+    if (params.amplifyEnd != undefined) {
+      await tempusAMM.startAmplificationUpdate(params.amplifyEnd, ONE_AMP_UPDATE_TIME);
+    }
   }
 
-  async function checkSwap(owner:Signer, swapTest:SwapTestRun, principalIn:boolean, givenIn:boolean) {
-    const yieldEst = swapTest.pricePerYield / swapTest.pricePerPrincipal;
-    await createPools({yieldEst:yieldEst, duration:60*60*24*31, amplify:swapTest.amplification});
-    await tempusAMM.provideLiquidity(owner, swapTest.balancePrincipal, swapTest.balanceYield, TempusAMMJoinKind.INIT);
-  
+  async function checkSwap(owner:Signer, swapTest:SwapTestRun) {
+    await tempusAMM.forwardToAmplification(swapTest.amplification);
+
     const [tokenIn, tokenOut] = 
-      principalIn ? 
+      swapTest.principalIn ? 
       [tempusAMM.principalShare, tempusAMM.yieldShare] : 
       [tempusAMM.yieldShare, tempusAMM.principalShare];
 
     const preSwapTokenInBalance:BigNumber = await tokenIn.contract.balanceOf(owner.address);
     const preSwapTokenOutBalance:BigNumber = await tokenOut.contract.balanceOf(owner.address);
   
-    if (givenIn) {
+    if (swapTest.swapType === SwapType.SWAP_GIVEN_IN) {
       await tempusAMM.swapGivenIn(owner, tokenIn.address, tokenOut.address, swapTest.swapAmountIn);
     } else {
       await tempusAMM.swapGivenOut(owner, tokenIn.address, tokenOut.address, swapTest.swapAmountOut);
@@ -74,7 +85,7 @@ describe("TempusAMM", async () => {
 
   it("checks amplification and invariant in multiple stages", async () =>
   {
-    await createPools({yieldEst:0.1, duration:60*60*24*31, amplify:5});
+    await createPools({yieldEst:0.1, duration:60*60*24*31, amplifyStart:5});
     let ampInv = await tempusAMM.getLastInvariant();
     expect(ampInv.invariant).to.equal(0);
     expect(ampInv.amplification).to.equal(0);
@@ -86,8 +97,8 @@ describe("TempusAMM", async () => {
 
   it("checks amplification increases over time", async () =>
   {
-    await createPools({yieldEst:0.1, duration:60*60*24*30, amplify:5});
-    await tempusAMM.startAmplificationUpdate(95, testPool.maturityTime);
+    await createPools({yieldEst:0.1, duration:60*60*24*30, amplifyStart:5});
+    await tempusAMM.startAmplificationUpdate(95, 60*60*8);
     await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
     let ampInv = await tempusAMM.getLastInvariant();
     const amplificationParams = await tempusAMM.getAmplificationParam();
@@ -112,18 +123,18 @@ describe("TempusAMM", async () => {
 
   it("checks amplification update reverts with invalid args", async () =>
   {
-    await createPools({yieldEst:0.1, duration:60*60*24*30, amplify:5});
+    await createPools({yieldEst:0.1, duration:60*60*24*30, amplifyStart:5});
 
     // min amp 
-    let invalidAmpUpdate = tempusAMM.startAmplificationUpdate(0, (await blockTimestamp()) + 0);
+    let invalidAmpUpdate = tempusAMM.startAmplificationUpdate(0, 0);
     (await expectRevert(invalidAmpUpdate)).to.equal("BAL#300");
 
     // max amp 
-    invalidAmpUpdate = tempusAMM.startAmplificationUpdate(1000000, (await blockTimestamp()) + 0);
+    invalidAmpUpdate = tempusAMM.startAmplificationUpdate(1000000, 0);
     (await expectRevert(invalidAmpUpdate)).to.equal("BAL#301");
 
     // min duration
-    invalidAmpUpdate = tempusAMM.startAmplificationUpdate(65, (await blockTimestamp()) + 60);
+    invalidAmpUpdate = tempusAMM.startAmplificationUpdate(65, 1);
     (await expectRevert(invalidAmpUpdate)).to.equal("BAL#317");
 
     // stop update no ongoing update
@@ -131,10 +142,10 @@ describe("TempusAMM", async () => {
     (await expectRevert(invalidAmpUpdate)).to.equal("BAL#320");
 
     // there is ongoing update
-    await tempusAMM.startAmplificationUpdate(65, (await blockTimestamp()) + 60*60*24*30);
+    await tempusAMM.startAmplificationUpdate(65, 60*60*12);
     await increaseTime(60*60*24*15);
     testPool.setInterestRate(1.05);
-    invalidAmpUpdate = tempusAMM.startAmplificationUpdate(95, (await blockTimestamp()) + 60*60*24*30);
+    invalidAmpUpdate = tempusAMM.startAmplificationUpdate(95, 60*60*24);
     (await expectRevert(invalidAmpUpdate)).to.equal("BAL#318");
 
     // stop update
@@ -146,22 +157,21 @@ describe("TempusAMM", async () => {
 
   it("revert on invalid join kind", async () =>
   {
-    await createPools({yieldEst:0.1, duration:60*60*24*30, amplify:5});
+    await createPools({yieldEst:0.1, duration:60*60*24*30, amplifyStart:5});
     await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
     (await expectRevert(tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.EXACT_BPT_OUT_FOR_TOKEN_IN)));
   });
 
   it("revert on join after maturity", async () =>
   {
-    await createPools({yieldEst:0.1, duration:60*60, amplify:5});
+    await createPools({yieldEst:0.1, duration:60*60, amplifyStart:5});
     await testPool.fastForwardToMaturity();
     (await expectRevert(tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT)));
   });
 
   it("checks LP exiting pool", async () =>
   {
-    await createPools({yieldEst:0.1, duration:60*60*24*30, amplify:5});
-    await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
+    await createPools({yieldEst:0.1, duration:60*60*24*30, amplifyStart:5, ammBalancePrincipal: 100, ammBalanceYield: 1000});
     const preYieldBalance = +await tempusAMM.yieldShare.balanceOf(owner);
     const prePrincipalBalance = +await tempusAMM.principalShare.balanceOf(owner);
     expect(+await tempusAMM.balanceOf(owner)).to.be.within(181, 182);
@@ -175,8 +185,7 @@ describe("TempusAMM", async () => {
 
   it("checks LP exiting pool with exact tokens out", async () =>
   {
-    await createPools({yieldEst:0.1, duration:60*60*24*30, amplify:5});
-    await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
+    await createPools({yieldEst:0.1, duration:60*60*24*30, amplifyStart:5, ammBalancePrincipal: 100, ammBalanceYield: 1000});
     const preYieldBalance = +await tempusAMM.yieldShare.balanceOf(owner);
     const prePrincipalBalance = +await tempusAMM.principalShare.balanceOf(owner);
     expect(+await tempusAMM.balanceOf(owner)).to.be.within(181, 182);
@@ -190,15 +199,13 @@ describe("TempusAMM", async () => {
 
   it("checks LP exiting pool for one token reverts", async () =>
   {
-    await createPools({yieldEst:0.1, duration:60*60*24*30, amplify:5});
-    await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
+    await createPools({yieldEst:0.1, duration:60*60*24*30, amplifyStart:5, ammBalancePrincipal: 100, ammBalanceYield: 1000});
     await expectRevert(tempusAMM.exitPoolExactLpAmountIn(owner, 100, true));
   });
 
   it("checks second LP's pool token balance without swaps between", async () =>
   {
-    await createPools({yieldEst:0.1, duration:60*60*24*30, amplify:5});
-    await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
+    await createPools({yieldEst:0.1, duration:60*60*24*30, amplifyStart:5, ammBalancePrincipal: 100, ammBalanceYield: 1000});
 
     await tempusAMM.principalShare.transfer(owner, user.address, 1000);
     await tempusAMM.yieldShare.transfer(owner, user.address, 1000);
@@ -211,8 +218,7 @@ describe("TempusAMM", async () => {
 
   it("checks rate and second LP's pool token balance with swaps between", async () =>
   {
-    await createPools({yieldEst:0.1, duration:60*60*24*30, amplify:5});
-    await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
+    await createPools({yieldEst:0.1, duration:60*60*24*30, amplifyStart:5, ammBalancePrincipal: 100, ammBalanceYield: 1000});
 
     expect(+await tempusAMM.balanceOf(owner)).to.be.within(181, 182);
     expect(+await tempusAMM.getRate()).to.be.equal(1);
@@ -246,124 +252,108 @@ describe("TempusAMM", async () => {
     expect(+await tempusAMM.getRate()).to.be.within(1.006, 1.0061);
   });
 
-  describe("test swaps principal in with balances aligned with Interest Rate", () =>
+  it("test swaps principal in with balances aligned with Interest Rate", async () =>
   {
-    const swapsTests:SwapTestRun[] = [
-      // basic swap with Interest Rate aligned to balances with increasing amplification
-      {amplification: 5, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 9.784051829755239},
-      {amplification: 95, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 9.799039414114326},
-      // swap big percentage of tokens
-      {amplification: 5, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 50, swapAmountOut: 447.19084470040065},
-      {amplification: 95, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 50, swapAmountOut: 486.76343807350116}
-    ];
-    for (let i:number = 0; i < swapsTests.length; ++i) {
-      it("check swap aligned "+(i+1)+"/"+swapsTests.length, async () => {
-        await checkSwap(owner, swapsTests[i], true, true);
-      });
-    }
+    // creating 300 year pool, so that estimated yield is more valued than current one (in order to not update underlying protocols behaviour)
+    await createPools({yieldEst:0.1, duration:60*60*24*30*12*300, amplifyStart:5, amplifyEnd:95, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+
+    // basic swap with Interest Rate aligned to balances with increasing amplification
+    await checkSwap(owner, {amplification: 5, swapAmountIn: 1, swapAmountOut: 9.800039358937214, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 95, swapAmountIn: 1, swapAmountOut: 9.808507816594444, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
+    // swap big percentage of tokens 
+    // let's start updating amp backwards
+    await tempusAMM.startAmplificationUpdate(5, ONE_AMP_UPDATE_TIME);
+    await checkSwap(owner, {amplification: 95, swapAmountIn: 5000, swapAmountOut: 48717.68223490758, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 5, swapAmountIn: 5000, swapAmountOut: 29656.395311170872, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
   });
 
-  describe("tests swaps principal in with balances not aligned with Interest Rate", () =>
+  it("tests swaps principal in with balances not aligned with Interest Rate", async () =>
   {
-    const swapsTests:SwapTestRun[] = [
-      // Interest Rate doesn't match balances with increasing amplification
-      {amplification: 2, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 6.272332951557398},
-      {amplification: 4, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 5.715922328378409},
-      {amplification: 6, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 5.48168727610396},
-      {amplification: 15, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 5.154325593575289},
-      {amplification: 25, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 5.056552331336089},
-      {amplification: 40, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 4.999303750647578},
-      {amplification: 60, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 4.966757609512131},
-      {amplification: 85, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 4.947357157416658},
-      // swap big percentage of tokens (this is going to make even bigger disbalance)
-      {amplification: 5, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 50, swapAmountOut: 260.1918310953869},
-      {amplification: 15, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 50, swapAmountOut: 250.79346565959221},
-      {amplification: 35, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 50, swapAmountOut: 247.59037289049772},
-      {amplification: 65, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 50, swapAmountOut: 246.41609218445564},
-      {amplification: 95, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 50, swapAmountOut: 245.97438693083}
-    ];
-    for (let i:number = 0; i < swapsTests.length; ++i) {
-      it("check swap misaligned "+(i+1)+"/"+swapsTests.length, async () => {
-        await checkSwap(owner, swapsTests[i], true, true);
-      });
-    }
+    // creating 300 year pool, so that estimated yield is more valued than current one (in order to not update underlying protocols behaviour)
+    await createPools({yieldEst:0.2, duration:60*60*24*30*12*300, amplifyStart:2, amplifyEnd:95, ammBalancePrincipal: 100, ammBalanceYield: 1000});
+    
+    await checkSwap(owner, {amplification: 2, swapAmountIn: 1, swapAmountOut: 6.272332951557398, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 15, swapAmountIn: 1, swapAmountOut: 5.146813326588359, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 40, swapAmountIn: 1, swapAmountOut: 4.994925254153118, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 85, swapAmountIn: 1, swapAmountOut: 4.946851638290887, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
   });
 
-  describe("tests swaps principal in with balances not aligned with Interest Rate - different direction", () =>
+  
+  it("tests swaps principal in with balances not aligned with Interest Rate - different direction", async () =>
   {
-    const swapsTests:SwapTestRun[] = [
-      // Interest Rate doesn't match balances (different direction) with increasing amplification
-      {amplification: 1, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 5.3317755638575175},
-      {amplification: 3, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 6.896221833652769},
-      {amplification: 5, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 7.627913133644028},
-      {amplification: 10, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 8.460442066577425},
-      {amplification: 20, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 9.039770474570926},
-      {amplification: 35, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 9.338579672892703},
-      {amplification: 55, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 9.497192647761961},
-      {amplification: 80, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 9.588189486283492},
-      {amplification: 100, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 9.629239320211923},
-      // swap big percentage of tokens (this is going to make more balance in the pool)
-      {amplification: 5, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 7.627913133644028},
-      {amplification: 15, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 8.830230789508375},
-      {amplification: 35, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 9.338579672892703},
-      {amplification: 65, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 9.541599111062181},
-      {amplification: 95, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 1, swapAmountOut: 9.620544606819651},
-    ];
-    for (let i:number = 0; i < swapsTests.length; ++i) {
-      it("check swap misaligned "+(i+1)+"/"+swapsTests.length, async () => {
-        await checkSwap(owner, swapsTests[i], true, true);
-      });
-    }
+    // creating 300 year pool, so that estimated yield is more valued than current one (in order to not update underlying protocols behaviour)
+    await createPools({yieldEst:0.1, duration:60*60*24*30*12*300, amplifyStart:1, amplifyEnd:100, ammBalancePrincipal: 300, ammBalanceYield: 1000});
+
+    // Interest Rate doesn't match balances (different direction) with increasing amplification
+    await checkSwap(owner, {amplification: 1, swapAmountIn: 1, swapAmountOut: 5.3317755638575175, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 5, swapAmountIn: 1, swapAmountOut: 7.604776113715418, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 20, swapAmountIn: 1, swapAmountOut: 9.017438622153582, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 55, swapAmountIn: 1, swapAmountOut: 9.48492767451098, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 100, swapAmountIn: 1, swapAmountOut: 9.624086305240366, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
+    
+    await tempusAMM.startAmplificationUpdate(5, ONE_AMP_UPDATE_TIME);
+    // swap big percentage of tokens (this is going to make more balance in the pool)
+    await checkSwap(owner, {amplification: 95, swapAmountIn: 50, swapAmountOut: 470.5179263828851, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 5, swapAmountIn: 50, swapAmountOut: 186.3783216913147, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
   });
 
-  describe("tests various swaps yield in", () =>
+  it("test swaps yield in with balances aligned with Interest Rate", async () =>
   {
-    const swapsTests:SwapTestRun[] = [
-      // basic swap with Interest Rate aligned to balances with increasing amplification
-      {amplification: 5, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 0.9784018372524833},
-      {amplification: 95, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 0.9798999591380052},
-      
-      // Interest Rate doesn't match balances with increasing amplification
-      {amplification: 1, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.3562540744512224},
-      {amplification: 3, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.6103952416463594},
-      {amplification: 5, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.7127786624515455},
-      {amplification: 15, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.8592914652303911},
-      {amplification: 25, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.8967255491721766},
-      {amplification: 45, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.9237011908949793},
-      {amplification: 70, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.9363193351638321},
-      {amplification: 95, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.9424276065986663},
-      
-      // Interest Rate doesn't match balances (different direction) with increasing amplification
-      {amplification: 1, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.7872015561660912},
-      {amplification: 3, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.3849666433163224},
-      {amplification: 5, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.2536077337113882},
-      {amplification: 10, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.131957093158697},
-      {amplification: 20, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.0606443666723824},
-      {amplification: 35, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.027359882510765},
-      {amplification: 55, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.010553660402521},
-      {amplification: 80, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 1.0011662485931432},
-      {amplification: 100, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 10, swapAmountOut: 0.996990344244073}
-    ];
-    for (let i:number = 0; i < swapsTests.length; ++i) {
-      it("check swap in "+(i+1)+"/"+swapsTests.length, async () => {
-        await checkSwap(owner, swapsTests[i], false, true);
-      });
-    }
+    // creating 300 year pool, so that estimated yield is more valued than current one (in order to not update underlying protocols behaviour)
+    await createPools({yieldEst:0.1, duration:60*60*24*30*12*300, amplifyStart:5, amplifyEnd:95, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+
+    // basic swap with Interest Rate aligned to balances with increasing amplification
+    await checkSwap(owner, {amplification: 5, swapAmountIn: 10, swapAmountOut: 0.9799839923694128, principalIn: false, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 95, swapAmountIn: 10, swapAmountOut: 0.9791888166812937, principalIn: false, swapType: SwapType.SWAP_GIVEN_IN});
+    // swap big percentage of tokens 
+    // let's start updating amp backwards
+    await tempusAMM.startAmplificationUpdate(5, ONE_AMP_UPDATE_TIME);
+    await checkSwap(owner, {amplification: 95, swapAmountIn: 5000, swapAmountOut: 489.3436560729869, principalIn: false, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 5, swapAmountIn: 5000, swapAmountOut: 477.32926892162294, principalIn: false, swapType: SwapType.SWAP_GIVEN_IN});
   });
 
-  describe("test swaps principal in with given out", () =>
+  it("tests swaps yield in with balances not aligned with Interest Rate", async () =>
   {
-    const swapsTests:SwapTestRun[] = [
-      {amplification: 50, pricePerPrincipal: 1, pricePerYield: 0.1, balancePrincipal: 100, balanceYield: 1000, swapAmountIn: 1.020604192005178, swapAmountOut: 10},
-      {amplification: 1, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 2.519192149555226, swapAmountOut: 10},
-      {amplification: 1, pricePerPrincipal: 1, pricePerYield: 0.3, balancePrincipal: 200, balanceYield: 1000, swapAmountIn: 2.5062916237046142, swapAmountOut: 10},
-      {amplification: 60, pricePerPrincipal: 1, pricePerYield: 0.2, balancePrincipal: 300, balanceYield: 1000, swapAmountIn: 2.055687723416004, swapAmountOut: 10},
-      {amplification: 60, pricePerPrincipal: 1, pricePerYield: 0.3, balancePrincipal: 200, balanceYield: 1000, swapAmountIn: 3.0403023467562296, swapAmountOut: 10}
-    ];
-    for (let i:number = 0; i < swapsTests.length; ++i) {
-      it("check swap out "+(i+1)+"/"+swapsTests.length, async () => {
-        await checkSwap(owner, swapsTests[i], true, false);
-      });
-    }
+    // creating 300 year pool, so that estimated yield is more valued than current one (in order to not update underlying protocols behaviour)
+    await createPools({yieldEst:0.2, duration:60*60*24*30*12*300, amplifyStart:2, amplifyEnd:95, ammBalancePrincipal: 100, ammBalanceYield: 1000});
+    
+    await checkSwap(owner, {amplification: 2, swapAmountIn: 10, swapAmountOut: 1.5181390799659535, principalIn: false, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 15, swapAmountIn: 10, swapAmountOut: 1.854315971827023, principalIn: false, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 40, swapAmountIn: 10, swapAmountOut: 1.9143269555117204, principalIn: false, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 85, swapAmountIn: 10, swapAmountOut: 1.935536937130989, principalIn: false, swapType: SwapType.SWAP_GIVEN_IN});
+  });
+
+  
+  it("tests swaps yield in with balances not aligned with Interest Rate - different direction", async () =>
+  {
+    // creating 300 year pool, so that estimated yield is more valued than current one (in order to not update underlying protocols behaviour)
+    await createPools({yieldEst:0.1, duration:60*60*24*30*12*300, amplifyStart:1, amplifyEnd:100, ammBalancePrincipal: 300, ammBalanceYield: 1000});
+
+    // Interest Rate doesn't match balances (different direction) with increasing amplification
+    await checkSwap(owner, {amplification: 1, swapAmountIn: 10, swapAmountOut: 1.78720155521161, principalIn: false, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 5, swapAmountIn: 10, swapAmountOut: 1.2467415717523336, principalIn: false, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 20, swapAmountIn: 10, swapAmountOut: 1.0564830973599812, principalIn: false, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 55, swapAmountIn: 10, swapAmountOut: 1.0078689702486059, principalIn: false, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 100, swapAmountIn: 10, swapAmountOut: 0.9945145891945463, principalIn: false, swapType: SwapType.SWAP_GIVEN_IN});
+    
+    await tempusAMM.startAmplificationUpdate(5, ONE_AMP_UPDATE_TIME);
+    // swap big percentage of tokens (this is going to make more balance in the pool)
+    await checkSwap(owner, {amplification: 95, swapAmountIn: 500, swapAmountOut: 49.438688716741254, principalIn: false, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 5, swapAmountIn: 500, swapAmountOut: 50.641479074770096, principalIn: false, swapType: SwapType.SWAP_GIVEN_IN});
+  });
+
+  it("test swaps principal in given out with balances aligned with Interest Rate", async () =>
+  {
+    // creating 300 year pool, so that estimated yield is more valued than current one (in order to not update underlying protocols behaviour)
+    await createPools({yieldEst:0.1, duration:60*60*24*30*12*300, amplifyStart:5, amplifyEnd:95, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+
+    // basic swap with Interest Rate aligned to balances with increasing amplification
+    await checkSwap(owner, {amplification: 5, swapAmountIn: 1, swapAmountOut: 9.800039358937214, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 95, swapAmountIn: 1, swapAmountOut: 9.808507816594444, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
+    // swap big percentage of tokens 
+    // let's start updating amp backwards
+    await tempusAMM.startAmplificationUpdate(5, ONE_AMP_UPDATE_TIME);
+    await checkSwap(owner, {amplification: 95, swapAmountIn: 5000, swapAmountOut: 48717.68223490758, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
+    await checkSwap(owner, {amplification: 5, swapAmountIn: 5000, swapAmountOut: 29656.395311170872, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
   });
 });
