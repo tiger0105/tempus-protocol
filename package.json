@@ -62,7 +62,8 @@
     "mythx-install": "pip install mythx-cli",
     "mythx-amm": "mythx --ci --yes analyze --wait --solc-version 0.7.6 contracts/amm/TempusAMM.sol",
     "mythx-pool": "mythx --ci --yes analyze --wait --solc-version 0.8.6 contracts/pools/AaveTempusPool.sol contracts/pools/CompoundTempusPool.sol contracts/pools/LidoTempusPool.sol",
-    "mythx-misc": "mythx --ci --yes analyze --wait --solc-version 0.8.6 contracts/token/TempusToken.sol"
+    "mythx-misc": "mythx --ci --yes analyze --wait --solc-version 0.8.6 contracts/token/TempusToken.sol",
+    "slither": "rm -rf contracts/amm contracts/TempusController.sol && slither ."
   },
   "dependencies": {
     "@balancer-labs/v2-asset-manager-utils": "https://gitpkg.now.sh/balancer-labs/balancer-v2-monorepo/pkg/asset-manager-utils?ccb2d594a893cd4b7ce79698e373cb100b28aaa2",
