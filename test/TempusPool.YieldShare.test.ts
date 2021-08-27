@@ -14,6 +14,19 @@ describeForEachPool("TempusPool YieldShare", (pool:ITestPool) =>
     expect(principalPrice + yieldsPrice).to.be.equal(1);
   });
 
+  it("Should have correct rates for Yields and Principals in the middle of the pool", async () => {
+    await pool.createDefault();
+    await pool.setTimeRelativeToPoolStart(0.5);
+    const midRate = 1 + pool.yieldEst / 2;
+    await pool.setInterestRate(midRate);
+
+    let principalPrice:number = +await pool.tempus.principalShare.getPricePerFullShareStored();
+    let yieldsPrice:number = +await pool.tempus.yieldShare.getPricePerFullShareStored();
+    expect(principalPrice).to.be.within(0.0954, 0.955);
+    expect(yieldsPrice).to.be.within(0.00954, 0.0955);
+    expect(principalPrice + yieldsPrice).to.equal(midRate);
+  });
+
   it("Should have correct rates for Yields and Principals after Maturity", async () =>
   {
     await pool.createDefault();
