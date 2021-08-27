@@ -2,8 +2,6 @@
 pragma solidity >=0.7.6 <0.9.0;
 pragma abicoder v2;
 
-import "./token/IPoolShare.sol";
-
 /// @author The tempus.finance team
 /// @title The interface of a Tempus Pool
 interface ITempusPool {
@@ -30,10 +28,10 @@ interface ITempusPool {
     function backingToken() external view returns (address);
 
     /// @return This TempusPool's Tempus Principal Share (TPS)
-    function principalShare() external view returns (IPoolShare);
+    function principalShare() external view returns (address);
 
     /// @return This TempusPool's Tempus Yield Share (TYS)
-    function yieldShare() external view returns (IPoolShare);
+    function yieldShare() external view returns (address);
 
     /// @return The TempusController address that is authorized to perform restricted actions
     function controller() external view returns (address);

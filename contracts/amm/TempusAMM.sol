@@ -24,7 +24,7 @@ import "@balancer-labs/v2-pool-utils/contracts/BaseMinimalSwapInfoPool.sol";
 
 import "./interfaces/IRateProvider.sol";
 import "./../ITempusPool.sol";
-import "./../token/IPoolShare.sol";
+import "./../token/IPriceable.sol";
 import "./StableMath.sol";
 import "./TempusAMMUserDataHelpers.sol";
 
@@ -53,8 +53,8 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
     uint256 private immutable _totalTokens;
 
-    IPoolShare internal immutable _token0;
-    IPoolShare internal immutable _token1;
+    IPriceable internal immutable _token0;
+    IPriceable internal immutable _token1;
 
     // All token balances are normalized to behave as if the token had 18 decimals. We assume a token's decimals will
     // not change throughout its lifetime, and store the corresponding scaling factor for each at construction time.
@@ -118,8 +118,8 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         _totalTokens = 2;
 
         // Immutable variables cannot be initialized inside an if statement, so we must do conditional assignments
-        IPoolShare yieldShare = pool.yieldShare();
-        IPoolShare principalShare = pool.principalShare();
+        IPriceable yieldShare = IPriceable(pool.yieldShare());
+        IPriceable principalShare = IPriceable(pool.principalShare());
         (_token0, _token1) = yieldShare < principalShare ? (yieldShare, principalShare) : (principalShare, yieldShare);
 
         tempusPool = pool;
@@ -152,7 +152,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         uint256 indexOut
     ) internal virtual override whenNotPaused beforeMaturity returns (uint256) {
         (uint256 currentAmp, ) = _getAmplificationParameter();
-        (IPoolShare tokenIn, IPoolShare tokenOut) = indexIn == 0 ? (_token0, _token1) : (_token1, _token0);
+        (IPriceable tokenIn, IPriceable tokenOut) = indexIn == 0 ? (_token0, _token1) : (_token1, _token0);
 
         _rateAdjustBalances(balances);
         uint256 rateAdjustedSwapAmount = (swapRequest.amount * tokenIn.getPricePerFullShare()) /
@@ -171,7 +171,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         uint256 indexOut
     ) internal virtual override whenNotPaused beforeMaturity returns (uint256) {
         (uint256 currentAmp, ) = _getAmplificationParameter();
-        (IPoolShare tokenIn, IPoolShare tokenOut) = indexIn == 0 ? (_token0, _token1) : (_token1, _token0);
+        (IPriceable tokenIn, IPriceable tokenOut) = indexIn == 0 ? (_token0, _token1) : (_token1, _token0);
 
         _rateAdjustBalances(balances);
         uint256 rateAdjustedSwapAmount = (swapRequest.amount * tokenOut.getPricePerFullShare()) /
@@ -433,6 +433,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
     function _exitExactBPTInForTokensOut(uint256[] memory balances, bytes memory userData)
         private
+        view
         returns (uint256, uint256[] memory)
     {
         // This exit function is the only one that is not disabled if the contract is paused: it remains unrestricted
@@ -489,6 +490,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
      */
     function _getDueProtocolFeeAmounts(uint256[] memory balances, uint256 protocolSwapFeePercentage)
         private
+        view
         returns (uint256[] memory)
     {
         // Initialize with zeros
@@ -784,11 +786,11 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
     function _mapTempusSharesToIERC20(ITempusPool pool) private view returns (IERC20[] memory) {
         IERC20[] memory tokens = new IERC20[](2);
-        IPoolShare yieldShare = pool.yieldShare();
-        IPoolShare principalShare = pool.principalShare();
+        address yieldShare = pool.yieldShare();
+        address principalShare = pool.principalShare();
         (tokens[0], tokens[1]) = (yieldShare < principalShare)
-            ? (IERC20(address(yieldShare)), IERC20(address(principalShare)))
-            : (IERC20(address(principalShare)), IERC20(address(yieldShare)));
+            ? (IERC20(yieldShare), IERC20(principalShare))
+            : (IERC20(principalShare), IERC20(yieldShare));
         return tokens;
     }
 }

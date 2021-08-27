@@ -26,8 +26,8 @@ abstract contract TempusPool is ITempusPool, Ownable {
 
     uint256 public immutable override initialInterestRate;
     uint256 public maturityInterestRate;
-    IPoolShare public immutable override principalShare;
-    IPoolShare public immutable override yieldShare;
+    address public immutable override principalShare;
+    address public immutable override yieldShare;
     address public immutable override controller;
 
     uint256 private immutable initialEstimatedYield;
@@ -72,8 +72,8 @@ abstract contract TempusPool is ITempusPool, Ownable {
         initialInterestRate = initInterestRate;
         initialEstimatedYield = estimatedFinalYield;
 
-        principalShare = new PrincipalShare(this, principalName, principalSymbol);
-        yieldShare = new YieldShare(this, yieldName, yieldSymbol);
+        principalShare = address(new PrincipalShare(this, principalName, principalSymbol));
+        yieldShare = address(new YieldShare(this, yieldName, yieldSymbol));
     }
 
     modifier onlyController() {
@@ -95,7 +95,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
             maturityInterestRate = currentInterestRate();
             matured = true;
 
-            assert(IERC20(address(principalShare)).totalSupply() == IERC20(address(yieldShare)).totalSupply());
+            assert(IPoolShare(principalShare).totalSupply() == IPoolShare(yieldShare).totalSupply());
         }
     }
 
@@ -280,15 +280,15 @@ abstract contract TempusPool is ITempusPool, Ownable {
             uint256
         )
     {
-        require(IERC20(address(principalShare)).balanceOf(from) >= principalAmount, "Insufficient principals.");
-        require(IERC20(address(yieldShare)).balanceOf(from) >= yieldAmount, "Insufficient yields.");
+        require(IPoolShare(principalShare).balanceOf(from) >= principalAmount, "Insufficient principals.");
+        require(IPoolShare(yieldShare).balanceOf(from) >= yieldAmount, "Insufficient yields.");
 
         // Redeeming prior to maturity is only allowed in equal amounts.
         require(matured || (principalAmount == yieldAmount), "Inequal redemption not allowed before maturity.");
 
         // Burn the appropriate shares
-        PrincipalShare(address(principalShare)).burn(from, principalAmount);
-        YieldShare(address(yieldShare)).burn(from, yieldAmount);
+        PrincipalShare(principalShare).burn(from, principalAmount);
+        YieldShare(yieldShare).burn(from, yieldAmount);
 
         uint256 currentRate = updateInterestRate(yieldBearingToken);
         (uint256 redeemableYieldTokens, uint256 redeemableBackingTokens, uint256 interestRate) = getRedemptionAmounts(

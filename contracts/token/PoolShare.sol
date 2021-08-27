@@ -2,6 +2,7 @@
 pragma solidity 0.8.6;
 
 import "./ERC20OwnerMintableToken.sol";
+import "./IPoolShare.sol";
 import "../ITempusPool.sol";
 
 /// Token representing the principal or yield shares of a pool.
