@@ -262,6 +262,14 @@ export class TempusPool extends ContractBase {
     return this.fromBigNum(await this.contract.numYieldTokensPerAsset(this.toBigNum(amount), this.toBigNum(interestRate)));
   }
 
+  async pricePerYieldShare(): Promise<NumberOrString> {
+    return this.fromBigNum(await this.contract.pricePerYieldShareStored());
+  }
+
+  async pricePerPrincipalShare(): Promise<NumberOrString> {
+    return this.fromBigNum(await this.contract.pricePerPrincipalShareStored());
+  }
+
   /**
    * @returns Total accumulated fees
    */
