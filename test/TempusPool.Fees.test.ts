@@ -4,7 +4,7 @@ import { ITestPool } from "./pool-utils/ITestPool";
 import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
 
 import { Signer } from "./utils/ContractBase";
-import { MAX_UINT256 } from "./utils/Decimal";
+import { parseDecimal, MAX_UINT256 } from "./utils/Decimal";
 
 describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
 {
@@ -13,6 +13,27 @@ describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
   beforeEach(async () =>
   {
     [owner, user, user2] = await ethers.getSigners();
+  });
+
+  it("Fee configuration should zero on deployment", async () =>
+  {
+    await pool.createDefault();
+    let feesConfig = await pool.tempus.getFeesConfig();
+    expect(feesConfig.depositPercent).to.equal(0);
+    expect(feesConfig.earlyRedeemPercent).to.equal(0);
+    expect(feesConfig.matureRedeemPercent).to.equal(0);
+  });
+
+  it("Fee configuration should be changeable", async () =>
+  {
+    await pool.createDefault();
+
+    await pool.tempus.setFeesConfig(owner, 0.15, 0.05, 0.02);
+
+    let feesConfig = await pool.tempus.getFeesConfig();
+    expect(feesConfig.depositPercent).to.equal(parseDecimal("0.15", 18));
+    expect(feesConfig.earlyRedeemPercent).to.equal(parseDecimal("0.05", 18));
+    expect(feesConfig.matureRedeemPercent).to.equal(parseDecimal("0.02", 18));
   });
 
   it("Should collect tokens as fees during deposit() if fees != 0", async () =>
