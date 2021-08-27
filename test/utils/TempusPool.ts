@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { BigNumber, BytesLike, Contract, Transaction } from "ethers";
-import { NumberOrString, toWei } from "./Decimal";
+import { NumberOrString, fromWei, toWei } from "./Decimal";
 import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
 import { PoolShare, ShareKind } from "./PoolShare";
@@ -284,7 +284,12 @@ export class TempusPool extends ContractBase {
   }
 
   async getFeesConfig(): Promise<TempusFeesConfig> {
-    return await this.contract.getFeesConfig();
+    let feesConfig = await this.contract.getFeesConfig();
+    return {
+      depositPercent: fromWei(feesConfig.depositPercent),
+      earlyRedeemPercent: fromWei(feesConfig.earlyRedeemPercent),
+      matureRedeemPercent: fromWei(feesConfig.matureRedeemPercent)
+    }
   }
 
   /**
@@ -292,14 +297,12 @@ export class TempusPool extends ContractBase {
    */
   async setFeesConfig(
     owner:SignerOrAddress,
-    depositPercent:NumberOrString,
-    earlyRedeemPercent:NumberOrString,
-    matureRedeemPercent:NumberOrString
+    feesConfig: TempusFeesConfig
   ): Promise<void> {
     await this.contract.connect(owner).setFeesConfig({
-      depositPercent: this.toBigNum(depositPercent),
-      earlyRedeemPercent: this.toBigNum(earlyRedeemPercent),
-      matureRedeemPercent: this.toBigNum(matureRedeemPercent),
+      depositPercent: toWei(feesConfig.depositPercent),
+      earlyRedeemPercent: toWei(feesConfig.earlyRedeemPercent),
+      matureRedeemPercent: toWei(feesConfig.matureRedeemPercent)
     });
   }
 
