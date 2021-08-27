@@ -27,6 +27,7 @@ interface CreateParams {
   duration:number;
   amplifyStart:number;
   amplifyEnd?:number;
+  oneAmpUpdate?:number;
   ammBalanceYield?: number;
   ammBalancePrincipal?:number;
 }
@@ -45,6 +46,8 @@ describeForEachPool("TempusAMM", (testFixture:ITestPool) =>
   let tempusAMM:TempusAMM;
   
   async function createPools(params:CreateParams): Promise<void> {
+    const oneAmplifyUpdate = (params.oneAmpUpdate === undefined) ? ONE_AMP_UPDATE_TIME : params.oneAmpUpdate;
+    
     tempusPool = await testFixture.createWithAMM({
       initialRate:1.0, poolDuration:params.duration, yieldEst:params.yieldEst,
       ammSwapFee:SWAP_FEE_PERC, ammAmplification: params.amplifyStart
@@ -60,7 +63,7 @@ describeForEachPool("TempusAMM", (testFixture:ITestPool) =>
       await tempusAMM.provideLiquidity(owner, params.ammBalancePrincipal, params.ammBalanceYield, TempusAMMJoinKind.INIT);
     }
     if (params.amplifyEnd != undefined) {
-      await tempusAMM.startAmplificationUpdate(params.amplifyEnd, ONE_AMP_UPDATE_TIME);
+      await tempusAMM.startAmplificationUpdate(params.amplifyEnd, oneAmplifyUpdate);
     }
   }
 
@@ -91,41 +94,38 @@ describeForEachPool("TempusAMM", (testFixture:ITestPool) =>
   it("checks amplification and invariant in multiple stages", async () =>
   {
     await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5});
-    let ampInv = await tempusAMM.getLastInvariant();
+    let ampInv = await testFixture.amm.getLastInvariant();
     expect(ampInv.invariant).to.equal(0);
     expect(ampInv.amplification).to.equal(0);
-    await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
-    ampInv = await tempusAMM.getLastInvariant();
+    await testFixture.amm.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
+    ampInv = await testFixture.amm.getLastInvariant();
     expect(ampInv.invariant).to.be.within(181, 182);
     expect(ampInv.amplification).to.equal(5000);
   });
 
-  it("checks amplification increases over time", async () =>
+  it.only("checks invariant increases over time with adding liquidity", async () =>
   {
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5});
-    await tempusAMM.startAmplificationUpdate(95, ONE_HOUR*8);
-    await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
-    let ampInv = await tempusAMM.getLastInvariant();
-    const amplificationParams = await tempusAMM.getAmplificationParam();
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, amplifyEnd: 95, oneAmpUpdate: (ONE_MONTH / 90)});
+    await testFixture.amm.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
+    let ampInv = await testFixture.amm.getLastInvariant();
+    const amplificationParams = await testFixture.amm.getAmplificationParam();
     expect(amplificationParams.value).to.be.equal(ampInv.amplification);
     expect(amplificationParams.isUpdating).to.be.true;
     expect(ampInv.invariant).to.be.within(200 / 1.11, 200 / 1.09);
-    expect(ampInv.amplification).to.equal(5000);
-  
+    
     // move half period of pool duration
-    await increaseTime(ONE_DAY*15);
-    testFixture.setInterestRate(1.05);
-    await tempusAMM.provideLiquidity(owner, 100, 1000, 1);
-    ampInv = await tempusAMM.getLastInvariant();
+    await testFixture.setTimeRelativeToPoolStart(0.5);
+    await testFixture.setInterestRate(1.05);
+    await testFixture.amm.provideLiquidity(owner, 100, 1000, 1);
+    ampInv = await testFixture.amm.getLastInvariant();
     expect(ampInv.invariant).to.be.within(400 / (1.1 / 1.049), 400 / (1.1 / 1.051));
-    expect(ampInv.amplification).to.equal(50000);
-  
+    
     // move to the end of the pool
-    await increaseTime(ONE_DAY*15);
-    testFixture.setInterestRate(1.1);
-    await tempusAMM.provideLiquidity(owner, 100, 1000, 1);
-    ampInv = await tempusAMM.getLastInvariant();
-    expect(ampInv.amplification).to.equal(95000);
+    await testFixture.setTimeRelativeToPoolStart(1.0);
+    await testFixture.setInterestRate(1.1);
+    await testFixture.amm.provideLiquidity(owner, 100, 1000, 1);
+    ampInv = await testFixture.amm.getLastInvariant();
+    expect(ampInv.invariant).to.be.equal(600);
   });
 
   it("checks amplification update reverts with invalid args", async () =>

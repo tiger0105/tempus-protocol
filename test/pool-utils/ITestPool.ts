@@ -249,7 +249,7 @@ export abstract class ITestPool {
    */
   async setTimeRelativeToPoolStart(percentDuration: number): Promise<void> {
     const startTime:number = +await this.tempus.startTime();
-    const duration:number = this.maturityTime - startTime;
+    const duration:number = +await this.tempus.maturityTime() - startTime;
     await setEvmTime(startTime + percentDuration * duration);
   }
 
