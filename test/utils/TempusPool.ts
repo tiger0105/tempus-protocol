@@ -19,6 +19,12 @@ export interface TempusSharesNames {
   yieldSymbol: string;
 }
 
+export interface TempusFeesConfig {
+  depositPercent: NumberOrString;
+  earlyRedeemPercent: NumberOrString;
+  matureRedeemPercent: NumberOrString;
+}
+
 export function generateTempusSharesNames(ybtName:string, ybtSymbol:string, maturityTime:number): TempusSharesNames {
   const date:Date = new Date(maturityTime * 1000);
   
@@ -267,6 +273,10 @@ export class TempusPool extends ContractBase {
    */
    async totalFees(): Promise<NumberOrString> {
     return this.fromBigNum(await this.contract.totalFees());
+  }
+
+  async getFeesConfig(): Promise<TempusFeesConfig> {
+    return await this.contract.getFeesConfig();
   }
 
   /**
