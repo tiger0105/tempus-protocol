@@ -44,7 +44,7 @@ export class LidoTestPool extends ITestPool {
 
   async createWithAMM(params:TempusAMMParams): Promise<TempusPool> {
     return await this.initPool(params, 'TPS-stETH', 'TYS-stETH', async () => {
-      return await Lido.create(1000000, this.initialRate);
+      return await Lido.create(1000000000, this.initialRate);
     }, (pool:ContractBase) => {
       this.lido = <Lido>pool;
     });

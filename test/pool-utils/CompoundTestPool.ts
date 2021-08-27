@@ -36,7 +36,7 @@ export class CompoundTestPool extends ITestPool {
 
   async createWithAMM(params:TempusAMMParams): Promise<TempusPool> {
     return await this.initPool(params, 'TPS-cDAI', 'TYS-cDAI', async () => {
-      return await Comptroller.create(1000000, this.initialRate);
+      return await Comptroller.create(1000000000, this.initialRate);
     }, (pool:ContractBase) => {
       this.compound = <Comptroller>pool;
     });
