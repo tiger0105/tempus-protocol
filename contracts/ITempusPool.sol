@@ -4,15 +4,41 @@ pragma abicoder v2;
 
 import "./token/IPoolShare.sol";
 
-/// @author The tempus.finance team
-/// @title The interface of a Tempus Pool
-interface ITempusPool {
+interface ITempusFees {
+    // The fees are in terms of yield bearing token (YBT).
     struct FeesConfig {
         uint256 depositPercent;
         uint256 earlyRedeemPercent;
         uint256 matureRedeemPercent;
     }
 
+    /// Returns the current fee configuration.
+    function feesConfig()
+        external
+        view
+        returns (
+            uint256 depositPercent,
+            uint256 earlyRedeemPercent,
+            uint256 matureRedeemPercent
+        );
+
+    /// Replace the current fee configuration with a new one.
+    /// By default all the fees are expected to be set to zero.
+    function setFeesConfig(FeesConfig calldata newFeesConfig) external;
+
+    /// Accumulated fees available for withdrawal.
+    function totalFees() external view returns (uint256);
+
+    /// Transfers accumulated Yield Bearing Token (YBT) fees
+    /// from this pool contract to `recipient`
+    ///
+    /// @param recipient Address which will receive the specified amount of YBT
+    /// @param amount Amount of YBT to transfer, cannot be more than totalFees.
+    ///               If amount is uint256.max, then all accumulated fees are transferred.
+    function transferFees(address recipient, uint256 amount) external;
+}
+
+interface ITempusPool is ITempusFees {
     /// @return The version of the pool.
     function version() external view returns (uint);
 
@@ -154,17 +180,4 @@ interface ITempusPool {
     /// @return Rate of one Tempus Principal Share expressed in Asset Tokens
     /// @dev calculated with stored interest rates
     function pricePerPrincipalShareStored() external view returns (uint256);
-
-    /// Returns the current fee configuration.
-    function feesConfig()
-        external
-        view
-        returns (
-            uint256 depositPercent,
-            uint256 earlyRedeemPercent,
-            uint256 matureRedeemPercent
-        );
-
-    /// Replace the current fee configuration with a new one.
-    function setFeesConfig(FeesConfig calldata newFeesConfig) external;
 }
