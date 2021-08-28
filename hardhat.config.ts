@@ -106,7 +106,10 @@ module.exports = {
     daiHolder: '0xf977814e90da44bfa03b6295a0616a897441acec',
     aDaiHolder: '0x3ddfa8ec3052539b6c9549f12cea2c295cff5296',
     aWethHolder: '0x3ddfa8ec3052539b6c9549f12cea2c295cff5296',
-    cDaiHolder: '0x9b4772e59385ec732bccb06018e318b7b3477459'
+    cDaiHolder: '0x9b4772e59385ec732bccb06018e318b7b3477459',
+    lidoOracleMember1: '0x140Bd8FbDc884f48dA7cb1c09bE8A2fAdfea776E',
+    lidoOracleMember2: '0x1d0813bf088BE3047d827D98524fBf779Bc25F00',
+    lidoOracleMember3: '0x404335BcE530400a5814375E7Ec1FB55fAff3eA2'
   },
   mocha: {
     timeout: 120000
