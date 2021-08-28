@@ -111,6 +111,7 @@ contract TempusController is Ownable {
     }
 
     /// @dev Atomically deposits YBT/BT to TempusPool and swaps TYS for TPS to get fixed yield
+    ///      See https://docs.balancer.fi/developers/guides/single-swaps#swap-overview
     /// @param tempusAMM Tempus AMM to use to swap TYS for TPS
     /// @param tokenAmount Amount of YBT/BT to be deposited
     /// @param isBackingToken specifies whether the deposited asset is the Backing Token or Yield Bearing Token
@@ -137,14 +138,14 @@ contract TempusController is Ownable {
         uint256 swapAmount = yieldShares.balanceOf(address(this));
         yieldShares.safeIncreaseAllowance(address(vault), swapAmount);
 
-        // // Provide TPS/TYS liquidity to TempusAMM
+        // Provide TPS/TYS liquidity to TempusAMM
         IVault.SingleSwap memory singleSwap = IVault.SingleSwap({
             poolId: poolId,
             kind: IVault.SwapKind.GIVEN_IN,
             assetIn: yieldShares,
             assetOut: principalShares,
             amount: swapAmount,
-            userData: "0x0"
+            userData: ""
         });
 
         IVault.FundManagement memory fundManagement = IVault.FundManagement({
