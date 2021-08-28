@@ -3,14 +3,14 @@ pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./amm/interfaces/ITempusAMM.sol";
 import "./amm/interfaces/IVault.sol";
 import "./ITempusPool.sol";
 import "./math/Fixed256x18.sol";
+import "./utils/PermanentlyOwnable.sol";
 
-contract TempusController is Ownable {
+contract TempusController is PermanentlyOwnable {
     using Fixed256x18 for uint256;
     using SafeERC20 for IERC20;
 
