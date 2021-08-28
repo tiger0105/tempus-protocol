@@ -249,7 +249,7 @@ export abstract class ITestPool {
    */
   async setTimeRelativeToPoolStart(percentDuration: number): Promise<void> {
     const startTime:number = +await this.tempus.startTime();
-    const duration:number = this.maturityTime - startTime;
+    const duration:number = +await this.tempus.maturityTime() - startTime;
     await setEvmTime(startTime + percentDuration * duration);
   }
 
@@ -306,6 +306,8 @@ export abstract class ITestPool {
       const names = generateTempusSharesNames(tpsName, tysName, maturityTime);
       f = new FixtureState(maturityTime, names, deployments.createFixture(async () =>
       {
+        const startTime = Date.now();
+
         await deployments.fixture(undefined, { keepExistingDeployments: true, });
         // Note: for fixtures, all contracts must be initialized inside this callback
         const [owner,user,user2] = await ethers.getSigners();
@@ -313,6 +315,11 @@ export abstract class ITestPool {
         const ybt = (pool as any).yieldToken;
         const tempus = await TempusPool.deploy(this.type, controller, ybt, maturityTime, p.yieldEst, names);
         const amm = await TempusAMM.create(owner, p.ammAmplification, p.ammSwapFee, tempus);
+
+        // always report the instantiation of new fixtures,
+        // because this is a major test bottleneck
+        const elapsed = Date.now() - startTime;
+        console.log('    createFixture %s %sms', sig, elapsed);
         return {
           signers: { owner:owner, user:user, user2:user2 },
           contracts: { pool:pool, tempus:tempus, amm: amm },
