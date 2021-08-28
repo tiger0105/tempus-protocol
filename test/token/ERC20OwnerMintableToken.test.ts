@@ -17,7 +17,7 @@ describe("Owner Mintable Token", async () => {
   {
     it("Should set the right owner and initial supply", async () =>
     {
-      expect(await token.manager()).to.equal(owner.address);
+      expect(await token.owner()).to.equal(owner.address);
       expect(await token.balanceOf(owner)).to.equal(0);
       expect(await token.totalSupply()).to.equal(0);
     });
@@ -48,12 +48,12 @@ describe("Owner Mintable Token", async () => {
 
     it("Should not allow Users to mint to User", async () =>
     {
-      (await expectRevert(token.mint(user, user, 10))).to.equal("mint: only manager can mint");
+      (await expectRevert(token.mint(user, user, 10))).to.equal("Ownable: caller is not the owner");
     });
 
     it("Should not allow Users to mint to Owner", async () =>
     {
-      (await expectRevert(token.mint(user, owner, 10))).to.equal("mint: only manager can mint");
+      (await expectRevert(token.mint(user, owner, 10))).to.equal("Ownable: caller is not the owner");
     });
   });
 
@@ -92,10 +92,10 @@ describe("Owner Mintable Token", async () => {
       expect(await token.totalSupply()).to.equal(10);
 
       // User tries to burn User tokens
-      (await expectRevert(token.burn(user, 5))).to.equal("burn: only manager can burn");
-      (await expectRevert(token.burn(user, 10))).to.equal("burn: only manager can burn");
-      (await expectRevert(token.burnFrom(user, user, 5))).to.equal("burn: only manager can burn");
-      (await expectRevert(token.burnFrom(user, user, 10))).to.equal("burn: only manager can burn");
+      (await expectRevert(token.burn(user, 5))).to.equal("Ownable: caller is not the owner");
+      (await expectRevert(token.burn(user, 10))).to.equal("Ownable: caller is not the owner");
+      (await expectRevert(token.burnFrom(user, user, 5))).to.equal("Ownable: caller is not the owner");
+      (await expectRevert(token.burnFrom(user, user, 10))).to.equal("Ownable: caller is not the owner");
     });
 
     it("Should not allow Users to burn Owners tokens", async () =>
@@ -105,8 +105,8 @@ describe("Owner Mintable Token", async () => {
       expect(await token.totalSupply()).to.equal(10);
 
       // User tries to burn Owner tokens
-      (await expectRevert(token.burnFrom(user, owner, 5))).to.equal("burn: only manager can burn");
-      (await expectRevert(token.burnFrom(user, owner, 10))).to.equal("burn: only manager can burn");
+      (await expectRevert(token.burnFrom(user, owner, 5))).to.equal("Ownable: caller is not the owner");
+      (await expectRevert(token.burnFrom(user, owner, 10))).to.equal("Ownable: caller is not the owner");
     });
 
     it("Should not allow Owner to burn more User tokens than available", async () =>

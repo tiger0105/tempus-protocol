@@ -12,8 +12,8 @@ export class ERC20OwnerMintable extends ERC20 {
   }
 
   /** @returns The manager who is allowed to mint and burn. */
-  async manager(): Promise<string> {
-    return await this.contract.manager();
+  async owner(): Promise<string> {
+    return await this.contract.owner();
   }
 
   /**
