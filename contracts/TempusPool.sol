@@ -120,13 +120,6 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         token.safeTransferFrom(address(this), recipient, amount);
     }
 
-    /// @dev Deposits backing token to the underlying protocol, and then to Tempus Pool.
-    ///      NOTE This function can only be called by TempusController
-    /// @param backingTokenAmount amount of Backing Tokens to be deposit into the underlying protocol
-    /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
-    /// @return mintedShares Amount of TPS and TYS minted to `recipient`
-    /// @return depositedYBT The BT value deposited, denominated as Yield Bearing Tokens
-    /// @return rate The interest rate at the time of the deposit
     function depositBacking(uint256 backingTokenAmount, address recipient)
         external
         payable
@@ -146,14 +139,6 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         (mintedShares, , rate) = _deposit(depositedYBT, recipient);
     }
 
-    /// @dev Deposits yield bearing tokens (such as cDAI) into TempusPool
-    ///      msg.sender must approve @param yieldTokenAmount to this TempusPool
-    ///      NOTE This function can only be called by TempusController
-    /// @param yieldTokenAmount Amount of yield bearing tokens to deposit
-    /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
-    /// @return mintedShares Amount of TPS and TYS minted to `recipient`
-    /// @return depositedBT The YBT value deposited, denominated as Backing Tokens
-    /// @return rate The interest rate at the time of the deposit
     function deposit(uint256 yieldTokenAmount, address recipient)
         external
         override
@@ -201,18 +186,6 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         YieldShare(address(yieldShare)).mint(recipient, mintedShares);
     }
 
-    /// @dev Redeem TPS+TYS held by msg.sender into backing tokens
-    ///      `msg.sender` must approve TPS and TYS amounts to this TempusPool.
-    ///      `msg.sender` will receive the backing tokens
-    ///      NOTE #1 Before maturity, principalAmount must equal to yieldAmount.
-    ///      NOTE #2 This function can only be called by TempusController
-    /// @param from Address to redeem its Tempus Shares
-    /// @param principalAmount Amount of Tempus Principal Shares (TPS) to redeem
-    /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem
-    /// @param recipient Address to which redeemed BT will be sent
-    /// @return redeemableYieldTokens Amount of Backing Tokens redeemed to `recipient`, denominated in YBT
-    /// @return redeemableBackingTokens Amount of Backing Tokens redeemed to `recipient`
-    /// @return rate The interest rate at the time of the redemption
     function redeemToBacking(
         address from,
         uint256 principalAmount,
@@ -235,17 +208,6 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         assert(backingTokensReceived == redeemableBackingTokens);
     }
 
-    /// @dev Redeem yield bearing tokens from this TempusPool
-    ///      msg.sender will receive the YBT
-    ///      NOTE #1 Before maturity, principalAmount must equal to yieldAmount.
-    ///      NOTE #2 This function can only be called by TempusController
-    /// @param from Address to redeem its Tempus Shares
-    /// @param principalAmount Amount of Tempus Principal Shares (TPS) to redeem for YBT
-    /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem for YBT
-    /// @param recipient Address to which redeemed YBT will be sent
-    /// @return redeemableYieldTokens Amount of Yield Bearing Tokens redeemed to `recipient`
-    /// @return redeemableBackingTokens Amount of Yield Bearing Tokens redeemed to `recipient`, denominated in BT
-    /// @return rate The interest rate at the time of the redemption
     function redeem(
         address from,
         uint256 principalAmount,

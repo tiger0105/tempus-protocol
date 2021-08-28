@@ -74,8 +74,8 @@ interface ITempusPool is ITempusFees {
     function finalize() external;
 
     /// @dev Deposits yield bearing tokens (such as cDAI) into TempusPool
-    ///      msg.sender must approve `yieldTokenAmount` to this TempusPool
-    /// @notice Deposit will fail if maturity has been reached.
+    ///      msg.sender must approve @param yieldTokenAmount to this TempusPool
+    ///      NOTE This function can only be called by TempusController
     /// @param yieldTokenAmount Amount of yield bearing tokens to deposit
     /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
     /// @return mintedShares Amount of TPS and TYS minted to `recipient`
@@ -90,6 +90,7 @@ interface ITempusPool is ITempusFees {
         );
 
     /// @dev Deposits backing token to the underlying protocol, and then to Tempus Pool.
+    ///      NOTE This function can only be called by TempusController
     /// @param backingTokenAmount amount of Backing Tokens to be deposit into the underlying protocol
     /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
     /// @return mintedShares Amount of TPS and TYS minted to `recipient`
@@ -106,7 +107,8 @@ interface ITempusPool is ITempusFees {
 
     /// @dev Redeem yield bearing tokens from this TempusPool
     ///      msg.sender will receive the YBT
-    ///      NOTE Before maturity, principalAmount must equal to yieldAmount.
+    ///      NOTE #1 Before maturity, principalAmount must equal to yieldAmount.
+    ///      NOTE #2 This function can only be called by TempusController
     /// @param from Address to redeem its Tempus Shares
     /// @param principalAmount Amount of Tempus Principal Shares (TPS) to redeem for YBT
     /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem for YBT
@@ -130,7 +132,8 @@ interface ITempusPool is ITempusFees {
     /// @dev Redeem TPS+TYS held by msg.sender into backing tokens
     ///      `msg.sender` must approve TPS and TYS amounts to this TempusPool.
     ///      `msg.sender` will receive the backing tokens
-    ///      NOTE Before maturity, principalAmount must equal to yieldAmount.
+    ///      NOTE #1 Before maturity, principalAmount must equal to yieldAmount.
+    ///      NOTE #2 This function can only be called by TempusController
     /// @param from Address to redeem its Tempus Shares
     /// @param principalAmount Amount of Tempus Principal Shares (TPS) to redeem
     /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem
