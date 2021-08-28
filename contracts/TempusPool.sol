@@ -287,8 +287,8 @@ abstract contract TempusPool is ITempusPool, Ownable {
         require(matured || (principalAmount == yieldAmount), "Inequal redemption not allowed before maturity.");
 
         // Burn the appropriate shares
-        PrincipalShare(address(principalShare)).burn(from, principalAmount);
-        YieldShare(address(yieldShare)).burn(from, yieldAmount);
+        PrincipalShare(address(principalShare)).burnFrom(from, principalAmount);
+        YieldShare(address(yieldShare)).burnFrom(from, yieldAmount);
 
         uint256 currentRate = updateInterestRate(yieldBearingToken);
         (uint256 redeemableYieldTokens, uint256 redeemableBackingTokens, uint256 interestRate) = getRedemptionAmounts(
