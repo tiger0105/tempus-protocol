@@ -38,13 +38,13 @@ interface ITempusPool is ITempusFees {
     /// @return The name of underlying protocol, for example "Aave" for Aave protocol
     function protocolName() external view returns (bytes32);
 
-    /// @return The underlying yield bearing token.
-    /// @dev This token will be used as a token that user can deposit to mint same amounts
+    /// This token will be used as a token that user can deposit to mint same amounts
     /// of principal and interest shares.
+    /// @return The underlying yield bearing token.
     function yieldBearingToken() external view returns (address);
 
-    /// @dev This is the address of the actual backing asset token
-    ///      in the case of ETH, this address will be 0
+    /// This is the address of the actual backing asset token
+    /// in the case of ETH, this address will be 0
     /// @return Address of the Backing Token
     function backingToken() external view returns (address);
 
@@ -73,9 +73,10 @@ interface ITempusPool is ITempusFees {
     /// Can be called by anyone and can be called multiple times.
     function finalize() external;
 
-    /// @dev Deposits yield bearing tokens (such as cDAI) into TempusPool
-    ///      msg.sender must approve `yieldTokenAmount` to this TempusPool
-    /// @notice Deposit will fail if maturity has been reached.
+    /// Deposits yield bearing tokens (such as cDAI) into TempusPool
+    ///      msg.sender must approve @param yieldTokenAmount to this TempusPool
+    ///      NOTE #1 Deposit will fail if maturity has been reached.
+    ///      NOTE #2 This function can only be called by TempusController
     /// @param yieldTokenAmount Amount of yield bearing tokens to deposit
     /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
     /// @return mintedShares Amount of TPS and TYS minted to `recipient`
@@ -89,7 +90,9 @@ interface ITempusPool is ITempusFees {
             uint256 rate
         );
 
-    /// @dev Deposits backing token to the underlying protocol, and then to Tempus Pool.
+    /// Deposits backing token to the underlying protocol, and then to Tempus Pool.
+    ///      NOTE #1 Deposit will fail if maturity has been reached.
+    ///      NOTE #2 This function can only be called by TempusController
     /// @param backingTokenAmount amount of Backing Tokens to be deposit into the underlying protocol
     /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
     /// @return mintedShares Amount of TPS and TYS minted to `recipient`
@@ -104,9 +107,10 @@ interface ITempusPool is ITempusFees {
             uint256 rate
         );
 
-    /// @dev Redeem yield bearing tokens from this TempusPool
+    /// Redeem yield bearing tokens from this TempusPool
     ///      msg.sender will receive the YBT
-    ///      NOTE Before maturity, principalAmount must equal to yieldAmount.
+    ///      NOTE #1 Before maturity, principalAmount must equal to yieldAmount.
+    ///      NOTE #2 This function can only be called by TempusController
     /// @param from Address to redeem its Tempus Shares
     /// @param principalAmount Amount of Tempus Principal Shares (TPS) to redeem for YBT
     /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem for YBT
@@ -127,10 +131,11 @@ interface ITempusPool is ITempusFees {
             uint256 rate
         );
 
-    /// @dev Redeem TPS+TYS held by msg.sender into backing tokens
+    /// Redeem TPS+TYS held by msg.sender into backing tokens
     ///      `msg.sender` must approve TPS and TYS amounts to this TempusPool.
     ///      `msg.sender` will receive the backing tokens
-    ///      NOTE Before maturity, principalAmount must equal to yieldAmount.
+    ///      NOTE #1 Before maturity, principalAmount must equal to yieldAmount.
+    ///      NOTE #2 This function can only be called by TempusController
     /// @param from Address to redeem its Tempus Shares
     /// @param principalAmount Amount of Tempus Principal Shares (TPS) to redeem
     /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem
@@ -166,11 +171,11 @@ interface ITempusPool is ITempusFees {
     /// @return Rate of one Tempus Principal Share expressed in Asset Tokens
     function pricePerPrincipalShare() external returns (uint256);
 
+    /// Calculated with stored interest rates
     /// @return Rate of one Tempus Yield Share expressed in Asset Tokens,
-    /// @dev calculated with stored interest rates
     function pricePerYieldShareStored() external view returns (uint256);
 
+    /// Calculated with stored interest rates
     /// @return Rate of one Tempus Principal Share expressed in Asset Tokens
-    /// @dev calculated with stored interest rates
     function pricePerPrincipalShareStored() external view returns (uint256);
 }
