@@ -3,16 +3,16 @@ pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./ITempusPool.sol";
 import "./token/PrincipalShare.sol";
 import "./token/YieldShare.sol";
 import "./math/Fixed256x18.sol";
+import "./utils/PermanentlyOwnable.sol";
 
 /// @author The tempus.finance team
 /// @title Implementation of Tempus Pool
-abstract contract TempusPool is ITempusPool, Ownable {
+abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     using SafeERC20 for IERC20;
     using Fixed256x18 for uint256;
 
