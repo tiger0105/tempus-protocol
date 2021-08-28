@@ -66,8 +66,12 @@ contract TempusController is PermanentlyOwnable {
     ) external payable {
         IVault vault = tempusAMM.getVault();
         bytes32 poolId = tempusAMM.getPoolId();
+
         (IERC20[] memory ammTokens, uint256[] memory ammBalances, ) = vault.getPoolTokens(poolId);
-        require(ammBalances[0] > 0 && ammBalances[1] > 0, "AMM not initialized");
+        require(
+            ammTokens.length == 2 && ammBalances.length == 2 && ammBalances[0] > 0 && ammBalances[1] > 0,
+            "AMM not initialized"
+        );
 
         ITempusPool targetPool = tempusAMM.tempusPool();
 
@@ -155,7 +159,7 @@ contract TempusController is PermanentlyOwnable {
             toInternalBalance: false
         });
 
-        uint256 minReturn = minTYSRate.mulf18(swapAmount);
+        uint256 minReturn = swapAmount.mulf18(minTYSRate);
         vault.swap(singleSwap, fundManagement, minReturn, block.timestamp);
 
         uint256 TPSBalance = principalShares.balanceOf(address(this));
