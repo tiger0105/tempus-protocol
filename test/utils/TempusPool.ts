@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { BigNumber, BytesLike, Contract, Transaction } from "ethers";
-import { NumberOrString, toWei } from "./Decimal";
+import { NumberOrString, fromWei, toWei } from "./Decimal";
 import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
 import { PoolShare, ShareKind } from "./PoolShare";
@@ -17,6 +17,12 @@ export interface TempusSharesNames {
   principalSymbol: string;
   yieldName: string;
   yieldSymbol: string;
+}
+
+export interface TempusFeesConfig {
+  depositPercent: NumberOrString;
+  earlyRedeemPercent: NumberOrString;
+  matureRedeemPercent: NumberOrString;
 }
 
 export function generateTempusSharesNames(ybtName:string, ybtSymbol:string, maturityTime:number): TempusSharesNames {
@@ -277,19 +283,26 @@ export class TempusPool extends ContractBase {
     return this.fromBigNum(await this.contract.totalFees());
   }
 
+  async getFeesConfig(): Promise<TempusFeesConfig> {
+    let feesConfig = await this.contract.getFeesConfig();
+    return {
+      depositPercent: fromWei(feesConfig.depositPercent),
+      earlyRedeemPercent: fromWei(feesConfig.earlyRedeemPercent),
+      matureRedeemPercent: fromWei(feesConfig.matureRedeemPercent)
+    }
+  }
+
   /**
    * Sets fees config for the pool. Caller must be owner
    */
   async setFeesConfig(
     owner:SignerOrAddress,
-    depositPercent:NumberOrString,
-    earlyRedeemPercent:NumberOrString,
-    matureRedeemPercent:NumberOrString
+    feesConfig: TempusFeesConfig
   ): Promise<void> {
     await this.contract.connect(owner).setFeesConfig({
-      depositPercent: this.toBigNum(depositPercent),
-      earlyRedeemPercent: this.toBigNum(earlyRedeemPercent),
-      matureRedeemPercent: this.toBigNum(matureRedeemPercent),
+      depositPercent: toWei(feesConfig.depositPercent),
+      earlyRedeemPercent: toWei(feesConfig.earlyRedeemPercent),
+      matureRedeemPercent: toWei(feesConfig.matureRedeemPercent)
     });
   }
 

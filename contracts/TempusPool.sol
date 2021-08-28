@@ -34,10 +34,10 @@ abstract contract TempusPool is ITempusPool, Ownable {
 
     bool public override matured;
 
-    FeesConfig public override feesConfig;
+    FeesConfig feesConfig;
 
     /// total amount of fees accumulated in pool
-    uint256 public totalFees;
+    uint256 public override totalFees;
 
     /// Constructs Pool with underlying token, start and maturity date
     /// @param token underlying yield bearing token
@@ -99,17 +99,15 @@ abstract contract TempusPool is ITempusPool, Ownable {
         }
     }
 
-    /// @dev Sets the fees config for this pool. By default all fees are 0
+    function getFeesConfig() external view override returns (FeesConfig memory) {
+        return feesConfig;
+    }
+
     function setFeesConfig(FeesConfig calldata newFeesConfig) external override onlyOwner {
         feesConfig = newFeesConfig;
     }
 
-    /// @dev Transfers accumulated Yield Bearing Token (YBT) fees
-    ///      from this pool contract to `recipient`
-    /// @param recipient Address which will receive the specified amount of YBT
-    /// @param amount Amount of YBT to transfer, cannot be more than contract's `totalFees`
-    ///               If amount is uint256.max, then all accumulated fees are transferred.
-    function transferFees(address recipient, uint256 amount) external onlyOwner {
+    function transferFees(address recipient, uint256 amount) external override onlyOwner {
         if (amount == type(uint256).max) {
             amount = totalFees;
         } else {
