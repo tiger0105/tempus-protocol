@@ -16,6 +16,7 @@ jobs:
             yarn coverage
       - coveralls/upload:
           parallel: true
+
   integration_tests_coverage:
     executor:
       name: node/default
@@ -29,6 +30,7 @@ jobs:
             yarn coverage:integration
       - coveralls/upload:
           parallel: true
+
   unit_tests:
     executor:
       name: node/default
@@ -38,7 +40,9 @@ jobs:
       - node/install-packages:
           pkg-manager: yarn
       - run:
+          name: "Run unit tests"
           command: yarn test
+
   solhint:
     executor:
       name: node/default
@@ -48,9 +52,11 @@ jobs:
       - node/install-packages:
           pkg-manager: yarn
       - run:
+          name: "Run solhint and lint-check"
           command: |
             yarn solhint
             yarn lint-check
+
   coverage:
     executor:
       name: node/default
@@ -60,12 +66,13 @@ jobs:
       - node/install-packages:
           pkg-manager: yarn
       - run:
-          command:
-            yarn coverage
+          name: "Run coverage"
+          command: yarn coverage
       - coveralls/upload
       - store_artifacts:
           path: coverage
           prefix: coverage
+
   integration_tests:
     executor:
       name: node/default
@@ -75,8 +82,9 @@ jobs:
       - node/install-packages:
           pkg-manager: yarn
       - run:
-          command:
-            yarn test:integration
+          name: "Run integration tests"
+          command: yarn test:integration
+
   save_and_upload_coverage_artifacts:
     executor:
       name: node/default
@@ -87,6 +95,7 @@ jobs:
       - store_artifacts:
           path: coverage
           prefix: coverage
+
   localDeployment:
     executor:
       name: node/default
@@ -96,8 +105,9 @@ jobs:
       - node/install-packages:
           pkg-manager: yarn
       - run:
-          command:
-            yarn deploy-ci
+          name: "Deploy on local network"
+          command: yarn deploy-ci
+
   localDeploymentForkMainnet:
     executor:
       name: node/default
@@ -107,8 +117,9 @@ jobs:
       - node/install-packages:
           pkg-manager: yarn
       - run:
-          command:
-            yarn deploy-ci:fork:mainnet
+          name: "Deploy on forked mainnet"
+          command: yarn deploy-ci:fork:mainnet
+
   runMythX-Pool:
     executor:
       name: node/default
@@ -118,11 +129,16 @@ jobs:
       - node/install-packages:
           pkg-manager: yarn
       - run:
+          name: "Install MythX"
           command: |
             sudo apt update
             sudo apt install python3-pip
+            sudo pip3 install python-dateutil==2.8.1
             sudo yarn mythx-install
-            yarn mythx-pool
+      - run:
+          name: "Run mythx"
+          command: yarn mythx-pool
+
   runMythX-AMM:
     executor:
       name: node/default
@@ -132,11 +148,15 @@ jobs:
       - node/install-packages:
           pkg-manager: yarn
       - run:
+          name: "Install MythX"
           command: |
             sudo apt update
             sudo apt install python3-pip
+            sudo pip3 install python-dateutil==2.8.1
             sudo yarn mythx-install
-            yarn mythx-amm
+      - run:
+          name: "Run mythx"
+          command: yarn mythx-amm
 
 workflows:
   code_coverage:
