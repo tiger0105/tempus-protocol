@@ -165,6 +165,9 @@ interface ITempusPool is ITempusFees {
     /// @return Initial interest rate of the underlying pool
     function initialInterestRate() external view returns (uint256);
 
+    /// @return Interest rate at maturity of the underlying pool (or 0 if maturity not reached yet)
+    function maturityInterestRate() external view returns (uint256);
+
     /// @return Rate of one Tempus Yield Share expressed in Asset Tokens
     function pricePerYieldShare() external returns (uint256);
 

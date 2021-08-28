@@ -25,7 +25,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     uint256 public immutable override maturityTime;
 
     uint256 public immutable override initialInterestRate;
-    uint256 public maturityInterestRate;
+    uint256 public override maturityInterestRate;
     IPoolShare public immutable override principalShare;
     IPoolShare public immutable override yieldShare;
     address public immutable override controller;
