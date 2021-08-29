@@ -13,6 +13,7 @@ contract AaveTempusPool is TempusPool {
 
     ILendingPool internal immutable aavePool;
     bytes32 public immutable override protocolName = "Aave";
+    uint16 private immutable referrer;
 
     constructor(
         IAToken token,
@@ -22,7 +23,8 @@ contract AaveTempusPool is TempusPool {
         string memory principalName,
         string memory principalSymbol,
         string memory yieldName,
-        string memory yieldSymbol
+        string memory yieldSymbol,
+        uint16 referrerCode
     )
         TempusPool(
             address(token),
@@ -38,6 +40,7 @@ contract AaveTempusPool is TempusPool {
         )
     {
         aavePool = token.POOL();
+        referrer = referrerCode;
     }
 
     function depositToUnderlying(uint256 amount) internal override returns (uint256) {
