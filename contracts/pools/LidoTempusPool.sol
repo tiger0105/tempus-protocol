@@ -7,6 +7,7 @@ import "../protocols/lido/ILido.sol";
 contract LidoTempusPool is TempusPool {
     ILido internal immutable lido;
     bytes32 public immutable override protocolName = "Lido";
+    address private immutable referrer;
 
     constructor(
         ILido token,
@@ -16,7 +17,8 @@ contract LidoTempusPool is TempusPool {
         string memory principalName,
         string memory principalSymbol,
         string memory yieldName,
-        string memory yieldSymbol
+        string memory yieldSymbol,
+        address referrerAddress
     )
         TempusPool(
             address(token),
@@ -33,13 +35,14 @@ contract LidoTempusPool is TempusPool {
     {
         // TODO: consider adding sanity check for _lido.name() and _lido.symbol()
         lido = token;
+        referrer = referrerAddress;
     }
 
     function depositToUnderlying(uint256 amount) internal override returns (uint256) {
         require(msg.value == amount, "ETH value does not match provided amount");
 
         uint256 preDepositBalance = IERC20(yieldBearingToken).balanceOf(address(this));
-        lido.submit{value: msg.value}(address(0));
+        lido.submit{value: msg.value}(referrer);
 
         /// TODO: figure out why lido.submit returns a different value than this
         uint256 mintedTokens = IERC20(yieldBearingToken).balanceOf(address(this)) - preDepositBalance;
