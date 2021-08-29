@@ -101,17 +101,33 @@ export class TempusPool extends ContractBase {
   }
 
   static async deploy(type:PoolType, controller: TempusController, yieldToken:ERC20, maturityTime:number, estimatedYield:number, tempusShareNames:TempusSharesNames): Promise<TempusPool> {
-    const pool = await ContractBase.deployContract(
-      type+"TempusPool",
-      yieldToken.address, 
-      controller.address,
-      maturityTime,
-      toWei(estimatedYield),
-      tempusShareNames.principalName,
-      tempusShareNames.principalSymbol,
-      tempusShareNames.yieldName,
-      tempusShareNames.yieldSymbol
-    );
+    let pool;
+    if (type === PoolType.Lido) {
+      pool = await ContractBase.deployContract(
+        type + "TempusPool",
+        yieldToken.address,
+        controller.address,
+        maturityTime,
+        toWei(estimatedYield),
+        tempusShareNames.principalName,
+        tempusShareNames.principalSymbol,
+        tempusShareNames.yieldName,
+        tempusShareNames.yieldSymbol,
+        "0x0000000000000000000000000000000000000000" /* hardcoded referrer */
+      );
+    } else {
+      pool = await ContractBase.deployContract(
+        type + "TempusPool",
+        yieldToken.address,
+        controller.address,
+        maturityTime,
+        toWei(estimatedYield),
+        tempusShareNames.principalName,
+        tempusShareNames.principalSymbol,
+        tempusShareNames.yieldName,
+        tempusShareNames.yieldSymbol
+      );
+    }
 
     const principalShare = await PoolShare.attach(ShareKind.Principal, await pool.principalShare());
     const yieldShare = await PoolShare.attach(ShareKind.Yield, await pool.yieldShare());
