@@ -102,7 +102,20 @@ export class TempusPool extends ContractBase {
 
   static async deploy(type:PoolType, controller: TempusController, yieldToken:ERC20, maturityTime:number, estimatedYield:number, tempusShareNames:TempusSharesNames): Promise<TempusPool> {
     let pool;
-    if (type === PoolType.Lido) {
+    if (type === PoolType.Aave) {
+      pool = await ContractBase.deployContract(
+        type + "TempusPool",
+        yieldToken.address,
+        controller.address,
+        maturityTime,
+        toWei(estimatedYield),
+        tempusShareNames.principalName,
+        tempusShareNames.principalSymbol,
+        tempusShareNames.yieldName,
+        tempusShareNames.yieldSymbol,
+        "0x00000" /* hardcoded referral code */
+      );
+    } else if (type === PoolType.Lido) {
       pool = await ContractBase.deployContract(
         type + "TempusPool",
         yieldToken.address,
