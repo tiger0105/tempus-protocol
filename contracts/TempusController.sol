@@ -52,8 +52,6 @@ contract TempusController is PermanentlyOwnable {
         uint256 interestRate
     );
 
-    // TODO: we need to add a reference to ITempusPool in TempusAMM... This would also mean the we can remove the ITempusPool argument
-
     /// @dev Atomically deposits YBT/BT to TempusPool and provides liquidity
     ///      to the corresponding Tempus AMM with the issued TYS & TPS
     /// @param tempusAMM Tempus AMM to use to swap TYS for TPS
@@ -64,14 +62,12 @@ contract TempusController is PermanentlyOwnable {
         uint256 tokenAmount,
         bool isBackingToken
     ) external payable {
-        IVault vault = tempusAMM.getVault();
-        bytes32 poolId = tempusAMM.getPoolId();
-
-        (IERC20[] memory ammTokens, uint256[] memory ammBalances, ) = vault.getPoolTokens(poolId);
-        require(
-            ammTokens.length == 2 && ammBalances.length == 2 && ammBalances[0] > 0 && ammBalances[1] > 0,
-            "AMM not initialized"
-        );
+        (
+            IVault vault,
+            bytes32 poolId,
+            IERC20[] memory ammTokens,
+            uint256[] memory ammBalances
+        ) = getAMMDetailsAndEnsureInitialized(tempusAMM);
 
         ITempusPool targetPool = tempusAMM.tempusPool();
 
@@ -95,10 +91,7 @@ contract TempusController is PermanentlyOwnable {
         IVault.JoinPoolRequest memory request = IVault.JoinPoolRequest({
             assets: ammTokens,
             maxAmountsIn: ammLiquidityProvisionAmounts,
-            userData: abi.encode(
-                1, /** joins a pre-initialized pool */
-                ammLiquidityProvisionAmounts
-            ),
+            userData: abi.encode(uint8(ITempusAMM.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT), ammLiquidityProvisionAmounts),
             fromInternalBalance: false
         });
 
@@ -126,8 +119,7 @@ contract TempusController is PermanentlyOwnable {
         bool isBackingToken,
         uint256 minTYSRate
     ) external payable {
-        IVault vault = tempusAMM.getVault();
-        bytes32 poolId = tempusAMM.getPoolId();
+        (IVault vault, bytes32 poolId, , ) = getAMMDetailsAndEnsureInitialized(tempusAMM);
 
         ITempusPool targetPool = tempusAMM.tempusPool();
 
@@ -302,11 +294,164 @@ contract TempusController is PermanentlyOwnable {
         );
     }
 
+    /// @dev Withdraws liquidity from TempusAMM
+    /// @notice `msg.sender` needs to approve controller for @param lpTokensAmount of LP tokens
+    /// @notice Transfers LP tokens to controller and exiting tempusAmm with `msg.sender` as recipient
+    /// @param tempusAMM Tempus AMM instance
+    /// @param lpTokensAmount Amount of LP tokens to be withdrawn
+    /// @param principalAmountOutMin Minimal amount of TPS to be withdrawn
+    /// @param yieldAmountOutMin Minimal amount of TYS to be withdrawn
+    /// @param toInternalBalances Withdrawing liquidity to internal balances
+    function exitTempusAMM(
+        ITempusAMM tempusAMM,
+        uint256 lpTokensAmount,
+        uint256 principalAmountOutMin,
+        uint256 yieldAmountOutMin,
+        bool toInternalBalances
+    ) external {
+        tempusAMM.transferFrom(msg.sender, address(this), lpTokensAmount);
+
+        doExitTempusAMMGivenLP(
+            tempusAMM,
+            address(this),
+            msg.sender,
+            lpTokensAmount,
+            getAMMOrderedAmounts(tempusAMM.tempusPool(), principalAmountOutMin, yieldAmountOutMin),
+            toInternalBalances
+        );
+
+        assert(tempusAMM.balanceOf(address(this)) == 0);
+    }
+
+    /// @dev Withdraws liquidity from TempusAMM and redeems Shares to Yield Bearing or Backing Tokens
+    ///      Checks user's balance of principal shares and yield shares
+    ///      and exits AMM with exact amounts needed for redemption.
+    /// @notice `msg.sender` needs to approve `tempusAMM.tempusPool` for both Yields and Principals
+    ///         for `sharesAmount`
+    /// @notice `msg.sender` needs to approve controller for whole balance of LP token
+    /// @notice Transfers users' LP tokens to controller, then exits tempusAMM with `msg.sender` as recipient.
+    ///         After exit transfers remainder of LP tokens back to user
+    /// @notice Can fail if there is not enough user balance
+    /// @notice Only available before maturity since exiting AMM with exact amounts is disallowed after maturity
+    /// @param tempusAMM TempusAMM instance to withdraw liquidity from
+    /// @param sharesAmount Amount of Principals and Yields
+    /// @param toBackingToken If true redeems to backing token, otherwise redeems to yield bearing
+    function exitTempusAMMAndRedeem(
+        ITempusAMM tempusAMM,
+        uint256 sharesAmount,
+        bool toBackingToken
+    ) external {
+        ITempusPool tempusPool = tempusAMM.tempusPool();
+        require(!tempusPool.matured(), "Pool already finalized");
+        uint256 userPrincipalBalance = IERC20(address(tempusPool.principalShare())).balanceOf(msg.sender);
+        uint256 userYieldBalance = IERC20(address(tempusPool.yieldShare())).balanceOf(msg.sender);
+
+        uint256 ammExitAmountPrincipal = sharesAmount - userPrincipalBalance;
+        uint256 ammExitAmountYield = sharesAmount - userYieldBalance;
+
+        // transfer LP tokens to controller
+        uint256 userBalanceLP = tempusAMM.balanceOf(msg.sender);
+        tempusAMM.transferFrom(msg.sender, address(this), userBalanceLP);
+
+        doExitTempusAMMGivenAmountsOut(
+            tempusAMM,
+            address(this),
+            msg.sender,
+            getAMMOrderedAmounts(tempusPool, ammExitAmountPrincipal, ammExitAmountYield),
+            userBalanceLP,
+            false
+        );
+
+        // transfer remainder of LP tokens back to user
+        tempusAMM.transferFrom(address(this), msg.sender, tempusAMM.balanceOf(address(this)));
+
+        if (toBackingToken) {
+            redeemToBacking(tempusPool, sharesAmount, sharesAmount);
+        } else {
+            redeemToYieldBearing(tempusPool, sharesAmount, sharesAmount);
+        }
+    }
+
+    function doExitTempusAMMGivenLP(
+        ITempusAMM tempusAMM,
+        address sender,
+        address recipient,
+        uint256 lpTokensAmount,
+        uint256[] memory minAmountsOut,
+        bool toInternalBalances
+    ) private {
+        require(lpTokensAmount > 0, "LP token amount is 0");
+
+        (IVault vault, bytes32 poolId, IERC20[] memory ammTokens, ) = getAMMDetailsAndEnsureInitialized(tempusAMM);
+
+        IVault.ExitPoolRequest memory request = IVault.ExitPoolRequest({
+            assets: ammTokens,
+            minAmountsOut: minAmountsOut,
+            userData: abi.encode(uint8(ITempusAMM.ExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT), lpTokensAmount),
+            toInternalBalance: toInternalBalances
+        });
+        vault.exitPool(poolId, sender, payable(recipient), request);
+    }
+
+    function doExitTempusAMMGivenAmountsOut(
+        ITempusAMM tempusAMM,
+        address sender,
+        address recipient,
+        uint256[] memory amountsOut,
+        uint256 lpTokensAmountInMax,
+        bool toInternalBalances
+    ) private {
+        (IVault vault, bytes32 poolId, IERC20[] memory ammTokens, ) = getAMMDetailsAndEnsureInitialized(tempusAMM);
+
+        IVault.ExitPoolRequest memory request = IVault.ExitPoolRequest({
+            assets: ammTokens,
+            minAmountsOut: amountsOut,
+            userData: abi.encode(
+                uint8(ITempusAMM.ExitKind.BPT_IN_FOR_EXACT_TOKENS_OUT),
+                amountsOut,
+                lpTokensAmountInMax
+            ),
+            toInternalBalance: toInternalBalances
+        });
+        vault.exitPool(poolId, sender, payable(recipient), request);
+    }
+
+    function getAMMDetailsAndEnsureInitialized(ITempusAMM tempusAMM)
+        private
+        view
+        returns (
+            IVault vault,
+            bytes32 poolId,
+            IERC20[] memory ammTokens,
+            uint256[] memory ammBalances
+        )
+    {
+        vault = tempusAMM.getVault();
+        poolId = tempusAMM.getPoolId();
+        (ammTokens, ammBalances, ) = vault.getPoolTokens(poolId);
+        require(
+            ammTokens.length == 2 && ammBalances.length == 2 && ammBalances[0] > 0 && ammBalances[1] > 0,
+            "AMM not initialized"
+        );
+    }
+
     function getAMMBalancesRatio(uint256[] memory ammBalances) private pure returns (uint256[2] memory balancesRatio) {
         uint256 rate = ammBalances[0].divf18(ammBalances[1]);
 
         (balancesRatio[0], balancesRatio[1]) = rate > Fixed256x18.ONE
             ? (Fixed256x18.ONE, Fixed256x18.ONE.divf18(rate))
             : (rate, Fixed256x18.ONE);
+    }
+
+    function getAMMOrderedAmounts(
+        ITempusPool tempusPool,
+        uint256 principalAmount,
+        uint256 yieldAmount
+    ) private view returns (uint256[] memory) {
+        uint256[] memory amounts = new uint256[](2);
+        (amounts[0], amounts[1]) = (tempusPool.principalShare() < tempusPool.yieldShare())
+            ? (principalAmount, yieldAmount)
+            : (yieldAmount, principalAmount);
+        return amounts;
     }
 }

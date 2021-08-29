@@ -25,7 +25,7 @@ describeForEachPool("TempusController", (testPool:ITestPool) =>
 
     amm = testPool.amm;
     controller = testPool.tempus.controller;
-    await testPool.setupAccounts(owner, [[user1,/*ybt*/2000],[user2,/*ybt*/2000]]);
+    await testPool.setupAccounts(owner, [[user1,/*ybt*/1000000],[user2,/*ybt*/100000]]);
   });
 
   // TODO: refactor math (minimize toWei, fromWei, Number etc...). I think we should just use Decimal.js
@@ -148,6 +148,66 @@ describeForEachPool("TempusController", (testPool:ITestPool) =>
 
       expect(+await pool.principalShare.balanceOf(user2)).to.be.greaterThan(0, "Some Principals should be returned to user");
       expect(+await pool.yieldShare.balanceOf(user2)).to.be.equal(0, "ALL Yields should be deposited to AMM");
+    });
+  });
+
+  describe("Exit AMM", () =>
+  {
+    it("ExitAMM before maturity", async () =>
+    {
+      await initAMM(user1, /*ybtDeposit*/1000000, /*principals*/100000, /*yields*/1000000);
+      const beforeExitBalanceLP:number = +await testPool.amm.balanceOf(user1);
+      expect(beforeExitBalanceLP).to.be.within(181000, 182000);
+      await testPool.setInterestRate(1.1);
+      await testPool.fastForwardToMaturity();
+      await controller.exitTempusAmm(testPool, user1, 100000);
+      expect(+await testPool.amm.balanceOf(user1)).to.be.within(81000, 82000);
+      expect(+await testPool.tempus.yieldShare.balanceOf(user1)).to.be.within(550000, 551000);
+      expect(+await testPool.tempus.principalShare.balanceOf(user1)).to.be.within(955000, 956000);
+    });
+  });
+
+  describe("Exit AMM and Reedem", () => 
+  {
+    it("Exit AMM and redeem before maturity", async () => 
+    {
+      await initAMM(user1, /*ybtDeposit*/1000000, /*principals*/100000, /*yields*/1000000);
+
+      await controller.depositYieldBearing(user2, pool, 10000, user2);
+      await testPool.amm.provideLiquidity(user2, 1000, 10000, TempusAMMJoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT);
+      await controller.exitTempusAMMAndRedeem(testPool, user2, 9999, false);
+      expect(await pool.yieldShare.balanceOf(user2)).to.equal(0);
+      expect(await pool.principalShare.balanceOf(user2)).to.equal(0);
+      expect(+await amm.balanceOf(user2)).to.be.within(0.991, 0.993);
+      expect(await pool.yieldBearing.balanceOf(user2)).to.equal(99999);
+    });
+
+    it("Exit AMM and redeem to backing before maturity", async () => 
+    {
+      await initAMM(user1, /*ybtDeposit*/1000000, /*principals*/100000, /*yields*/1000000);
+      await controller.depositYieldBearing(user2, pool, 10000, user2);
+      await testPool.amm.provideLiquidity(user2, 1000, 10000, TempusAMMJoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT);
+      const reedemAction = controller.exitTempusAMMAndRedeem(testPool, user2, 9999, true);
+      if (testPool.type === PoolType.Lido) {
+        (await expectRevert(reedemAction)).to.equal("LidoTempusPool.withdrawFromUnderlyingProtocol not supported");
+      }
+      else {
+        await reedemAction;
+        expect(await pool.yieldShare.balanceOf(user2)).to.equal(0);
+        expect(await pool.principalShare.balanceOf(user2)).to.equal(0);
+        expect(+await amm.balanceOf(user2)).to.be.within(0.991, 0.993);
+        expect(await testPool.asset().balanceOf(user2)).to.equal(109999);
+      }
+    });
+
+    it("Exit AMM and redeem after maturity should revert", async () => 
+    {
+      await initAMM(user1, /*ybtDeposit*/1000000, /*principals*/100000, /*yields*/1000000);
+      await testPool.fastForwardToMaturity();
+
+      (await expectRevert(controller.exitTempusAMMAndRedeem(testPool, user2, 100000, false))).to.equal(
+        "Pool already finalized"
+      );
     });
   });
 });

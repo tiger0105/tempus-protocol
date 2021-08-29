@@ -133,4 +133,35 @@ export class TempusController extends ContractBase {
       pool.amm.address, toWei(tokenAmount), isBackingToken, toWei(minTYSRate), { value: toWei(ethValue) }
     );
   }
+
+  async exitTempusAMMAndRedeem(
+    pool: ITestPool,
+    user: SignerOrAddress,
+    sharesAmount: Number,
+    toBackingToken: boolean
+  ): Promise<Transaction> {
+    await pool.amm.contract.connect(user).approve(this.address, pool.amm.contract.balanceOf(addressOf(user)));
+    await pool.tempus.principalShare.approve(user, pool.tempus.address, sharesAmount);
+    await pool.tempus.yieldShare.approve(user, pool.tempus.address, sharesAmount);
+    return this.contract.connect(user).exitTempusAMMAndRedeem(
+      pool.amm.address,
+      toWei(sharesAmount),
+      toBackingToken
+    );
+  }
+
+  async exitTempusAmm(
+    pool: ITestPool,
+    user: SignerOrAddress,
+    lpTokensAmount: Number
+  ): Promise<Transaction> {
+    await pool.amm.contract.connect(user).approve(this.address, pool.amm.contract.balanceOf(addressOf(user)));
+    return this.contract.connect(user).exitTempusAMM(
+      pool.amm.address,
+      toWei(lpTokensAmount),
+      1,
+      1,
+      false
+    );
+  }
 }
