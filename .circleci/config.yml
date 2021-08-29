@@ -158,6 +158,25 @@ jobs:
           name: "Run mythx"
           command: yarn mythx-amm
 
+  runMythX-Misc:
+    executor:
+      name: node/default
+      tag: '15.11'
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: yarn
+      - run:
+          name: "Install MythX"
+          command: |
+            sudo apt update
+            sudo apt install python3-pip
+            sudo pip3 install python-dateutil==2.8.1
+            sudo yarn mythx-install
+      - run:
+          name: "Run mythx"
+          command: yarn mythx-misc
+
 workflows:
   code_coverage:
     jobs:
@@ -194,6 +213,9 @@ workflows:
   mythx_amm:
     jobs:
       - runMythX-AMM
+  mythx_misc:
+    jobs:
+      - runMythX-Misc
 
 notify:
   webhooks:
