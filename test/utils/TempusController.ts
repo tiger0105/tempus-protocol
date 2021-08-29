@@ -67,7 +67,7 @@ export class TempusController extends ContractBase {
    * @param yieldAmount How many yield shares to redeem
    */
   async redeemToBacking(user:SignerOrAddress, pool: TempusPool, principalAmount:NumberOrString, yieldAmount:NumberOrString): Promise<Transaction> {
-    return this.contract.connect(user).redeemToBacking(pool.address, this.toBigNum(principalAmount), this.toBigNum(yieldAmount));
+    return this.contract.connect(user).redeemToBacking(pool.address, addressOf(user), this.toBigNum(principalAmount), this.toBigNum(yieldAmount), addressOf(user));
   }
 
   /**
@@ -78,7 +78,7 @@ export class TempusController extends ContractBase {
    * @param yieldAmount How many yield shares to redeem
    */
   async redeemToYieldBearing(user:SignerOrAddress, pool: TempusPool, principalAmount:NumberOrString, yieldAmount:NumberOrString): Promise<Transaction> {
-    return this.contract.connect(user).redeemToYieldBearing(pool.address, this.toBigNum(principalAmount), this.toBigNum(yieldAmount));
+    return this.contract.connect(user).redeemToYieldBearing(pool.address, addressOf(user), this.toBigNum(principalAmount), this.toBigNum(yieldAmount), addressOf(user));
   }
 
   /**
