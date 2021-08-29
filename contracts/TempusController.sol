@@ -398,8 +398,8 @@ contract TempusController is PermanentlyOwnable {
         // send all shares to controller
         uint256 userPrincipalBalance = principalShare.balanceOf(msg.sender);
         uint256 userYieldBalance = yieldShare.balanceOf(msg.sender);
-        principalShare.transferFrom(msg.sender, address(this), userPrincipalBalance);
-        yieldShare.transferFrom(msg.sender, address(this), userYieldBalance);
+        principalShare.safeTransferFrom(msg.sender, address(this), userPrincipalBalance);
+        yieldShare.safeTransferFrom(msg.sender, address(this), userYieldBalance);
 
         uint256 userBalanceLP = tempusAMM.balanceOf(msg.sender);
 
