@@ -110,7 +110,6 @@ contract TempusController is ReentrancyGuard, Ownable {
             IERC20[] memory ammTokens,
             uint256[] memory ammBalances
         ) = _getAMMDetailsAndEnsureInitialized(tempusAMM);
-
         _provideLiquidity(msg.sender, vault, poolId, ammTokens, ammBalances, sharesAmount, msg.sender);
     }
 
@@ -144,6 +143,7 @@ contract TempusController is ReentrancyGuard, Ownable {
     ) external nonReentrant {
         require(recipient != address(0), "recipient can not be 0x0");
         requireRegistered(address(targetPool));
+        require(targetPool.version() == TEMPUS_INTERFACE_VERSION);
         _depositYieldBearing(targetPool, yieldTokenAmount, recipient);
     }
 
@@ -159,6 +159,7 @@ contract TempusController is ReentrancyGuard, Ownable {
     ) external payable nonReentrant {
         require(recipient != address(0), "recipient can not be 0x0");
         requireRegistered(address(targetPool));
+        require(targetPool.version() == TEMPUS_INTERFACE_VERSION);
         _depositBacking(targetPool, backingTokenAmount, recipient);
     }
 
@@ -178,6 +179,7 @@ contract TempusController is ReentrancyGuard, Ownable {
     ) external nonReentrant {
         require(recipient != address(0), "recipient can not be 0x0");
         requireRegistered(address(targetPool));
+        require(targetPool.version() == TEMPUS_INTERFACE_VERSION);
         _redeemToYieldBearing(targetPool, msg.sender, principalAmount, yieldAmount, recipient);
     }
 
@@ -197,6 +199,7 @@ contract TempusController is ReentrancyGuard, Ownable {
     ) external nonReentrant {
         require(recipient != address(0), "recipient can not be 0x0");
         requireRegistered(address(targetPool));
+        require(targetPool.version() == TEMPUS_INTERFACE_VERSION);
         _redeemToBacking(targetPool, msg.sender, principalAmount, yieldAmount, recipient);
     }
 
@@ -305,6 +308,7 @@ contract TempusController is ReentrancyGuard, Ownable {
     function transferFees(ITempusPool targetPool, address recipient) external nonReentrant {
         require(recipient != address(0), "recipient can not be 0x0");
         requireRegistered(address(targetPool));
+        require(targetPool.version() == TEMPUS_INTERFACE_VERSION);
         targetPool.transferFees(msg.sender, recipient);
     }
 
