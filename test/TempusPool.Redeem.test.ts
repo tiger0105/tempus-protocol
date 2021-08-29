@@ -16,6 +16,7 @@ describeForEachPool("TempusPool Redeem", (pool:ITestPool) =>
     await expect(pool.redeemToYBT(user, 100, 100)).to.emit(pool.tempus.controller.contract, 'Redeemed').withArgs(
       pool.tempus.address, // pool
       user.address, // redeemer
+      user.address, // recipient
       toWei(100), // principal amount
       toWei(100), // yield amount
       toWei(100), // yield bearing token amount

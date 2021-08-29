@@ -35,8 +35,8 @@ contract TempusController is PermanentlyOwnable {
 
     /// @dev Event emitted on a successful BT/YBT redemption.
     /// @param pool The Tempus Pool from which Tempus Shares were redeemed
-    /// @param redeemer Address of the user who wants to redeem Tempus Principal Shares (TPS)
-    ///                 and Tempus Yield Shares (TYS) to Yield Bearing Tokens (YBT).
+    /// @param redeemer Address of the user whose Shares (Principals and Yields) are redeemed
+    /// @param recipient Address of user that recieved Yield Bearing Tokens
     /// @param principalShareAmount Number of Tempus Principal Shares (TPS) to redeem into the Yield Bearing Token (YBT)
     /// @param yieldShareAmount Number of Tempus Yield Shares (TYS) to redeem into the Yield Bearing Token (YBT)
     /// @param yieldBearingAmount Number of Yield bearing tokens redeemed from the pool
@@ -45,6 +45,7 @@ contract TempusController is PermanentlyOwnable {
     event Redeemed(
         address indexed pool,
         address indexed redeemer,
+        address indexed recipient,
         uint256 principalShareAmount,
         uint256 yieldShareAmount,
         uint256 yieldBearingAmount,
@@ -230,29 +231,34 @@ contract TempusController is PermanentlyOwnable {
     }
 
     /// @dev Redeem TPS+TYS held by msg.sender into Yield Bearing Tokens
-    ///      `msg.sender` must approve TPS and TYS amounts to this TempusPool.
-    ///      `msg.sender` will receive the backing tokens
-    ///      NOTE Before maturity, principalAmount must equal to yieldAmount.
+    /// @notice `msg.sender` must approve Principals and Yields amounts to `targetPool`
+    /// @notice `msg.sender` will receive yield bearing tokens
+    /// @notice Before maturity, `principalAmount` must equal to `yieldAmount`
     /// @param targetPool The Tempus Pool from which to redeem Tempus Shares
-    /// @param principalAmount Amount of Tempus Principal Shares (TPS) to redeem
-    /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem
+    /// @param sender Address of user whose Shares are going to be redeemed
+    /// @param principalAmount Amount of Tempus Principals to redeem
+    /// @param yieldAmount Amount of Tempus Yields to redeem
+    /// @param recipient Address of user that will recieve yield bearing tokens
     function redeemToYieldBearing(
         ITempusPool targetPool,
+        address sender,
         uint256 principalAmount,
-        uint256 yieldAmount
+        uint256 yieldAmount,
+        address recipient
     ) public {
         require((principalAmount > 0) || (yieldAmount > 0), "principalAmount and yieldAmount cannot both be 0");
 
         (uint256 redeemedYBT, uint256 redeemedBT, uint256 interestRate) = targetPool.redeem(
-            msg.sender,
+            sender,
             principalAmount,
             yieldAmount,
-            msg.sender
+            recipient
         );
 
         emit Redeemed(
             address(targetPool),
-            msg.sender,
+            sender,
+            recipient,
             principalAmount,
             yieldAmount,
             redeemedYBT,
@@ -262,29 +268,35 @@ contract TempusController is PermanentlyOwnable {
     }
 
     /// @dev Redeem TPS+TYS held by msg.sender into Backing Tokens
-    ///      `msg.sender` must approve TPS and TYS amounts to this TempusPool.
-    ///      `msg.sender` will receive the backing tokens
-    ///      NOTE Before maturity, principalAmount must equal to yieldAmount.
+    /// @notice `sender` must approve Principals and Yields amounts to this TempusPool
+    /// @notice `recipient` will receive the backing tokens
+    /// @notice Before maturity, `principalAmount` must equal to `yieldAmount`
     /// @param targetPool The Tempus Pool from which to redeem Tempus Shares
-    /// @param principalAmount Amount of Tempus Principal Shares (TPS) to redeem
-    /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem
+    /// @param targetPool The Tempus Pool from which to redeem Tempus Shares
+    /// @param sender Address of user whose Shares are going to be redeemed
+    /// @param principalAmount Amount of Tempus Principals to redeem
+    /// @param yieldAmount Amount of Tempus Yields to redeem
+    /// @param recipient Address of user that will recieve yield bearing tokens
     function redeemToBacking(
         ITempusPool targetPool,
+        address sender,
         uint256 principalAmount,
-        uint256 yieldAmount
+        uint256 yieldAmount,
+        address recipient
     ) public {
         require((principalAmount > 0) || (yieldAmount > 0), "principalAmount and yieldAmount cannot both be 0");
 
         (uint256 redeemedYBT, uint256 redeemedBT, uint256 interestRate) = targetPool.redeemToBacking(
-            msg.sender,
+            sender,
             principalAmount,
             yieldAmount,
-            msg.sender
+            sender
         );
 
         emit Redeemed(
             address(targetPool),
-            msg.sender,
+            sender,
+            recipient,
             principalAmount,
             yieldAmount,
             redeemedYBT,
@@ -365,9 +377,9 @@ contract TempusController is PermanentlyOwnable {
         tempusAMM.transferFrom(address(this), msg.sender, tempusAMM.balanceOf(address(this)));
 
         if (toBackingToken) {
-            redeemToBacking(tempusPool, sharesAmount, sharesAmount);
+            redeemToBacking(tempusPool, msg.sender, sharesAmount, sharesAmount, msg.sender);
         } else {
-            redeemToYieldBearing(tempusPool, sharesAmount, sharesAmount);
+            redeemToYieldBearing(tempusPool, msg.sender, sharesAmount, sharesAmount, msg.sender);
         }
     }
 
