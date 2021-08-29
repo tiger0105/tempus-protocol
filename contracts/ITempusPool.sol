@@ -4,6 +4,8 @@ pragma abicoder v2;
 
 import "./token/IPoolShare.sol";
 
+uint256 constant TEMPUS_INTERFACE_VERSION = 1;
+
 interface ITempusFees {
     // The fees are in terms of yield bearing token (YBT).
     struct FeesConfig {
@@ -40,7 +42,7 @@ interface ITempusFees {
 
 interface ITempusPool is ITempusFees {
     /// @return The version of the pool.
-    function version() external view returns (uint);
+    function version() external view returns (uint256);
 
     /// @return The name of underlying protocol, for example "Aave" for Aave protocol
     function protocolName() external view returns (bytes32);

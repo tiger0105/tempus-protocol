@@ -24,7 +24,7 @@ abstract contract TempusPool is ITempusPool {
     using UntrustedERC20 for IERC20;
     using Fixed256xVar for uint256;
 
-    uint public constant override version = 1;
+    uint256 public constant override version = TEMPUS_INTERFACE_VERSION;
 
     address public immutable override yieldBearingToken;
     address public immutable override backingToken;
