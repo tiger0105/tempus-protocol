@@ -61,7 +61,7 @@ describe('TempusPool <> Lido', function () {
     const btBalancePreSigner2 = await tempusPool.yieldBearing.balanceOf(signer2);
     
     await tempusPool.controller.depositBacking(signer1, tempusPool, depositAmount, signer1, depositAmount); // deposit some BT to the pool before 
-    await lido.connect(signer2).submit('0x1234567895e8bbcfc9581d2e864a68feb6a076d3', { value: toWei(depositAmount) }); // deposit directly to Aave
+    await lido.connect(signer2).submit('0x1234567895e8bbcfc9581d2e864a68feb6a076d3', { value: toWei(depositAmount) }); // deposit directly to Lido
     
     // This increases Lido's yield
     const { beaconValidators, beaconBalance } = await lido.contract.getBeaconStat();
