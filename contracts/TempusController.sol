@@ -42,6 +42,7 @@ contract TempusController is PermanentlyOwnable {
     /// @param yieldBearingAmount Number of Yield bearing tokens redeemed from the pool
     /// @param backingTokenValue Value of @param yieldBearingAmount expressed in backing tokens
     /// @param interestRate Interest Rate of the underlying pool from Yield Bearing Tokens to the underlying asset
+    /// @param isEarlyRedeem True in case of early redemption, otherwise false
     event Redeemed(
         address indexed pool,
         address indexed redeemer,
@@ -50,7 +51,8 @@ contract TempusController is PermanentlyOwnable {
         uint256 yieldShareAmount,
         uint256 yieldBearingAmount,
         uint256 backingTokenValue,
-        uint256 interestRate
+        uint256 interestRate,
+        bool isEarlyRedeem
     );
 
     /// @dev Atomically deposits YBT/BT to TempusPool and provides liquidity
@@ -256,6 +258,7 @@ contract TempusController is PermanentlyOwnable {
         );
 
         uint256 redeemedBT = targetPool.numAssetsPerYieldToken(redeemedYBT, targetPool.currentInterestRate());
+        bool earlyRedeem = !targetPool.matured();
         emit Redeemed(
             address(targetPool),
             sender,
@@ -264,7 +267,8 @@ contract TempusController is PermanentlyOwnable {
             yieldAmount,
             redeemedYBT,
             redeemedBT,
-            interestRate
+            interestRate,
+            earlyRedeem
         );
     }
 
@@ -294,6 +298,7 @@ contract TempusController is PermanentlyOwnable {
             recipient
         );
 
+        bool earlyRedeem = !targetPool.matured();
         emit Redeemed(
             address(targetPool),
             sender,
@@ -302,7 +307,8 @@ contract TempusController is PermanentlyOwnable {
             yieldAmount,
             redeemedYBT,
             redeemedBT,
-            interestRate
+            interestRate,
+            earlyRedeem
         );
     }
 
