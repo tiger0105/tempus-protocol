@@ -139,7 +139,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         (mintedShares, , rate) = _deposit(depositedYBT, recipient);
     }
 
-    function deposit(uint256 yieldTokenAmount, address recipient)
+    function deposit(address sender, uint256 yieldTokenAmount, address recipient)
         external
         override
         onlyController
@@ -151,7 +151,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     {
         require(yieldTokenAmount > 0, "yieldTokenAmount must be greater than 0");
         // Collect the deposit
-        IERC20(yieldBearingToken).safeTransferFrom(msg.sender, address(this), yieldTokenAmount);
+        IERC20(yieldBearingToken).safeTransferFrom(sender, address(this), yieldTokenAmount);
 
         (mintedShares, depositedBT, rate) = _deposit(yieldTokenAmount, recipient);
     }

@@ -43,7 +43,7 @@ export class TempusController extends ContractBase {
    * @param ethValue value of ETH to send with the tx
    */
   async depositYieldBearing(user:SignerOrAddress, pool: TempusPool, yieldBearingAmount:NumberOrString, recipient:SignerOrAddress = user, ethValue: NumberOrString = 0): Promise<Transaction> {
-    await pool.yieldBearing.approve(user, this.contract.address, yieldBearingAmount);
+    await pool.yieldBearing.approve(user, pool.address, yieldBearingAmount);
     return this.connect(user).depositYieldBearing(pool.address, this.toBigNum(yieldBearingAmount), addressOf(recipient), { value: toWei(ethValue) });
   }
 

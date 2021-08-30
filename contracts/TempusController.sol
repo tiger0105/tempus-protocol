@@ -163,6 +163,7 @@ contract TempusController is PermanentlyOwnable {
     }
 
     /// @dev Deposits Yield Bearing Tokens to a Tempus Pool.
+    /// @notice `msg.sender` needs to approve `targetPool` for Yield Bearing Token with `yieldTokenAmount`
     /// @param targetPool The Tempus Pool to which tokens will be deposited
     /// @param yieldTokenAmount amount of Yield Bearing Tokens to be deposited
     /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
@@ -173,12 +174,9 @@ contract TempusController is PermanentlyOwnable {
     ) public {
         require(yieldTokenAmount > 0, "yieldTokenAmount is 0");
 
-        IERC20 yieldBearingToken = IERC20(targetPool.yieldBearingToken());
-
         // Deposit to TempusPool
-        yieldBearingToken.safeTransferFrom(msg.sender, address(this), yieldTokenAmount);
-        yieldBearingToken.safeIncreaseAllowance(address(targetPool), yieldTokenAmount);
         (uint256 mintedShares, uint256 depositedBT, uint256 interestRate) = targetPool.deposit(
+            msg.sender,
             yieldTokenAmount,
             recipient
         );
@@ -196,6 +194,7 @@ contract TempusController is PermanentlyOwnable {
 
     /// @dev Deposits Backing Tokens into the underlying protocol and
     ///      then deposited the minted Yield Bearing Tokens to the Tempus Pool.
+    /// @notice msg.sender needs to approve controller for `backingTokenAmount` of backing tokens
     /// @param targetPool The Tempus Pool to which tokens will be deposited
     /// @param backingTokenAmount amount of Backing Tokens to be deposited into the underlying protocol
     /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)

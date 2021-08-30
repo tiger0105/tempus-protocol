@@ -82,7 +82,7 @@ interface ITempusPool is ITempusFees {
     /// @return mintedShares Amount of TPS and TYS minted to `recipient`
     /// @return depositedBT The YBT value deposited, denominated as Backing Tokens
     /// @return rate The interest rate at the time of the deposit
-    function deposit(uint256 yieldTokenAmount, address recipient)
+    function deposit(address sender, uint256 yieldTokenAmount, address recipient)
         external
         returns (
             uint256 mintedShares,
