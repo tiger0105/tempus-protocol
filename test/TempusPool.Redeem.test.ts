@@ -21,7 +21,8 @@ describeForEachPool("TempusPool Redeem", (pool:ITestPool) =>
       toWei(100), // yield amount
       toWei(100), // yield bearing token amount
       toWei(100), // backing token amount
-      toWei(1.0)  // rate
+      toWei(1.0), // rate
+      true // early redeem
     );
   });
 
