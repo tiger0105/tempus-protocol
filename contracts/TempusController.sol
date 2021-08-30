@@ -290,7 +290,7 @@ contract TempusController is PermanentlyOwnable {
             sender,
             principalAmount,
             yieldAmount,
-            sender
+            recipient
         );
 
         emit Redeemed(
@@ -380,6 +380,55 @@ contract TempusController is PermanentlyOwnable {
             redeemToBacking(tempusPool, msg.sender, sharesAmount, sharesAmount, msg.sender);
         } else {
             redeemToYieldBearing(tempusPool, msg.sender, sharesAmount, sharesAmount, msg.sender);
+        }
+    }
+
+    /// @dev Withdraws ALL liquidity from TempusAMM and redeems Shares to Yield Bearing or Backing Tokens
+    /// @notice `msg.sender` needs to approve controller for whole balance for both Yields and Principals
+    /// @notice `msg.sender` needs to approve controller for whole balance of LP token
+    /// @notice Can fail if there is not enough user balance
+    /// @param tempusAMM TempusAMM instance to withdraw liquidity from
+    /// @param toBackingToken If true redeems to backing token, otherwise redeems to yield bearing
+    function completeExitAndRedeem(ITempusAMM tempusAMM, bool toBackingToken) external {
+        ITempusPool tempusPool = tempusAMM.tempusPool();
+        require(tempusPool.matured(), "Not supported before maturity");
+
+        IERC20 principalShare = IERC20(address(tempusPool.principalShare()));
+        IERC20 yieldShare = IERC20(address(tempusPool.yieldShare()));
+        // send all shares to controller
+        uint256 userPrincipalBalance = principalShare.balanceOf(msg.sender);
+        uint256 userYieldBalance = yieldShare.balanceOf(msg.sender);
+        principalShare.safeTransferFrom(msg.sender, address(this), userPrincipalBalance);
+        yieldShare.safeTransferFrom(msg.sender, address(this), userYieldBalance);
+
+        uint256 userBalanceLP = tempusAMM.balanceOf(msg.sender);
+
+        if (userBalanceLP > 0) {
+            // if there is LP balance, transfer to controller
+            tempusAMM.transferFrom(msg.sender, address(this), userBalanceLP);
+
+            uint256[] memory minAmountsOut = new uint256[](2);
+
+            // exit amm and sent shares to controller
+            doExitTempusAMMGivenLP(tempusAMM, address(this), address(this), userBalanceLP, minAmountsOut, false);
+        }
+
+        if (toBackingToken) {
+            redeemToBacking(
+                tempusPool,
+                address(this),
+                principalShare.balanceOf(address(this)),
+                yieldShare.balanceOf(address(this)),
+                msg.sender
+            );
+        } else {
+            redeemToYieldBearing(
+                tempusPool,
+                address(this),
+                principalShare.balanceOf(address(this)),
+                yieldShare.balanceOf(address(this)),
+                msg.sender
+            );
         }
     }
 

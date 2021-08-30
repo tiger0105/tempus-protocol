@@ -197,15 +197,14 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         override
         onlyController
         returns (
-            uint256 redeemableYieldTokens,
-            uint256 redeemableBackingTokens,
+            uint256 redeemedYieldTokens,
+            uint256 redeemedBackingTokens,
             uint256 rate
         )
     {
-        (redeemableYieldTokens, redeemableBackingTokens, rate) = burnShares(from, principalAmount, yieldAmount);
+        (redeemedYieldTokens, , rate) = burnShares(from, principalAmount, yieldAmount);
 
-        uint256 backingTokensReceived = withdrawFromUnderlyingProtocol(redeemableYieldTokens, recipient);
-        assert(backingTokensReceived == redeemableBackingTokens);
+        redeemedBackingTokens = withdrawFromUnderlyingProtocol(redeemedYieldTokens, recipient);
     }
 
     function redeem(
@@ -218,14 +217,14 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         override
         onlyController
         returns (
-            uint256 redeemableYieldTokens,
-            uint256 redeemableBackingTokens,
+            uint256 redeemedYieldTokens,
+            uint256 redeemedBackingTokens,
             uint256 rate
         )
     {
-        (redeemableYieldTokens, redeemableBackingTokens, rate) = burnShares(from, principalAmount, yieldAmount);
+        (redeemedYieldTokens, redeemedBackingTokens, rate) = burnShares(from, principalAmount, yieldAmount);
 
-        IERC20(yieldBearingToken).safeTransfer(recipient, redeemableYieldTokens);
+        IERC20(yieldBearingToken).safeTransfer(recipient, redeemedYieldTokens);
     }
 
     function burnShares(

@@ -164,4 +164,12 @@ export class TempusController extends ContractBase {
       false
     );
   }
+
+  async completeExitAndRedeem(pool:ITestPool, user: SignerOrAddress, toBacking: boolean): Promise<Transaction> {
+    await pool.amm.contract.connect(user).approve(this.address, pool.amm.contract.balanceOf(addressOf(user)));
+    await pool.tempus.principalShare.connect(user).approve(this.address, pool.tempus.principalShare.contract.balanceOf(addressOf(user)));
+    await pool.tempus.yieldShare.connect(user).approve(this.address, pool.tempus.yieldShare.contract.balanceOf(addressOf(user)));
+    
+    return this.contract.connect(user).completeExitAndRedeem(pool.amm.address, toBacking);
+  }
 }

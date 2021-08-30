@@ -69,13 +69,11 @@ contract CompoundTempusPool is TempusPool {
         override
         returns (uint256 backingTokenAmount)
     {
-        // -- deposit wrapper now owns YBT
+        // tempus pool owns YBT
         assert(cToken.balanceOf(address(this)) >= yieldBearingTokensAmount);
-
-        IERC20(backingToken).safeIncreaseAllowance(msg.sender, yieldBearingTokensAmount);
         require(cToken.redeem(yieldBearingTokensAmount) == 0, "CErc20 redeem failed");
 
-        uint256 backing = (yieldBearingTokensAmount * cToken.exchangeRateStored()) / 1e18;
+        uint256 backing = (yieldBearingTokensAmount * cToken.exchangeRateCurrent()) / 1e18;
         IERC20(backingToken).safeTransfer(recipient, backing);
 
         return backing;
