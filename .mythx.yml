@@ -4,6 +4,10 @@ format: json
 analyze:
     mode: standard
     min-severity: medium
+    blacklist:
+        # Floating pragma is allowed
+        - 103
+        - 120
     remappings:
         - "@openzeppelin/=./node_modules/@openzeppelin/"
         - "@balancer-labs/=./node_modules/@balancer-labs/"
