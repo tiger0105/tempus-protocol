@@ -202,7 +202,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
             uint256 rate
         )
     {
-        (redeemedYieldTokens, , rate) = burnShares(from, principalAmount, yieldAmount);
+        (redeemedYieldTokens, rate) = burnShares(from, principalAmount, yieldAmount);
 
         redeemedBackingTokens = withdrawFromUnderlyingProtocol(redeemedYieldTokens, recipient);
     }
@@ -212,17 +212,8 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         uint256 principalAmount,
         uint256 yieldAmount,
         address recipient
-    )
-        external
-        override
-        onlyController
-        returns (
-            uint256 redeemedYieldTokens,
-            uint256 redeemedBackingTokens,
-            uint256 rate
-        )
-    {
-        (redeemedYieldTokens, redeemedBackingTokens, rate) = burnShares(from, principalAmount, yieldAmount);
+    ) external override onlyController returns (uint256 redeemedYieldTokens, uint256 rate) {
+        (redeemedYieldTokens, rate) = burnShares(from, principalAmount, yieldAmount);
 
         IERC20(yieldBearingToken).safeTransfer(recipient, redeemedYieldTokens);
     }
@@ -231,14 +222,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         address from,
         uint256 principalAmount,
         uint256 yieldAmount
-    )
-        internal
-        returns (
-            uint256,
-            uint256,
-            uint256
-        )
-    {
+    ) internal returns (uint256 redeemedYieldTokens, uint256 interestRate) {
         require(IERC20(address(principalShare)).balanceOf(from) >= principalAmount, "Insufficient principals.");
         require(IERC20(address(yieldShare)).balanceOf(from) >= yieldAmount, "Insufficient yields.");
 
@@ -250,24 +234,15 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         YieldShare(address(yieldShare)).burnFrom(from, yieldAmount);
 
         uint256 currentRate = updateInterestRate(yieldBearingToken);
-        (uint256 redeemableYieldTokens, uint256 redeemableBackingTokens, uint256 interestRate) = getRedemptionAmounts(
-            principalAmount,
-            yieldAmount,
-            currentRate
-        );
+        (redeemedYieldTokens, , interestRate) = getRedemptionAmounts(principalAmount, yieldAmount, currentRate);
 
         // Collect fees on redeem
         uint256 redeemFees = matured ? feesConfig.matureRedeemPercent : feesConfig.earlyRedeemPercent;
         if (redeemFees != 0) {
-            uint256 yieldTokensFee = redeemableYieldTokens.mulf18(redeemFees);
-            uint256 backingTokensFee = redeemableBackingTokens.mulf18(redeemFees);
-            redeemableYieldTokens -= yieldTokensFee; // Apply fee
-            redeemableBackingTokens -= backingTokensFee; // Apply fee
-
+            uint256 yieldTokensFee = redeemedYieldTokens.mulf18(redeemFees);
+            redeemedYieldTokens -= yieldTokensFee; // Apply fee
             totalFees += yieldTokensFee;
         }
-
-        return (redeemableYieldTokens, redeemableBackingTokens, interestRate);
     }
 
     function getRedemptionAmounts(
@@ -390,18 +365,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     /// @return Stored Interest Rate as an 1e18 decimal
     function storedInterestRate(address token) internal view virtual returns (uint256);
 
-    /// @dev This returns actual Backing Token amount for amount of YBT (Yield Bearing Tokens)
-    ///      For example, in case of Aave and Lido the result is 1:1,
-    ///      and for compound is `yieldTokens * currentInterestRate`
-    /// @param yieldTokens Amount of YBT
-    /// @param interestRate The current interest rate
-    /// @return Amount of Backing Tokens for specified @param yieldTokens
-    function numAssetsPerYieldToken(uint yieldTokens, uint interestRate) public pure virtual returns (uint);
+    function numYieldTokensPerAsset(uint backingTokens, uint interestRate) public view virtual override returns (uint);
 
-    /// @dev This returns amount of YBT (Yield Bearing Tokens) that can be converted
-    ///      from @param backingTokens Backing Tokens
-    /// @param backingTokens Amount of Backing Tokens
-    /// @param interestRate The current interest rate
-    /// @return Amount of YBT for specified @param backingTokens
-    function numYieldTokensPerAsset(uint backingTokens, uint interestRate) public view virtual returns (uint);
+    function numAssetsPerYieldToken(uint yieldTokens, uint interestRate) public pure virtual override returns (uint);
 }

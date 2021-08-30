@@ -248,13 +248,14 @@ contract TempusController is PermanentlyOwnable {
     ) public {
         require((principalAmount > 0) || (yieldAmount > 0), "principalAmount and yieldAmount cannot both be 0");
 
-        (uint256 redeemedYBT, uint256 redeemedBT, uint256 interestRate) = targetPool.redeem(
+        (uint256 redeemedYBT, uint256 interestRate) = targetPool.redeem(
             sender,
             principalAmount,
             yieldAmount,
             recipient
         );
 
+        uint256 redeemedBT = targetPool.numAssetsPerYieldToken(redeemedYBT, targetPool.currentInterestRate());
         emit Redeemed(
             address(targetPool),
             sender,

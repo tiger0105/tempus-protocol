@@ -116,20 +116,13 @@ interface ITempusPool is ITempusFees {
     /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem for YBT
     /// @param recipient Address to which redeemed YBT will be sent
     /// @return redeemableYieldTokens Amount of Yield Bearing Tokens redeemed to `recipient`
-    /// @return redeemableBackingTokens Amount of Yield Bearing Tokens redeemed to `recipient`, denominated in BT
     /// @return rate The interest rate at the time of the redemption
     function redeem(
         address from,
         uint256 principalAmount,
         uint256 yieldAmount,
         address recipient
-    )
-        external
-        returns (
-            uint256 redeemableYieldTokens,
-            uint256 redeemableBackingTokens,
-            uint256 rate
-        );
+    ) external returns (uint256 redeemableYieldTokens, uint256 rate);
 
     /// Redeem TPS+TYS held by msg.sender into backing tokens
     ///      `msg.sender` must approve TPS and TYS amounts to this TempusPool.
@@ -181,4 +174,19 @@ interface ITempusPool is ITempusFees {
     /// Calculated with stored interest rates
     /// @return Rate of one Tempus Principal Share expressed in Asset Tokens
     function pricePerPrincipalShareStored() external view returns (uint256);
+
+    /// @dev This returns actual Backing Token amount for amount of YBT (Yield Bearing Tokens)
+    ///      For example, in case of Aave and Lido the result is 1:1,
+    ///      and for compound is `yieldTokens * currentInterestRate`
+    /// @param yieldTokens Amount of YBT
+    /// @param interestRate The current interest rate
+    /// @return Amount of Backing Tokens for specified @param yieldTokens
+    function numAssetsPerYieldToken(uint yieldTokens, uint interestRate) external pure returns (uint);
+
+    /// @dev This returns amount of YBT (Yield Bearing Tokens) that can be converted
+    ///      from @param backingTokens Backing Tokens
+    /// @param backingTokens Amount of Backing Tokens
+    /// @param interestRate The current interest rate
+    /// @return Amount of YBT for specified @param backingTokens
+    function numYieldTokensPerAsset(uint backingTokens, uint interestRate) external view returns (uint);
 }
