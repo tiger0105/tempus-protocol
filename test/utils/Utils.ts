@@ -9,6 +9,21 @@ export async function blockTimestamp() : Promise<number> {
 }
 
 /**
+ * Mines a block
+ */
+ export async function evmMine(): Promise<void> {
+  await ethers.provider.send("evm_mine", []);
+}
+
+/**
+ * sets the current EVM automining behavior.
+ * if true - a block is mined for every sent transaction (default is true)
+ */
+ export async function evmSetAutomine(automine: boolean): Promise<void> {
+  await ethers.provider.send("evm_setAutomine", [automine]);
+}
+
+/**
  * Increase current EVM time by seconds
  */
 export async function increaseTime(addSeconds: number) : Promise<void> {
