@@ -115,7 +115,7 @@ contract TempusController is PermanentlyOwnable {
     /// @param tempusAMM Tempus AMM to use to swap TYS for TPS
     /// @param tokenAmount Amount of YBT/BT to be deposited
     /// @param isBackingToken specifies whether the deposited asset is the Backing Token or Yield Bearing Token
-    /// @param minTYSRate Minimum TYS rate (denominated in TPS) to receive in exchange to TPS
+    /// @param minTYSRate Minimum exchange rate of TYS (denominated in TPS) to receive in exchange for TPS
     function depositAndFix(
         ITempusAMM tempusAMM,
         uint256 tokenAmount,
@@ -157,6 +157,7 @@ contract TempusController is PermanentlyOwnable {
         uint256 minReturn = swapAmount.mulf18(minTYSRate);
         vault.swap(singleSwap, fundManagement, minReturn, block.timestamp);
 
+        // At this point all TYS must be swapped for TPS
         uint256 TPSBalance = principalShares.balanceOf(address(this));
         assert(TPSBalance > 0);
         assert(yieldShares.balanceOf(address(this)) == 0);
