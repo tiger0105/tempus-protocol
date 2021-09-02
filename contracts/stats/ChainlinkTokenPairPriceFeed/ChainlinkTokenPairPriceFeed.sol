@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.6;
 
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+
 import "./IChainlinkAggregator.sol";
 import "./IENS.sol";
 import "../ITokenPairPriceFeed.sol";
@@ -23,8 +25,6 @@ abstract contract ChainlinkTokenPairPriceFeed is ITokenPairPriceFeed {
 
         (, int256 latestRate, , , ) = chainLinkAggregator.latestRoundData();
 
-        require(latestRate >= 0, "latest chainlink rate too small"); // prevents underflow when casting to uint256
-
-        return (uint256(latestRate), 10**chainLinkAggregator.decimals());
+        return (SafeCast.toUint256(latestRate), 10**chainLinkAggregator.decimals());
     }
 }
