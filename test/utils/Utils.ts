@@ -35,8 +35,15 @@ export async function increaseTime(addSeconds: number) : Promise<void> {
  * Set current EVM time
  */
 export async function setEvmTime(timestamp:number) : Promise<void> {
-  await ethers.provider.send("evm_setNextBlockTimestamp", [timestamp]);
+  await setNextBlockTimestamp(timestamp);
   await ethers.provider.send("evm_mine", []);
+}
+
+/**
+ * Set The timestamp of the next block (without mining it)
+ */
+export async function setNextBlockTimestamp(timestamp:number) : Promise<void> {
+  await ethers.provider.send("evm_setNextBlockTimestamp", [timestamp]);
 }
 
 /**

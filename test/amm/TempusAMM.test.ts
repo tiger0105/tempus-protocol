@@ -1,13 +1,14 @@
 import { expect } from "chai";
 import { BigNumber } from "ethers";
-import { fromWei } from "../utils/Decimal";
+import { fromWei, NumberOrString } from "../utils/Decimal";
 import { Signer } from "../utils/ContractBase";
 import { PoolType, TempusPool } from "../utils/TempusPool";
-import { expectRevert, increaseTime } from "../utils/Utils";
+import { evmMine, evmSetAutomine, expectRevert, increaseTime } from "../utils/Utils";
 import { TempusAMM, TempusAMMJoinKind } from "../utils/TempusAMM";
 import { describeForEachPool } from "../pool-utils/MultiPoolTestSuite";
 import { ITestPool } from "../pool-utils/ITestPool";
 import exp = require("constants");
+import { ethers } from "hardhat";
 
 enum SwapType {
   SWAP_GIVEN_IN,
@@ -16,8 +17,8 @@ enum SwapType {
 
 interface SwapTestRun {
   amplification:number;
-  swapAmountIn:number;
-  swapAmountOut: number;
+  swapAmountIn:NumberOrString;
+  swapAmountOut: NumberOrString;
   principalIn:boolean;
   swapType:SwapType
 }
@@ -83,13 +84,56 @@ describeForEachPool("TempusAMM", (testFixture:ITestPool) =>
     } else {
       await tempusAMM.swapGivenOut(owner, tokenIn.address, tokenOut.address, swapTest.swapAmountOut);
     }
+    
+    // mine a block in case the current test case has automining set to false (otherwise expect functions would fail...)
+    await evmMine();
 
     const postSwapTokenInBalance:BigNumber = await tokenIn.contract.balanceOf(owner.address);
     const postSwapTokenOutBalance:BigNumber = await tokenOut.contract.balanceOf(owner.address);
-  
-    expect(+fromWei(preSwapTokenInBalance.sub(postSwapTokenInBalance))).to.be.within(swapTest.swapAmountIn * 0.9999, swapTest.swapAmountIn * 1.0001);
-    expect(+fromWei(postSwapTokenOutBalance.sub(preSwapTokenOutBalance))).to.be.within(swapTest.swapAmountOut * 0.9999, swapTest.swapAmountOut * 1.0001);
+    
+    expect(+fromWei(preSwapTokenInBalance.sub(postSwapTokenInBalance))).to.be.within(+swapTest.swapAmountIn * 0.9999, +swapTest.swapAmountIn * 1.0001);
+    expect(+fromWei(postSwapTokenOutBalance.sub(preSwapTokenOutBalance))).to.be.within(+swapTest.swapAmountOut * 0.9999, +swapTest.swapAmountOut * 1.0001);
   }
+
+  it("[getExpectedReturnGivenIn] verifies the expected amount is equivilant to actual amount returned from swapping (TYS to TPS)", async () => {
+    const inputAmount = "0.0000000000001";
+    
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+    await testFixture.setTimeRelativeToPoolStart(0.5);
+    const expectedReturn = await tempusAMM.getExpectedReturnGivenIn(inputAmount, true); // TYS --> TPS
+    
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+    await testFixture.setNextBlockTimestampRelativeToPoolStart(0.5);
+    await evmSetAutomine(false);
+    
+    try {
+      await checkSwap(owner, {amplification: 5, swapAmountIn: inputAmount, swapAmountOut: expectedReturn, principalIn: false, swapType: SwapType.SWAP_GIVEN_IN});
+    }
+    finally {
+      // in case checkSwap fails, we must enable automining so that other tests are not affected
+      await evmSetAutomine(true);    
+    }
+  });
+
+  it("[getExpectedReturnGivenIn] verifies the expected amount is equivilant to actual amount returned from swapping (TPS to TYS)", async () => {
+    const inputAmount = "0.0000000000001";
+    
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+    await testFixture.setTimeRelativeToPoolStart(0.5);
+    const expectedReturn = await tempusAMM.getExpectedReturnGivenIn(inputAmount, false); // TPS --> TYS
+    
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+    await testFixture.setNextBlockTimestampRelativeToPoolStart(0.5);
+    await evmSetAutomine(false);
+    
+    try {
+      await checkSwap(owner, {amplification: 5, swapAmountIn: inputAmount, swapAmountOut: expectedReturn, principalIn: true, swapType: SwapType.SWAP_GIVEN_IN});
+    }
+    finally {
+      // in case checkSwap fails, we must enable automining so that other tests are not affected
+      await evmSetAutomine(true);    
+    }
+  });
 
   it("checks amplification and invariant in multiple stages", async () =>
   {
