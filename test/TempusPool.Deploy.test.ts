@@ -79,10 +79,12 @@ describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
     expect(await pool.yieldShare.symbol()).to.equal(testPool.names.yieldSymbol);
   });
 
-  it("Should revert on collecting fees as there is no fees", async () => 
+  it("Should not revert on collecting fees as there is no fees", async () =>
   {
     let [owner] = testPool.signers;
-    (await expectRevert(pool.transferFees(owner, owner, 1))).to.equal("not enough accumulated fees");
+    await pool.transferFees(owner, owner);
+    expect(await pool.yieldBearing.balanceOf(owner)).to.equal(0);
+    expect(await pool.totalFees()).to.equal(0);
   });
 
   it("Should revert if maturity is less than current time", async () =>

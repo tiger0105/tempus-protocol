@@ -338,7 +338,7 @@ export class TempusPool extends ContractBase {
   /**
    * Transfers fees from contract to recipient
    */
-  async transferFees(owner:SignerOrAddress, recipient:SignerOrAddress, amount:NumberOrString) {
-    await this.contract.connect(owner).transferFees(addressOf(recipient), this.toBigNum(amount));
+  async transferFees(owner:SignerOrAddress, recipient:SignerOrAddress) {
+    await this.contract.connect(owner).transferFees(addressOf(recipient));
   }
 }

@@ -96,11 +96,7 @@ describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
     (await pool.userState(user)).expect(90, 90, /*yieldBearing:*/400);
     expect(await pool.tempus.totalFees()).to.equal(10);
 
-    await pool.tempus.transferFees(owner, user2, 5);
-    expect(await pool.yieldTokenBalance(user2)).to.equal(5);
-    expect(await pool.tempus.totalFees()).to.equal(5);
-
-    await pool.tempus.transferFees(owner, user2, MAX_UINT256);
+    await pool.tempus.transferFees(owner, user2);
     expect(await pool.yieldTokenBalance(user2)).to.equal(10);
     expect(await pool.tempus.totalFees()).to.equal(0);
   });
