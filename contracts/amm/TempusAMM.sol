@@ -22,10 +22,11 @@ import "@balancer-labs/v2-solidity-utils/contracts/helpers/WordCodec.sol";
 import "@balancer-labs/v2-pool-utils/contracts/BaseGeneralPool.sol";
 import "@balancer-labs/v2-pool-utils/contracts/BaseMinimalSwapInfoPool.sol";
 
+import "@balancer-labs/v2-pool-stable/contracts/StableMath.sol";
+
 import "./interfaces/IRateProvider.sol";
 import "./../ITempusPool.sol";
 import "./../token/IPoolShare.sol";
-import "./StableMath.sol";
 import "./TempusAMMUserDataHelpers.sol";
 
 contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRateProvider {
@@ -433,6 +434,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
     function _exitExactBPTInForTokensOut(uint256[] memory balances, bytes memory userData)
         private
+        view
         returns (uint256, uint256[] memory)
     {
         // This exit function is the only one that is not disabled if the contract is paused: it remains unrestricted
@@ -489,6 +491,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
      */
     function _getDueProtocolFeeAmounts(uint256[] memory balances, uint256 protocolSwapFeePercentage)
         private
+        view
         returns (uint256[] memory)
     {
         // Initialize with zeros
