@@ -23,12 +23,10 @@ interface ITempusFees {
     function totalFees() external view returns (uint256);
 
     /// Transfers accumulated Yield Bearing Token (YBT) fees
-    /// from this pool contract to `recipient`
+    /// from this pool contract to `recipient`.
     ///
     /// @param recipient Address which will receive the specified amount of YBT
-    /// @param amount Amount of YBT to transfer, cannot be more than totalFees.
-    ///               If amount is uint256.max, then all accumulated fees are transferred.
-    function transferFees(address recipient, uint256 amount) external;
+    function transferFees(address recipient) external;
 }
 
 interface ITempusPool is ITempusFees {
