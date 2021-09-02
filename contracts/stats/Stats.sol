@@ -4,9 +4,10 @@ pragma solidity 0.8.6;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./ITokenPairPriceFeed.sol";
-import "../ITempusPool.sol";
 import "./ChainlinkTokenPairPriceFeed/ChainlinkTokenPairPriceFeed.sol";
+import "../ITempusPool.sol";
 import "../math/Fixed256x18.sol";
+import "../token/PoolShare.sol";
 
 contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
     using Fixed256x18 for uint256;
@@ -14,14 +15,18 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
     /// @param pool The TempusPool to fetch its TVL (total value locked)
     /// @return total value locked of a TempusPool (denominated in BackingTokens)
     function totalValueLockedInBackingTokens(ITempusPool pool) public view returns (uint256) {
-        // TODO: this assumption that TPS price is always 1e18 is only correct with the current implementation of pricePerPoolShare which is probably not good
+        PoolShare principalShare = PoolShare(address(pool.principalShare()));
+        PoolShare yieldShare = PoolShare(address(pool.yieldShare()));
+
+        assert(principalShare.decimals() == 18 && yieldShare.decimals() == 18);
+
         uint256 pricePerPrincipalShare = pool.pricePerPrincipalShareStored();
         uint256 pricePerYieldShare = pool.pricePerYieldShareStored();
 
         return
             calculateTvlInBackingTokens(
-                IERC20(address(pool.principalShare())).totalSupply(),
-                IERC20(address(pool.yieldShare())).totalSupply(),
+                IERC20(address(principalShare)).totalSupply(),
+                IERC20(address(yieldShare)).totalSupply(),
                 pricePerPrincipalShare,
                 pricePerYieldShare
             );
