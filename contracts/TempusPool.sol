@@ -116,8 +116,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         totalFees -= amount;
 
         IERC20 token = IERC20(yieldBearingToken);
-        token.safeIncreaseAllowance(address(this), amount);
-        token.safeTransferFrom(address(this), recipient, amount);
+        token.safeTransfer(recipient, amount);
     }
 
     function depositBacking(uint256 backingTokenAmount, address recipient)
