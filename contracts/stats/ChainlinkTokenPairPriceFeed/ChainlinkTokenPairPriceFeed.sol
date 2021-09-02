@@ -6,8 +6,11 @@ import "./IENS.sol";
 import "../ITokenPairPriceFeed.sol";
 
 abstract contract ChainlinkTokenPairPriceFeed is ITokenPairPriceFeed {
-    // The ENS registry (same for mainnet and all major test nets)
-    IENS public constant ENS = IENS(0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e);
+    // The ENS registry (same for mainnet and all major testnets)
+    //
+    // See https://docs.chain.link/docs/ens/. This may need to be updated should Chainlink deploy
+    // on other networks with a different ENS address.
+    IENS private constant ENS = IENS(0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e);
 
     function getRate(bytes32 chainlinkAggregatorNodeHash)
         public
