@@ -108,11 +108,25 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     }
 
     function transferFees(address recipient) external override onlyOwner {
-        uint256 amount = totalFees;
+        uint256 amount = accumulatedFees();
         totalFees = 0;
 
         IERC20 token = IERC20(yieldBearingToken);
         token.safeTransfer(recipient, amount);
+    }
+
+    function accumulatedFees() internal view returns (uint256) {
+        // After maturity when every share is redeemed, allow the dust to be
+        // transfered off.
+        if (
+            matured &&
+            IERC20(address(principalShare)).totalSupply() == 0 &&
+            IERC20(address(yieldShare)).totalSupply() == 0
+        ) {
+            return IERC20(yieldBearingToken).balanceOf(address(this));
+        }
+
+        return totalFees;
     }
 
     function depositBacking(uint256 backingTokenAmount, address recipient)

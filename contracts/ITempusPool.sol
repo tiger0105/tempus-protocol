@@ -25,6 +25,9 @@ interface ITempusFees {
     /// Transfers accumulated Yield Bearing Token (YBT) fees
     /// from this pool contract to `recipient`.
     ///
+    /// After maturity when all shares are redeemed, this function
+    /// also allows withdrawing all the remaining dust.
+    ///
     /// @param recipient Address which will receive the specified amount of YBT
     function transferFees(address recipient) external;
 }
