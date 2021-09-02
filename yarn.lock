@@ -23,7 +23,7 @@
     chalk "^2.0.0"
     js-tokens "^4.0.0"
 
-"@balancer-labs/v2-asset-manager-utils@https://gitpkg.now.sh/balancer-labs/balancer-v2-monorepo/pkg/asset-manager-utils?ccb2d594a893cd4b7ce79698e373cb100b28aaa2":
+"@balancer-labs/v2-asset-manager-utils@0.1.0", "@balancer-labs/v2-asset-manager-utils@https://gitpkg.now.sh/balancer-labs/balancer-v2-monorepo/pkg/asset-manager-utils?ccb2d594a893cd4b7ce79698e373cb100b28aaa2":
   version "0.1.0"
   resolved "https://gitpkg.now.sh/balancer-labs/balancer-v2-monorepo/pkg/asset-manager-utils?ccb2d594a893cd4b7ce79698e373cb100b28aaa2#fba58b0215165aa744f83e8e0d01750aedad1637"
   dependencies:
@@ -38,6 +38,14 @@
     "@balancer-labs/v2-solidity-utils" "1.0.0"
     "@balancer-labs/v2-vault" "1.0.0"
 
+"@balancer-labs/v2-pool-stable@https://gitpkg.now.sh/balancer-labs/balancer-v2-monorepo/pkg/pool-stable?ccb2d594a893cd4b7ce79698e373cb100b28aaa2":
+  version "0.1.0"
+  resolved "https://gitpkg.now.sh/balancer-labs/balancer-v2-monorepo/pkg/pool-stable?ccb2d594a893cd4b7ce79698e373cb100b28aaa2#661f7cd5dda18b87848fd30cfef098c10f96898a"
+  dependencies:
+    "@balancer-labs/v2-pool-utils" "workspace:*"
+    "@balancer-labs/v2-solidity-utils" "workspace:*"
+    "@balancer-labs/v2-vault" "workspace:*"
+
 "@balancer-labs/v2-pool-utils@https://gitpkg.now.sh/balancer-labs/balancer-v2-monorepo/pkg/pool-utils?ccb2d594a893cd4b7ce79698e373cb100b28aaa2":
   version "1.0.0"
   resolved "https://gitpkg.now.sh/balancer-labs/balancer-v2-monorepo/pkg/pool-utils?ccb2d594a893cd4b7ce79698e373cb100b28aaa2#41ab14c4e4bf516276d0ef066a2c0b2bb5bb94a0"
@@ -45,6 +53,15 @@
     "@balancer-labs/v2-asset-manager-utils" "workspace:*"
     "@balancer-labs/v2-solidity-utils" "workspace:*"
     "@balancer-labs/v2-vault" "workspace:*"
+
+"@balancer-labs/v2-pool-utils@workspace:*":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@balancer-labs/v2-pool-utils/-/v2-pool-utils-1.0.0.tgz#58316ac48ee0f5574777491cafe0b3fa1e7f0d22"
+  integrity sha512-7CSdHuWqSiEsK+/v+xgnn/Bc+9qNOvCF1T0UDidlxCfa1L2djpYz8P/J+ouITcGaz/330yGTEsrkd94ZOoLE2w==
+  dependencies:
+    "@balancer-labs/v2-asset-manager-utils" "0.1.0"
+    "@balancer-labs/v2-solidity-utils" "1.0.0"
+    "@balancer-labs/v2-vault" "1.0.0"
 
 "@balancer-labs/v2-solidity-utils@1.0.0", "@balancer-labs/v2-solidity-utils@workspace:*":
   version "1.0.0"
