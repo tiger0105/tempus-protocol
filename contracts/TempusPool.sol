@@ -351,8 +351,6 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         return pricePerPrincipalShare(currentYieldStored(), estimatedYieldStored());
     }
 
-    // TODO Reduce possible duplication
-
     /// @dev This updates the underlying pool's interest rate
     ///      It should be done first thing before deposit/redeem to avoid arbitrage
     /// @return Updated current Interest Rate as an 1e18 decimal

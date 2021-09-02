@@ -33,7 +33,6 @@ contract LidoTempusPool is TempusPool {
             yieldSymbol
         )
     {
-        // TODO: consider adding sanity check for _lido.name() and _lido.symbol()
         lido = token;
         referrer = referrerAddress;
     }

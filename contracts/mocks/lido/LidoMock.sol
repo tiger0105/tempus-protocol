@@ -143,10 +143,7 @@ contract LidoMock is StETH {
     // This would call the deposit contract, we just mimic it by burning the values.
     // solhint-disable-next-line func-name-mixedcase
     function _ETH2Deposit(uint256 _numDeposits) internal {
-        // TODO: handle this as transientEther?
         beaconBalance += _numDeposits * DEPOSIT_SIZE;
-
-        // TODO: send to a specific address like 0x00...4336 ?
         payable(0).transfer(_numDeposits * DEPOSIT_SIZE);
     }
 
