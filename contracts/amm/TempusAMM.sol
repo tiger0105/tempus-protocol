@@ -570,7 +570,8 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         }
     }
 
-    // TODO: add docs
+    /// @dev Adjusting balances by getPricePerFullShare per each token
+    /// @param balances Array of token balances to be adjusted
     function _rateAdjustBalances(uint256[] memory balances) private {
         uint256[] memory rates = new uint256[](2); // (balances.length) == 2
         rates[0] = _token0.getPricePerFullShare();
@@ -579,7 +580,9 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         _mutateAmounts(balances, rates, _mutateBalanceWithRate);
     }
 
-    // TODO: add docs
+    /// @dev Adjusting balances by getPricePerFullShareStored per each token.
+    ///      These balances are passed over to StableMath
+    /// @param balances Array of token balances to be adjusted
     function _rateAdjustBalancesStored(uint256[] memory balances) private view {
         uint256[] memory rates = new uint256[](2); // (balances.length) == 2
         rates[0] = _token0.getPricePerFullShareStored();
@@ -588,11 +591,16 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         _mutateAmounts(balances, rates, _mutateBalanceWithRate);
     }
 
+    /// @dev Mutate balance with rate, used to adjust rates for StableMath
+    /// @param balance Token balance to be mutated
+    /// @param rate Rate used for mutating balance
+    /// @return Mutated balance
     function _mutateBalanceWithRate(uint256 balance, uint256 rate) private pure returns (uint256) {
         return (balance * rate) / _TEMPUS_SHARE_PRECISION;
     }
 
-    // TODO: add docs
+    /// @dev Used to undo adjustment of balances which are result of StableMath calculations
+    /// @param balances Array of balances returned from StableMath
     function _undoRateAdjustBalances(uint256[] memory balances) private {
         uint256[] memory rates = new uint256[](2);
         rates[0] = _token0.getPricePerFullShare();
@@ -601,6 +609,10 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         _mutateAmounts(balances, rates, _unmutateBalanceWithRate);
     }
 
+    /// @dev Un-mutate balance with rate, used to adjust rates returned balances from StableMath
+    /// @param balance Token balance to be un-mutated
+    /// @param rate Rate used for un-mutating balance
+    /// @return Un-mutated balance
     function _unmutateBalanceWithRate(uint256 balance, uint256 rate) private pure returns (uint256) {
         return (balance * _TEMPUS_SHARE_PRECISION) / rate;
     }
