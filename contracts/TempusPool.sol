@@ -107,13 +107,9 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         feesConfig = newFeesConfig;
     }
 
-    function transferFees(address recipient, uint256 amount) external override onlyOwner {
-        if (amount == type(uint256).max) {
-            amount = totalFees;
-        } else {
-            require(amount <= totalFees, "not enough accumulated fees");
-        }
-        totalFees -= amount;
+    function transferFees(address recipient) external override onlyOwner {
+        uint256 amount = totalFees;
+        totalFees = 0;
 
         IERC20 token = IERC20(yieldBearingToken);
         token.safeTransfer(recipient, amount);
