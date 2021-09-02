@@ -91,6 +91,10 @@ export class TempusAMM extends ContractBase {
     return fromWei(await this.contract.getRate());
   }
 
+  async getExpectedReturnGivenIn(inAmount: NumberOrString, yieldShareIn: boolean) : Promise<NumberOrString> {
+    return fromWei(await this.contract.getExpectedReturnGivenIn(toWei(inAmount), yieldShareIn));
+  }
+
   async provideLiquidity(from: SignerWithAddress, principalShareBalance: Number, yieldShareBalance: Number, joinKind: TempusAMMJoinKind) {
     await this.principalShare.approve(from, this.vault.address, principalShareBalance);
     await this.yieldShare.approve(from, this.vault.address, yieldShareBalance);
@@ -163,12 +167,12 @@ export class TempusAMM extends ContractBase {
     await this.vault.connect(from).exitPool(poolId, from.address, from.address, exitPoolRequest);
   }
 
-  async swapGivenIn(from: SignerWithAddress, assetIn: string, assetOut: string, amount: Number) {
-    this.yieldShare.connect(from).approve(this.vault.address, toWei(amount));
-    this.principalShare.connect(from).approve(this.vault.address, toWei(amount));
+  async swapGivenIn(from: SignerWithAddress, assetIn: string, assetOut: string, amount: NumberOrString) {    
+    await this.yieldShare.connect(from).approve(this.vault.address, toWei(amount));
+    await this.principalShare.connect(from).approve(this.vault.address, toWei(amount));
     const SWAP_KIND_GIVEN_IN = 0;
-    const poolId = await this.contract.getPoolId();
-    
+    const poolId = await this.contract.getPoolId();    
+
     const singleSwap = {
       poolId,
       kind: SWAP_KIND_GIVEN_IN,
@@ -185,11 +189,12 @@ export class TempusAMM extends ContractBase {
       toInternalBalance: false
     };
     const minimumReturn = 1;
-    const deadline = await blockTimestamp() + 60*60; // deadline in one hour
+    const deadline = await blockTimestamp() * 2; // not anytime soon 
     await this.vault.connect(from).swap(singleSwap, fundManagement, minimumReturn, deadline);
   }
 
-  async swapGivenOut(from: SignerWithAddress, assetIn: string, assetOut: string, amount: Number) {
+  async swapGivenOut(from: SignerWithAddress, assetIn: string, assetOut: string, amount: NumberOrString) {
+    
     this.yieldShare.connect(from).approve(this.vault.address, toWei(amount));
     this.principalShare.connect(from).approve(this.vault.address, toWei(amount));
     

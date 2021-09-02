@@ -3,7 +3,7 @@ import { Transaction } from "ethers";
 import { ethers, deployments } from "hardhat";
 import { ContractBase, Signer, SignerOrAddress } from "../utils/ContractBase";
 import { TempusPool, PoolType, TempusSharesNames, generateTempusSharesNames } from "../utils/TempusPool";
-import { blockTimestamp, setEvmTime } from "../utils/Utils";
+import { blockTimestamp, setEvmTime, setNextBlockTimestamp } from "../utils/Utils";
 import { ERC20 } from "../utils/ERC20";
 import { NumberOrString } from "../utils/Decimal";
 import { getRevertMessage } from "../utils/Utils";
@@ -251,6 +251,15 @@ export abstract class ITestPool {
     const startTime:number = +await this.tempus.startTime();
     const duration:number = +await this.tempus.maturityTime() - startTime;
     await setEvmTime(startTime + percentDuration * duration);
+  }
+
+  /**
+   * Sets the next block timestamp relative to the pool's duration (without mining a block)
+   */
+   async setNextBlockTimestampRelativeToPoolStart(percentDuration: number): Promise<void> {
+    const startTime:number = +await this.tempus.startTime();
+    const duration:number = +await this.tempus.maturityTime() - startTime;
+    await setNextBlockTimestamp(startTime + percentDuration * duration);
   }
 
   /**
