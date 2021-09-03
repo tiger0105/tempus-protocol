@@ -46,6 +46,7 @@ describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
       toWei(100),
       toWei(100),
       toWei(100),
+      toWei(0),
       toWei(1.0)
     );
   });
