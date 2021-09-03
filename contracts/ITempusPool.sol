@@ -79,12 +79,14 @@ interface ITempusPool is ITempusFees {
     /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
     /// @return mintedShares Amount of TPS and TYS minted to `recipient`
     /// @return depositedBT The YBT value deposited, denominated as Backing Tokens
+    /// @return fee The fee which was deducted (in terms of YBT)
     /// @return rate The interest rate at the time of the deposit
     function deposit(uint256 yieldTokenAmount, address recipient)
         external
         returns (
             uint256 mintedShares,
             uint256 depositedBT,
+            uint256 fee,
             uint256 rate
         );
 
@@ -95,6 +97,7 @@ interface ITempusPool is ITempusFees {
     /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
     /// @return mintedShares Amount of TPS and TYS minted to `recipient`
     /// @return depositedYBT The BT value deposited, denominated as Yield Bearing Tokens
+    /// @return fee The fee which was deducted (in terms of YBT)
     /// @return rate The interest rate at the time of the deposit
     function depositBacking(uint256 backingTokenAmount, address recipient)
         external
@@ -102,6 +105,7 @@ interface ITempusPool is ITempusFees {
         returns (
             uint256 mintedShares,
             uint256 depositedYBT,
+            uint256 fee,
             uint256 rate
         );
 
@@ -114,13 +118,20 @@ interface ITempusPool is ITempusFees {
     /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem for YBT
     /// @param recipient Address to which redeemed YBT will be sent
     /// @return redeemableYieldTokens Amount of Yield Bearing Tokens redeemed to `recipient`
+    /// @return fee The fee which was deducted (in terms of YBT)
     /// @return rate The interest rate at the time of the redemption
     function redeem(
         address from,
         uint256 principalAmount,
         uint256 yieldAmount,
         address recipient
-    ) external returns (uint256 redeemableYieldTokens, uint256 rate);
+    )
+        external
+        returns (
+            uint256 redeemableYieldTokens,
+            uint256 fee,
+            uint256 rate
+        );
 
     /// Redeem TPS+TYS held by msg.sender into backing tokens
     ///      `msg.sender` must approve TPS and TYS amounts to this TempusPool.
@@ -133,6 +144,7 @@ interface ITempusPool is ITempusFees {
     /// @param recipient Address to which redeemed BT will be sent
     /// @return redeemableYieldTokens Amount of Backing Tokens redeemed to `recipient`, denominated in YBT
     /// @return redeemableBackingTokens Amount of Backing Tokens redeemed to `recipient`
+    /// @return fee The fee which was deducted (in terms of YBT)
     /// @return rate The interest rate at the time of the redemption
     function redeemToBacking(
         address from,
@@ -145,6 +157,7 @@ interface ITempusPool is ITempusFees {
         returns (
             uint256 redeemableYieldTokens,
             uint256 redeemableBackingTokens,
+            uint256 fee,
             uint256 rate
         );
 

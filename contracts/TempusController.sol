@@ -16,13 +16,14 @@ contract TempusController is PermanentlyOwnable {
 
     /// @dev Event emitted on a successful BT/YBT deposit.
     /// @param pool The Tempus Pool to which assets were deposited
-    /// @param depositor Address of user who deposits Yield Bearing Tokens to mint
+    /// @param depositor Address of the user who deposited Yield Bearing Tokens to mint
     ///                  Tempus Principal Share (TPS) and Tempus Yield Shares
     /// @param recipient Address of the recipient who will receive TPS and TYS tokens
     /// @param yieldTokenAmount Amount of yield tokens received from underlying pool
     /// @param backingTokenValue Value of @param yieldTokenAmount expressed in backing tokens
     /// @param shareAmounts Number of Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS) granted to `recipient`
     /// @param interestRate Interest Rate of the underlying pool from Yield Bearing Tokens to the underlying asset
+    /// @param fee The fee which was deducted (in terms of yield bearing tokens)
     event Deposited(
         address indexed pool,
         address indexed depositor,
@@ -30,7 +31,8 @@ contract TempusController is PermanentlyOwnable {
         uint256 yieldTokenAmount,
         uint256 backingTokenValue,
         uint256 shareAmounts,
-        uint256 interestRate
+        uint256 interestRate,
+        uint256 fee
     );
 
     /// @dev Event emitted on a successful BT/YBT redemption.
@@ -39,9 +41,10 @@ contract TempusController is PermanentlyOwnable {
     /// @param recipient Address of user that recieved Yield Bearing Tokens
     /// @param principalShareAmount Number of Tempus Principal Shares (TPS) to redeem into the Yield Bearing Token (YBT)
     /// @param yieldShareAmount Number of Tempus Yield Shares (TYS) to redeem into the Yield Bearing Token (YBT)
-    /// @param yieldBearingAmount Number of Yield bearing tokens redeemed from the pool
-    /// @param backingTokenValue Value of @param yieldBearingAmount expressed in backing tokens
+    /// @param yieldTokenAmount Number of Yield bearing tokens redeemed from the pool
+    /// @param backingTokenValue Value of @param yieldTokenAmount expressed in backing tokens
     /// @param interestRate Interest Rate of the underlying pool from Yield Bearing Tokens to the underlying asset
+    /// @param fee The fee which was deducted (in terms of yield bearing tokens)
     /// @param isEarlyRedeem True in case of early redemption, otherwise false
     event Redeemed(
         address indexed pool,
@@ -49,9 +52,10 @@ contract TempusController is PermanentlyOwnable {
         address indexed recipient,
         uint256 principalShareAmount,
         uint256 yieldShareAmount,
-        uint256 yieldBearingAmount,
+        uint256 yieldTokenAmount,
         uint256 backingTokenValue,
         uint256 interestRate,
+        uint256 fee,
         bool isEarlyRedeem
     );
 
@@ -181,7 +185,7 @@ contract TempusController is PermanentlyOwnable {
         // Deposit to TempusPool
         yieldBearingToken.safeTransferFrom(msg.sender, address(this), yieldTokenAmount);
         yieldBearingToken.safeIncreaseAllowance(address(targetPool), yieldTokenAmount);
-        (uint256 mintedShares, uint256 depositedBT, uint256 interestRate) = targetPool.deposit(
+        (uint256 mintedShares, uint256 depositedBT, uint256 fee, uint256 interestRate) = targetPool.deposit(
             yieldTokenAmount,
             recipient
         );
@@ -193,6 +197,7 @@ contract TempusController is PermanentlyOwnable {
             yieldTokenAmount,
             depositedBT,
             mintedShares,
+            fee,
             interestRate
         );
     }
@@ -218,7 +223,7 @@ contract TempusController is PermanentlyOwnable {
             require(address(backingToken) == address(0), "given TempusPool's Backing Token is not ETH");
         }
 
-        (uint256 mintedShares, uint256 depositedYBT, uint256 interestRate) = targetPool.depositBacking{
+        (uint256 mintedShares, uint256 depositedYBT, uint256 fee, uint256 interestRate) = targetPool.depositBacking{
             value: msg.value
         }(backingTokenAmount, recipient);
 
@@ -229,6 +234,7 @@ contract TempusController is PermanentlyOwnable {
             depositedYBT,
             backingTokenAmount,
             mintedShares,
+            fee,
             interestRate
         );
     }
@@ -251,7 +257,7 @@ contract TempusController is PermanentlyOwnable {
     ) public {
         require((principalAmount > 0) || (yieldAmount > 0), "principalAmount and yieldAmount cannot both be 0");
 
-        (uint256 redeemedYBT, uint256 interestRate) = targetPool.redeem(
+        (uint256 redeemedYBT, uint256 fee, uint256 interestRate) = targetPool.redeem(
             sender,
             principalAmount,
             yieldAmount,
@@ -268,6 +274,7 @@ contract TempusController is PermanentlyOwnable {
             yieldAmount,
             redeemedYBT,
             redeemedBT,
+            fee,
             interestRate,
             earlyRedeem
         );
@@ -292,7 +299,7 @@ contract TempusController is PermanentlyOwnable {
     ) public {
         require((principalAmount > 0) || (yieldAmount > 0), "principalAmount and yieldAmount cannot both be 0");
 
-        (uint256 redeemedYBT, uint256 redeemedBT, uint256 interestRate) = targetPool.redeemToBacking(
+        (uint256 redeemedYBT, uint256 redeemedBT, uint256 fee, uint256 interestRate) = targetPool.redeemToBacking(
             sender,
             principalAmount,
             yieldAmount,
@@ -308,6 +315,7 @@ contract TempusController is PermanentlyOwnable {
             yieldAmount,
             redeemedYBT,
             redeemedBT,
+            fee,
             interestRate,
             earlyRedeem
         );
