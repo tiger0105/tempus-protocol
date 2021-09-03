@@ -118,9 +118,20 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
         _totalTokens = 2;
 
-        // Immutable variables cannot be initialized inside an if statement, so we must do conditional assignments
         IPoolShare yieldShare = pool.yieldShare();
         IPoolShare principalShare = pool.principalShare();
+
+        // TODO: stop using typecasting
+        require(
+            _TEMPUS_SHARE_PRECISION == (10**ERC20(address(principalShare)).decimals()),
+            "Unsupported principal share precision."
+        );
+        require(
+            _TEMPUS_SHARE_PRECISION == (10**ERC20(address(yieldShare)).decimals()),
+            "Unsupported yield share precision."
+        );
+
+        // Immutable variables cannot be initialized inside an if statement, so we must do conditional assignments
         (_token0, _token1) = yieldShare < principalShare ? (yieldShare, principalShare) : (principalShare, yieldShare);
 
         tempusPool = pool;
