@@ -57,8 +57,8 @@ export class TempusAMM extends ContractBase {
     const [sender] = new MockProvider().getWallets();
     const mockedWETH = await deployMockContract(sender, WETH_ARTIFACTS.abi);
 
-    const authorizer = await ContractBase.deployContract("Authorizer", owner.address);
-    const vault = await ContractBase.deployContract("Vault", authorizer.address, mockedWETH.address, 3 * MONTH, MONTH);
+    const authorizer = await ContractBase.deployContract("@balancer-labs/v2-vault/contracts/Authorizer.sol:Authorizer", owner.address);
+    const vault = await ContractBase.deployContract("@balancer-labs/v2-vault/contracts/Vault.sol:Vault", authorizer.address, mockedWETH.address, 3 * MONTH, MONTH);
 
     let tempusAMM = await ContractBase.deployContract(
       "TempusAMM", 

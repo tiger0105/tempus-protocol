@@ -14,15 +14,10 @@ class DeployLocalForked {
     const owner = (await ethers.getSigners())[0];
 
     const aDaiToken = new ERC20("ERC20", (await ethers.getContract('aToken_Dai')));
-    const wEthToken = new ERC20("ERC20", (await ethers.getContract('aToken_Weth')));
     const stETHToken = new ERC20("ILido", (await ethers.getContract('Lido')));
   
     const latestBlock = await ethers.provider.getBlock('latest');
     console.log(`Latest block number: ${latestBlock.number}`);
-
-    // Deploy vault authorizer and vault
-    const authorizer = await ContractBase.deployContract("Authorizer", owner.address);
-    const vault = await ContractBase.deployContract("Vault", authorizer.address, wEthToken.address, 3 * MONTH, MONTH);
 
     // Deploy Tempus Controller
     const tempusController: TempusController = await TempusController.deploy();
@@ -42,7 +37,7 @@ class DeployLocalForked {
     // Deploy TempusAMM for Aave TempusPool - we have one AMM per TempusPool
     let tempusAMMAave = await ContractBase.deployContract(
       "TempusAMM",
-      vault.address,
+      "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
       "Tempus LP token",
       "LPaDAI",
       tempusPoolAave.address,
@@ -56,7 +51,7 @@ class DeployLocalForked {
     // Deploy TempusAMM for Lido TempusPool - we have one AMM per TempusPool
     let tempusAMMLido = await ContractBase.deployContract(
       "TempusAMM",
-      vault.address,
+      "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
       "Tempus LP token",
       "LPstETH",
       tempusPoolLido.address,
@@ -86,7 +81,6 @@ class DeployLocalForked {
     console.log('=========== Singleton Contracts Info ========');
     console.log(`Deployed Stats contract at: ${statistics.address}`);
     console.log(`Deployed TempusController at: ${tempusController.address}`);
-    console.log(`Deployed Vault at: ${vault.address}`);
   }
 }
 DeployLocalForked.deploy();
