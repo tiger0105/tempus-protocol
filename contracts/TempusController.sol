@@ -181,7 +181,7 @@ contract TempusController is PermanentlyOwnable {
         // Deposit to TempusPool
         yieldBearingToken.safeTransferFrom(msg.sender, address(this), yieldTokenAmount);
         yieldBearingToken.safeIncreaseAllowance(address(targetPool), yieldTokenAmount);
-        (uint256 mintedShares, uint256 depositedBT, uint256 interestRate) = targetPool.deposit(
+        (uint256 mintedShares, uint256 depositedBT, , uint256 interestRate) = targetPool.deposit(
             yieldTokenAmount,
             recipient
         );
@@ -218,7 +218,7 @@ contract TempusController is PermanentlyOwnable {
             require(address(backingToken) == address(0), "given TempusPool's Backing Token is not ETH");
         }
 
-        (uint256 mintedShares, uint256 depositedYBT, uint256 interestRate) = targetPool.depositBacking{
+        (uint256 mintedShares, uint256 depositedYBT, , uint256 interestRate) = targetPool.depositBacking{
             value: msg.value
         }(backingTokenAmount, recipient);
 
@@ -251,7 +251,7 @@ contract TempusController is PermanentlyOwnable {
     ) public {
         require((principalAmount > 0) || (yieldAmount > 0), "principalAmount and yieldAmount cannot both be 0");
 
-        (uint256 redeemedYBT, uint256 interestRate) = targetPool.redeem(
+        (uint256 redeemedYBT, , uint256 interestRate) = targetPool.redeem(
             sender,
             principalAmount,
             yieldAmount,
@@ -292,7 +292,7 @@ contract TempusController is PermanentlyOwnable {
     ) public {
         require((principalAmount > 0) || (yieldAmount > 0), "principalAmount and yieldAmount cannot both be 0");
 
-        (uint256 redeemedYBT, uint256 redeemedBT, uint256 interestRate) = targetPool.redeemToBacking(
+        (uint256 redeemedYBT, uint256 redeemedBT, , uint256 interestRate) = targetPool.redeemToBacking(
             sender,
             principalAmount,
             yieldAmount,

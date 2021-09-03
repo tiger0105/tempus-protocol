@@ -123,6 +123,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         returns (
             uint256 mintedShares,
             uint256 depositedYBT,
+            uint256 fee,
             uint256 rate
         )
     {
@@ -131,7 +132,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         depositedYBT = depositToUnderlying(backingTokenAmount);
         assert(depositedYBT > 0);
 
-        (mintedShares, , rate) = _deposit(depositedYBT, recipient);
+        (mintedShares, , fee, rate) = _deposit(depositedYBT, recipient);
     }
 
     function deposit(uint256 yieldTokenAmount, address recipient)
@@ -141,6 +142,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         returns (
             uint256 mintedShares,
             uint256 depositedBT,
+            uint256 fee,
             uint256 rate
         )
     {
@@ -148,7 +150,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         // Collect the deposit
         IERC20(yieldBearingToken).safeTransferFrom(msg.sender, address(this), yieldTokenAmount);
 
-        (mintedShares, depositedBT, rate) = _deposit(yieldTokenAmount, recipient);
+        (mintedShares, depositedBT, fee, rate) = _deposit(yieldTokenAmount, recipient);
     }
 
     function _deposit(uint256 yieldTokenAmount, address recipient)
@@ -156,6 +158,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         returns (
             uint256 mintedShares,
             uint256 depositedBT,
+            uint256 fee,
             uint256 rate
         )
     {
@@ -168,7 +171,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         uint256 tokenAmount = yieldTokenAmount;
         uint256 depositFees = feesConfig.depositPercent;
         if (depositFees != 0) {
-            uint256 fee = tokenAmount.mulf18(depositFees);
+            fee = tokenAmount.mulf18(depositFees);
             tokenAmount -= fee;
             totalFees += fee;
         }
@@ -194,10 +197,11 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         returns (
             uint256 redeemedYieldTokens,
             uint256 redeemedBackingTokens,
+            uint256 fee,
             uint256 rate
         )
     {
-        (redeemedYieldTokens, rate) = burnShares(from, principalAmount, yieldAmount);
+        (redeemedYieldTokens, fee, rate) = burnShares(from, principalAmount, yieldAmount);
 
         redeemedBackingTokens = withdrawFromUnderlyingProtocol(redeemedYieldTokens, recipient);
     }
@@ -207,8 +211,17 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         uint256 principalAmount,
         uint256 yieldAmount,
         address recipient
-    ) external override onlyController returns (uint256 redeemedYieldTokens, uint256 rate) {
-        (redeemedYieldTokens, rate) = burnShares(from, principalAmount, yieldAmount);
+    )
+        external
+        override
+        onlyController
+        returns (
+            uint256 redeemedYieldTokens,
+            uint256 fee,
+            uint256 rate
+        )
+    {
+        (redeemedYieldTokens, fee, rate) = burnShares(from, principalAmount, yieldAmount);
 
         IERC20(yieldBearingToken).safeTransfer(recipient, redeemedYieldTokens);
     }
@@ -217,7 +230,14 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         address from,
         uint256 principalAmount,
         uint256 yieldAmount
-    ) internal returns (uint256 redeemedYieldTokens, uint256 interestRate) {
+    )
+        internal
+        returns (
+            uint256 redeemedYieldTokens,
+            uint256 fee,
+            uint256 interestRate
+        )
+    {
         require(IERC20(address(principalShare)).balanceOf(from) >= principalAmount, "Insufficient principals.");
         require(IERC20(address(yieldShare)).balanceOf(from) >= yieldAmount, "Insufficient yields.");
 
@@ -234,9 +254,9 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         // Collect fees on redeem
         uint256 redeemFees = matured ? feesConfig.matureRedeemPercent : feesConfig.earlyRedeemPercent;
         if (redeemFees != 0) {
-            uint256 yieldTokensFee = redeemedYieldTokens.mulf18(redeemFees);
-            redeemedYieldTokens -= yieldTokensFee; // Apply fee
-            totalFees += yieldTokensFee;
+            fee = redeemedYieldTokens.mulf18(redeemFees);
+            redeemedYieldTokens -= fee;
+            totalFees += fee;
         }
     }
 
