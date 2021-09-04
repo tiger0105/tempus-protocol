@@ -30,7 +30,6 @@ import "./../token/IPoolShare.sol";
 import "./TempusAMMUserDataHelpers.sol";
 
 contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRateProvider {
-    using WordCodec for bytes32;
     using FixedPoint for uint256;
     using TempusAMMUserDataHelpers for bytes;
 
@@ -47,7 +46,14 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
     uint256 private constant _MAX_AMP_UPDATE_DAILY_RATE = 2;
     uint256 private constant _TEMPUS_SHARE_PRECISION = 1e18;
 
-    bytes32 private _packedAmplificationData;
+    struct AmplificationData {
+        uint64 startValue;
+        uint64 endValue;
+        uint64 startTime;
+        uint64 endTime;
+    }
+
+    AmplificationData private _amplificationData;
 
     event AmpUpdateStarted(uint256 startValue, uint256 endValue, uint256 startTime, uint256 endTime);
     event AmpUpdateStopped(uint256 currentValue);
@@ -797,11 +803,10 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         uint256 startTime,
         uint256 endTime
     ) private {
-        _packedAmplificationData =
-            WordCodec.encodeUint(uint64(startValue), 0) |
-            WordCodec.encodeUint(uint64(endValue), 64) |
-            WordCodec.encodeUint(uint64(startTime), 64 * 2) |
-            WordCodec.encodeUint(uint64(endTime), 64 * 3);
+        _amplificationData.startValue = uint64(startValue);
+        _amplificationData.endValue = uint64(endValue);
+        _amplificationData.startTime = uint64(startTime);
+        _amplificationData.endTime = uint64(endTime);
 
         emit AmpUpdateStarted(startValue, endValue, startTime, endTime);
     }
@@ -816,10 +821,10 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
             uint256 endTime
         )
     {
-        startValue = _packedAmplificationData.decodeUint64(0);
-        endValue = _packedAmplificationData.decodeUint64(64);
-        startTime = _packedAmplificationData.decodeUint64(64 * 2);
-        endTime = _packedAmplificationData.decodeUint64(64 * 3);
+        startValue = _amplificationData.startValue;
+        endValue = _amplificationData.endValue;
+        startTime = _amplificationData.startTime;
+        endTime = _amplificationData.endTime;
     }
 
     function _isToken0(IERC20 token) internal view returns (bool) {
