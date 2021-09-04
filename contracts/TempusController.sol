@@ -336,7 +336,7 @@ contract TempusController is PermanentlyOwnable {
         uint256 yieldAmountOutMin,
         bool toInternalBalances
     ) external {
-        tempusAMM.transferFrom(msg.sender, address(this), lpTokensAmount);
+        require(tempusAMM.transferFrom(msg.sender, address(this), lpTokensAmount), "LP token transfer failed");
 
         doExitTempusAMMGivenLP(
             tempusAMM,
@@ -378,7 +378,7 @@ contract TempusController is PermanentlyOwnable {
 
         // transfer LP tokens to controller
         uint256 userBalanceLP = tempusAMM.balanceOf(msg.sender);
-        tempusAMM.transferFrom(msg.sender, address(this), userBalanceLP);
+        require(tempusAMM.transferFrom(msg.sender, address(this), userBalanceLP), "LP token transfer failed");
 
         doExitTempusAMMGivenAmountsOut(
             tempusAMM,
@@ -390,7 +390,8 @@ contract TempusController is PermanentlyOwnable {
         );
 
         // transfer remainder of LP tokens back to user
-        tempusAMM.transferFrom(address(this), msg.sender, tempusAMM.balanceOf(address(this)));
+        uint256 lpTokenBalance = tempusAMM.balanceOf(address(this));
+        require(tempusAMM.transferFrom(address(this), msg.sender, lpTokenBalance), "LP token transfer failed");
 
         if (toBackingToken) {
             redeemToBacking(tempusPool, msg.sender, sharesAmount, sharesAmount, msg.sender);
@@ -421,7 +422,7 @@ contract TempusController is PermanentlyOwnable {
 
         if (userBalanceLP > 0) {
             // if there is LP balance, transfer to controller
-            tempusAMM.transferFrom(msg.sender, address(this), userBalanceLP);
+            require(tempusAMM.transferFrom(msg.sender, address(this), userBalanceLP), "LP token transfer failed");
 
             uint256[] memory minAmountsOut = new uint256[](2);
 
