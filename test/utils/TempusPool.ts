@@ -271,6 +271,16 @@ export class TempusPool extends ContractBase {
   }
 
   /**
+   * @param amount Amount of BackingTokens or YieldBearingTokens that would be deposited
+   * @param backingToken If true, @param amount is in BackingTokens, otherwise YieldBearingTokens
+   * @return Amount of Principals (TPS) and Yields (TYS), scaled as 1e18 decimals.
+   *         TPS and TYS are minted in 1:1 ratio, hence a single return value
+   */
+  async estimatedMintedShares(amount:NumberOrString, backingToken:boolean): Promise<NumberOrString> {
+    return this.fromBigNum(await this.contract.estimatedMintedShares(amount, backingToken));
+  }
+
+  /**
    * @param token An ERC20 token which belongs to a POOL
    * @returns Updated current Interest Rate as an 1e18 decimal
    */
