@@ -22,4 +22,15 @@ export class Stats extends ContractBase {
     const t = pool.tempus;
     return t.fromBigNum(await this.contract.estimatedMintedShares(t.address, t.toBigNum(amount), isBackingToken));
   }
+
+  /**
+   * @param principals Amount of Principals (TPS)
+   * @param yields Amount of Yields (TYS)
+   * @param toBackingToken If true, redeem amount is estimated in BackingTokens instead of YieldBearingTokens
+   * @return YBT or BT amount
+   */
+  async estimatedRedeem(pool:ITestPool, principals:NumberOrString, yields:NumberOrString, toBackingToken:boolean): Promise<NumberOrString> {
+    const t = pool.tempus;
+    return t.fromBigNum(await this.contract.estimatedRedeem(t.address, t.toBigNum(principals), t.toBigNum(yields), toBackingToken));
+  }
 }
