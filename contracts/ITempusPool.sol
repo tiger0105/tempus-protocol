@@ -168,6 +168,17 @@ interface ITempusPool is ITempusFees {
     ///         TPS and TYS are minted in 1:1 ratio, hence a single return value.
     function estimatedMintedShares(uint256 amount, bool isBackingToken) external view returns (uint256);
 
+    /// Gets the estimated amount of YieldBearingTokens or BackingTokens received when calling `redeemXXX()` functions
+    /// @param principals Amount of Principals (TPS)
+    /// @param yields Amount of Yields (TYS)
+    /// @param toBackingToken If true, redeem amount is estimated in BackingTokens instead of YieldBearingTokens
+    /// @return Amount of YieldBearingTokens or BackingTokens scaled as an 1e18 decimal
+    function estimatedRedeem(
+        uint256 principals,
+        uint256 yields,
+        bool toBackingToken
+    ) external view returns (uint256);
+
     /// The current interest rate of the underlying pool
     /// Calling this can accrue interest in the underlying pool
     /// @return The interest rate

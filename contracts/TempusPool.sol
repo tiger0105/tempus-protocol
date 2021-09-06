@@ -376,6 +376,16 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         return numSharesToMint(depositedBT, currentRate);
     }
 
+    function estimatedRedeem(
+        uint256 principals,
+        uint256 yields,
+        bool toBackingToken
+    ) public view override returns (uint256) {
+        uint256 currentRate = storedInterestRate(yieldBearingToken);
+        (uint256 yieldTokens, uint256 backingTokens, ) = getRedemptionAmounts(principals, yields, currentRate);
+        return toBackingToken ? backingTokens : yieldTokens;
+    }
+
     /// @dev This updates the underlying pool's interest rate
     ///      It should be done first thing before deposit/redeem to avoid arbitrage
     /// @return Updated current Interest Rate as an 1e18 decimal
