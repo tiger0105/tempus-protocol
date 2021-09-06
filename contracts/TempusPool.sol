@@ -178,7 +178,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
 
         // Issue appropriate shares
         depositedBT = numAssetsPerYieldToken(tokenAmount, rate);
-        mintedShares = (depositedBT * initialInterestRate) / rate;
+        mintedShares = numSharesToMint(depositedBT, rate);
 
         PrincipalShare(address(principalShare)).mint(recipient, mintedShares);
         YieldShare(address(yieldShare)).mint(recipient, mintedShares);
@@ -364,6 +364,16 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
 
     function pricePerPrincipalShareStored() external view override returns (uint256) {
         return pricePerPrincipalShare(currentYieldStored(), estimatedYieldStored());
+    }
+
+    function numSharesToMint(uint256 depositedBT, uint256 currentRate) private view returns (uint256) {
+        return (depositedBT * initialInterestRate) / currentRate;
+    }
+
+    function estimatedMintedShares(uint256 amount, bool isBackingToken) public view override returns (uint256) {
+        uint256 currentRate = storedInterestRate(yieldBearingToken);
+        uint256 depositedBT = isBackingToken ? amount : numAssetsPerYieldToken(amount, currentRate);
+        return numSharesToMint(depositedBT, currentRate);
     }
 
     /// @dev This updates the underlying pool's interest rate

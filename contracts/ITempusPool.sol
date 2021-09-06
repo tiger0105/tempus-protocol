@@ -161,6 +161,13 @@ interface ITempusPool is ITempusFees {
             uint256 rate
         );
 
+    /// Gets the estimated amount of Principals and Yields after a successful deposit
+    /// @param amount Amount of BackingTokens or YieldBearingTokens that would be deposited
+    /// @param isBackingToken If true, @param amount is in BackingTokens, otherwise YieldBearingTokens
+    /// @return Amount of Principals (TPS) and Yields (TYS), scaled as 1e18 decimals.
+    ///         TPS and TYS are minted in 1:1 ratio, hence a single return value.
+    function estimatedMintedShares(uint256 amount, bool isBackingToken) external view returns (uint256);
+
     /// The current interest rate of the underlying pool
     /// Calling this can accrue interest in the underlying pool
     /// @return The interest rate
