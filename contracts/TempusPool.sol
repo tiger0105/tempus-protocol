@@ -302,8 +302,12 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         }
     }
 
+    /// @dev Calculates current yield - since beginning of the pool
+    /// @notice Includes principal, so in case of 5% yield it returns 1.05
+    /// @param interestRate Current interest rate of the underlying protocol
+    /// @return Current yield relative to 1, such as 1.05 (+5%) or 0.97 (-3%)
     function currentYield(uint256 interestRate) private view returns (uint256) {
-        return (effectiveRate(interestRate) - initialInterestRate).divf18(initialInterestRate);
+        return effectiveRate(interestRate).divf18(initialInterestRate);
     }
 
     function currentYield() private returns (uint256) {
@@ -322,6 +326,10 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         return estimatedYield(currentYieldStored());
     }
 
+    /// @dev Calculates estimated yield at maturity
+    /// @notice Includes principal, so in case of 5% yield it returns 1.05
+    /// @param yieldCurrent Current yield - since beginning of the pool
+    /// @return Estimated yield at maturity relative to 1, such as 1.05 (+5%) or 0.97 (-3%)
     function estimatedYield(uint256 yieldCurrent) private view returns (uint256) {
         if (matured) {
             return yieldCurrent;
@@ -333,21 +341,22 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         return yieldCurrent + timeToMaturity.divf18(poolDuration).mulf18(initialEstimatedYield);
     }
 
-    /// Caluculations for Pricint Tmpus Yields and Tempus Principals
-    /// pricePerYield + pricePerPrincipal = 1 + currentYield     (1)
-    /// pricePerYield : pricePerPrincipal = estimatedYield : 1   (2)
-    /// pricePerYield = pricePerPrincipal * estimatedYield       (3)
-    /// using (3) in (1) we get:
-    /// pricePerPrincipal * (1 + estimatedYield) = 1 + currentYield
-    /// pricePerPrincipal = (1 + currentYield) / (1 + estimatedYield)
-    /// pricePerYield = (1 + currentYield) * estimatedYield() / (1 + estimatedYield)
-
+    /// pricePerYield = currentYield * (estimatedYield - 1) / (estimatedYield)
     function pricePerYieldShare(uint256 currYield, uint256 estYield) private pure returns (uint256) {
-        return (estYield.mulf18(Fixed256x18.ONE + currYield)).divf18(Fixed256x18.ONE + estYield);
+        // in case we have estimate for negative yield
+        if (estYield < Fixed256x18.ONE) {
+            return uint256(0);
+        }
+        uint256 yieldSharePrice = (estYield - Fixed256x18.ONE).mulf18(currYield).divf18(estYield);
+        return uint256(yieldSharePrice);
     }
 
+    /// pricePerPrincipal = currentYield / estimatedYield
     function pricePerPrincipalShare(uint256 currYield, uint256 estYield) private pure returns (uint256) {
-        return (Fixed256x18.ONE + currYield).divf18(Fixed256x18.ONE + estYield);
+        if (estYield < Fixed256x18.ONE) {
+            return currYield;
+        }
+        return currYield.divf18(estYield);
     }
 
     function pricePerYieldShare() external override returns (uint256) {
