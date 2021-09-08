@@ -7,11 +7,15 @@ describeForEachPool("TempusPool YieldShare", (pool:ITestPool) =>
   it("Should have correct rates for Yields and Principals before Maturity", async () =>
   {
     await pool.createDefault();
+    // we move 10% of time forward, and add up 10% of expected yield
+    const interestRate:number = 1.01;
+    await pool.setInterestRate(interestRate);
+    await pool.setNextBlockTimestampRelativeToPoolStart(0.1);
     let principalPrice:number = +await pool.tempus.principalShare.getPricePerFullShareStored();
     let yieldsPrice:number = +await pool.tempus.yieldShare.getPricePerFullShareStored();
-    expect(principalPrice).to.be.within(0.9090, 0.9092);
-    expect(yieldsPrice).to.be.within(0.0909, 0.0910);
-    expect(principalPrice + yieldsPrice).to.be.equal(1);
+    expect(principalPrice).to.be.within(0.9099, 0.911);
+    expect(yieldsPrice).to.be.within(0.0998, 0.1001);
+    expect(principalPrice + yieldsPrice).to.be.equal(interestRate);
   });
 
   it("Should have correct rates for Yields and Principals in the middle of the pool", async () => {
