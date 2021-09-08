@@ -81,7 +81,7 @@ describeForEachPool("TempusController", (testPool:ITestPool) =>
       expect(+await pool.yieldShare.balanceOf(user2)).to.be.equal(0, "ALL Yields should be deposited to AMM");
     });
 
-    it("deposit YBT and provide liquidity to a pre-initialized AMM with more then 100% yield estimate", async () =>
+    it("deposit YBT and provide liquidity to a pre-initialized AMM with more then 100% yield estimate [ @skip-on-coverage ]", async () =>
     {
       await initAMM(user1, /*ybtDeposit*/1200, /*principals*/120, /*yields*/12);
       await testPool.setInterestRate(10.0);
