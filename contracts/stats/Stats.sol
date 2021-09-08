@@ -50,4 +50,18 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
     ) internal pure returns (uint256) {
         return totalSupplyTPS.mulf18(pricePerPrincipalShare) + totalSupplyTYS.mulf18(pricePerYieldShare);
     }
+
+    /// Gets the estimated amount of Principals and Yields after a successful deposit
+    /// @param pool Which tempus pool
+    /// @param amount Amount of BackingTokens or YieldBearingTokens that would be deposited
+    /// @param isBackingToken If true, @param amount is in BackingTokens, otherwise YieldBearingTokens
+    /// @return Amount of Principals (TPS) and Yields (TYS), scaled as 1e18 decimals.
+    ///         TPS and TYS are minted in 1:1 ratio, hence a single return value.
+    function estimatedMintedShares(
+        ITempusPool pool,
+        uint256 amount,
+        bool isBackingToken
+    ) public view returns (uint256) {
+        return pool.estimatedMintedShares(amount, isBackingToken);
+    }
 }
