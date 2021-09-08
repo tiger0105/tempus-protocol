@@ -87,6 +87,10 @@ export class TempusAMM extends ContractBase {
     return fromWei(await this.contract.balanceOf(user.address));
   }
 
+  async totalSupply(): Promise<NumberOrString> {
+    return fromWei(await this.contract.totalSupply());
+  }
+
   async getRate(): Promise<NumberOrString> {
     return fromWei(await this.contract.getRate());
   }
