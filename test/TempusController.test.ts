@@ -153,17 +153,21 @@ describeForEachPool("TempusController", (testPool:ITestPool) =>
 
   describe("Exit AMM", () =>
   {
-    it("ExitAMM before maturity", async () =>
+    it("ExitAMM after maturity", async () =>
     {
       await initAMM(user1, /*ybtDeposit*/1000000, /*principals*/100000, /*yields*/1000000);
       const beforeExitBalanceLP:number = +await testPool.amm.balanceOf(user1);
+      const totalSupply:number = +await testPool.amm.totalSupply();
       expect(beforeExitBalanceLP).to.be.within(181000, 182000);
       await testPool.setInterestRate(1.1);
       await testPool.fastForwardToMaturity();
       await controller.exitTempusAmm(testPool, user1, 100000);
+      const redeemPercent:number = 100000 / totalSupply;
       expect(+await testPool.amm.balanceOf(user1)).to.be.within(81000, 82000);
-      expect(+await testPool.tempus.yieldShare.balanceOf(user1)).to.be.within(550000, 551000);
-      expect(+await testPool.tempus.principalShare.balanceOf(user1)).to.be.within(955000, 956000);
+      expect(+await testPool.tempus.yieldShare.balanceOf(user1)).to.be.within(0.999999 * redeemPercent * 1000000, 1.000001 * redeemPercent * 1000000);
+      // user already had 900000 because he provided liquidity with 100000 only
+      const redeemedPrincipals = (+await testPool.tempus.principalShare.balanceOf(user1)) - 900000;
+      expect(redeemedPrincipals).to.be.within(0.999999 * redeemPercent * 100000, 1.000001 * redeemPercent * 100000);
     });
   });
 
