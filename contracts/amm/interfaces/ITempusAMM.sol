@@ -29,4 +29,14 @@ interface ITempusAMM {
         address recipient,
         uint256 amount
     ) external returns (bool);
+
+    /// Calculates the expected returned swap amount
+    /// @param amount The given input amount of tokens
+    /// @param yieldShareIn Specifies whether to calculate the swap from TYS to TPS (if true) or from TPS to TYS (if false)
+    /// @return The expected returned amount of outToken
+    function getExpectedReturnGivenIn(uint256 amount, bool yieldShareIn) external view returns (uint256);
+
+    /// @dev This function returns the appreciation of one BPT relative to the
+    /// underlying tokens. This starts at 1 when the pool is created and grows over time
+    function getRate() external view returns (uint256);
 }

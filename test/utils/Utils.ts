@@ -36,7 +36,7 @@ export async function increaseTime(addSeconds: number) : Promise<void> {
  */
 export async function setEvmTime(timestamp:number) : Promise<void> {
   await setNextBlockTimestamp(timestamp);
-  await ethers.provider.send("evm_mine", []);
+  await evmMine();
 }
 
 /**
