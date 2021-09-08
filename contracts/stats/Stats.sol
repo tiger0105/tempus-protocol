@@ -64,4 +64,19 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
     ) public view returns (uint256) {
         return pool.estimatedMintedShares(amount, isBackingToken);
     }
+
+    /// Gets the estimated amount of YieldBearingTokens or BackingTokens received when calling `redeemXXX()` functions
+    /// @param pool Which tempus pool
+    /// @param principals Amount of Principals (TPS)
+    /// @param yields Amount of Yields (TYS)
+    /// @param toBackingToken If true, redeem amount is estimated in BackingTokens instead of YieldBearingTokens
+    /// @return Amount of YieldBearingTokens or BackingTokens scaled as an 1e18 decimal
+    function estimatedRedeem(
+        ITempusPool pool,
+        uint256 principals,
+        uint256 yields,
+        bool toBackingToken
+    ) public view returns (uint256) {
+        return pool.estimatedRedeem(principals, yields, toBackingToken);
+    }
 }

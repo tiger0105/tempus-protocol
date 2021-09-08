@@ -36,4 +36,21 @@ describeForEachPool("Stats", (testPool:ITestPool) =>
     }
   });
 
+  it("Estimated redeem returns expected values", async () =>
+  {
+    expect(await stats.estimatedRedeem(testPool, 10, 10, /*BT*/false)).to.equal(10, "1x YBT redeeming ALL with rate 1.0");
+    expect(await stats.estimatedRedeem(testPool, 10, 10, /*BT*/true )).to.equal(10, "1x BT redeeming ALL with rate 1.0");
+
+    await testPool.setInterestRate(2.0);
+    if (testPool.yieldPeggedToAsset)
+    {
+      expect(await stats.estimatedRedeem(testPool, 10, 10, /*BT*/false)).to.equal(20, "2x YBT redeeming ALL with rate 2.0");
+      expect(await stats.estimatedRedeem(testPool, 10, 10, /*BT*/true )).to.equal(20, "2x BT redeeming ALL with rate 2.0");
+    }
+    else
+    {
+      expect(await stats.estimatedRedeem(testPool, 10, 10, /*BT*/false)).to.equal(10, "1x YBT redeeming ALL with rate 2.0");
+      expect(await stats.estimatedRedeem(testPool, 10, 10, /*BT*/true )).to.equal(20, "2x BT redeeming ALL with rate 2.0");
+    }
+  });
 });
