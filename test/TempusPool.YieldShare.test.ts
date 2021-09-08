@@ -43,4 +43,44 @@ describeForEachPool("TempusPool YieldShare", (pool:ITestPool) =>
     expect(yieldsPrice).to.be.within(0.5, 0.5);
     expect(principalPrice + yieldsPrice).to.be.equal(1.5);
   });
+
+  it("Should have correct rates on negative yield - still estimates positive yield at maturity", async () => 
+  {
+    await pool.createDefault();
+    // set current interest rate to be under 1.0 (it implies negative yield)
+    await pool.setInterestRate(0.95);
+    await pool.setNextBlockTimestampRelativeToPoolStart(0.1);
+
+    let principalPrice:number = +await pool.tempus.principalShare.getPricePerFullShareStored();
+    let yieldsPrice:number = +await pool.tempus.yieldShare.getPricePerFullShareStored();
+    expect(principalPrice).to.be.within(0.9047, 0.90499);
+    expect(yieldsPrice).to.be.within(0.0450, 0.0453);
+    expect(principalPrice + yieldsPrice).to.be.within(0.94000009, 0.95000001);
+  });
+
+  it("Should have correct rates on negative yield - if estimated is negative as well", async () => 
+  {
+    await pool.createDefault();
+    // set current interest rate to be low enough to make yield estimate under 1.0
+    await pool.setInterestRate(0.8);
+
+    let principalPrice:number = +await pool.tempus.principalShare.getPricePerFullShareStored();
+    let yieldsPrice:number = +await pool.tempus.yieldShare.getPricePerFullShareStored();
+    expect(principalPrice).to.be.equal(0.8);
+    expect(yieldsPrice).to.be.equal(0);
+    expect(principalPrice + yieldsPrice).to.be.equal(principalPrice);
+  });
+
+  it("Should have correct rates on negative yield - at maturity", async () => 
+  {
+    await pool.createDefault();
+    await pool.setInterestRate(0.9);
+    await pool.fastForwardToMaturity();
+
+    let principalPrice:number = +await pool.tempus.principalShare.getPricePerFullShareStored();
+    let yieldsPrice:number = +await pool.tempus.yieldShare.getPricePerFullShareStored();
+    expect(principalPrice).to.be.equal(0.9);
+    expect(yieldsPrice).to.be.equal(0);
+    expect(principalPrice + yieldsPrice).to.be.equal(principalPrice);
+  });
 });
