@@ -195,34 +195,6 @@ export class TempusAMM extends ContractBase {
     await this.vault.connect(from).swap(singleSwap, fundManagement, minimumReturn, deadline);
   }
 
-  async swapGivenOut(from: SignerWithAddress, assetIn: string, assetOut: string, amount: NumberOrString) {
-    
-    this.yieldShare.connect(from).approve(this.vault.address, toWei(amount));
-    this.principalShare.connect(from).approve(this.vault.address, toWei(amount));
-    
-    const SWAP_KIND_GIVEN_OUT = 1;
-    const poolId = await this.contract.getPoolId();
-    
-    const singleSwap = {
-      poolId,
-      kind: SWAP_KIND_GIVEN_OUT,
-      assetIn: assetIn,
-      assetOut: assetOut,
-      amount: toWei(amount),
-      userData: 0x0
-    };
-  
-    const fundManagement = {
-      sender: from.address,
-      fromInternalBalance: false,
-      recipient: from.address,
-      toInternalBalance: false
-    };
-    const maximumIn = toWei(1000);
-    const deadline = await blockTimestamp() + 60*60; // deadline in one hour
-    await this.vault.connect(from).swap(singleSwap, fundManagement, maximumIn, deadline);
-  }
-
   async startAmplificationUpdate(ampTarget: number, oneAmpUpdateTime: number): Promise<Transaction> {
     this.targetAmp = ampTarget;
     this.oneAmpUpdateTime = oneAmpUpdateTime;
