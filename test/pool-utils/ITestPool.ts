@@ -14,6 +14,15 @@ export class UserState {
   principalShares:Number;
   yieldShares:Number;
   yieldBearing:Number;
+  yieldPeggedToAsset:boolean;
+
+  // non-async to give us actual test failure line #
+  public expectMulti(principalShares:number, yieldShares:number, yieldBearingPegged:number, yieldBearingVariable:number, message:string = null) {
+    const msg = message === null ? "" : ": expected" + message;
+    expect(this.principalShares).to.equal(principalShares, "principalShares did not match expected value"+msg);
+    expect(this.yieldShares).to.equal(yieldShares, "yieldShares did not match expected value"+msg);
+    expect(this.yieldBearing).to.equal(this.yieldPeggedToAsset ? yieldBearingPegged : yieldBearingVariable, "yieldBearing did not match expected value"+msg);
+  }
 
   // non-async to give us actual test failure line #
   public expect(principalShares:number, yieldShares:number, yieldBearing:number, message:string = null) {
@@ -291,6 +300,7 @@ export abstract class ITestPool {
     state.principalShares = Number(await this.tempus.principalShare.balanceOf(user));
     state.yieldShares = Number(await this.tempus.yieldShare.balanceOf(user));
     state.yieldBearing = Number(await this.yieldTokenBalance(user));
+    state.yieldPeggedToAsset = this.yieldPeggedToAsset;
     return state;
   }
 

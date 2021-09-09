@@ -249,15 +249,8 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         YieldShare(address(yieldShare)).burnFrom(from, yieldAmount);
 
         uint256 currentRate = updateInterestRate(yieldBearingToken);
-        (redeemedYieldTokens, , interestRate) = getRedemptionAmounts(principalAmount, yieldAmount, currentRate);
-
-        // Collect fees on redeem
-        uint256 redeemFees = matured ? feesConfig.matureRedeemPercent : feesConfig.earlyRedeemPercent;
-        if (redeemFees != 0) {
-            fee = redeemedYieldTokens.mulf18(redeemFees);
-            redeemedYieldTokens -= fee;
-            totalFees += fee;
-        }
+        (redeemedYieldTokens, , fee, interestRate) = getRedemptionAmounts(principalAmount, yieldAmount, currentRate);
+        totalFees += fee;
     }
 
     function getRedemptionAmounts(
@@ -270,6 +263,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         returns (
             uint256 redeemableYieldTokens,
             uint256 redeemableBackingTokens,
+            uint256 redeemFeeAmount,
             uint256 interestRate
         )
     {
@@ -285,9 +279,25 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
 
             // TODO: Scale based on number of decimals for tokens
             redeemableBackingTokens = principalAmount + redeemAmountFromYieldShares;
+
+            // after maturity, all additional yield is being collected as fee
+            if (matured && currentRate > interestRate) {
+                uint256 additionalYield = currentRate - interestRate;
+                uint256 feeBackingAmount = yieldAmount.mulf18(additionalYield.divf18(initialInterestRate));
+                redeemFeeAmount = numYieldTokensPerAsset(feeBackingAmount, currentRate);
+            }
         }
 
         redeemableYieldTokens = numYieldTokensPerAsset(redeemableBackingTokens, currentRate);
+
+        uint256 redeemFeePercent = matured ? feesConfig.matureRedeemPercent : feesConfig.earlyRedeemPercent;
+        if (redeemFeePercent != 0) {
+            uint256 regularRedeemFee = redeemableYieldTokens.mulf18(redeemFeePercent);
+            redeemableYieldTokens -= regularRedeemFee;
+            redeemFeeAmount += regularRedeemFee;
+
+            redeemableBackingTokens = numAssetsPerYieldToken(redeemableYieldTokens, currentRate);
+        }
     }
 
     function currentInterestRate() public view override returns (uint256) {
@@ -391,7 +401,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         bool toBackingToken
     ) public view override returns (uint256) {
         uint256 currentRate = storedInterestRate(yieldBearingToken);
-        (uint256 yieldTokens, uint256 backingTokens, ) = getRedemptionAmounts(principals, yields, currentRate);
+        (uint256 yieldTokens, uint256 backingTokens, , ) = getRedemptionAmounts(principals, yields, currentRate);
         return toBackingToken ? backingTokens : yieldTokens;
     }
 
