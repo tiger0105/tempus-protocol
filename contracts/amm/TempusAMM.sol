@@ -45,6 +45,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
     uint256 private constant _MIN_UPDATE_TIME = 1 days;
     uint256 private constant _MAX_AMP_UPDATE_DAILY_RATE = 2;
     uint256 private constant _TEMPUS_SHARE_PRECISION = 1e18;
+    uint256 private constant _TOTAL_TOKENS = 2;
 
     struct AmplificationData {
         uint64 startValue;
@@ -57,8 +58,6 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
     event AmpUpdateStarted(uint256 startValue, uint256 endValue, uint256 startTime, uint256 endTime);
     event AmpUpdateStopped(uint256 currentValue);
-
-    uint256 private immutable _totalTokens;
 
     IPoolShare internal immutable _token0;
     IPoolShare internal immutable _token1;
@@ -121,8 +120,6 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
     {
         _require(amplificationParameter >= _MIN_AMP, Errors.MIN_AMP);
         _require(amplificationParameter <= _MAX_AMP, Errors.MAX_AMP);
-
-        _totalTokens = 2;
 
         IPoolShare yieldShare = pool.yieldShare();
         IPoolShare principalShare = pool.principalShare();
@@ -226,8 +223,6 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         uint256 balanceTokenIn,
         uint256 balanceTokenOut
     ) internal virtual override returns (uint256) {
-        _require(_getTotalTokens() == 2, Errors.NOT_TWO_TOKENS);
-
         (uint256[] memory balances, uint256 indexIn, uint256 indexOut) = _getSwapBalanceArrays(
             swapRequest,
             balanceTokenIn,
@@ -242,8 +237,6 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         uint256 balanceTokenIn,
         uint256 balanceTokenOut
     ) internal virtual override returns (uint256) {
-        _require(_getTotalTokens() == 2, Errors.NOT_TWO_TOKENS);
-
         (uint256[] memory balances, uint256 indexIn, uint256 indexOut) = _getSwapBalanceArrays(
             swapRequest,
             balanceTokenIn,
@@ -298,7 +291,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         _require(kind == TempusAMM.JoinKind.INIT, Errors.UNINITIALIZED);
 
         uint256[] memory amountsIn = userData.initialAmountsIn();
-        InputHelpers.ensureInputLengthMatch(amountsIn.length, _getTotalTokens());
+        InputHelpers.ensureInputLengthMatch(amountsIn.length, _TOTAL_TOKENS);
         _upscaleArray(amountsIn, scalingFactors);
 
         _rateAdjustBalances(amountsIn);
@@ -379,7 +372,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         bytes memory userData
     ) private returns (uint256, uint256[] memory) {
         (uint256[] memory amountsIn, uint256 minBPTAmountOut) = userData.exactTokensInForBptOut();
-        InputHelpers.ensureInputLengthMatch(_getTotalTokens(), amountsIn.length);
+        InputHelpers.ensureInputLengthMatch(_TOTAL_TOKENS, amountsIn.length);
 
         _upscaleArray(amountsIn, scalingFactors);
 
@@ -436,7 +429,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         } else {
             // If the contract is paused, swap protocol fee amounts are not charged to avoid extra calculations and
             // reduce the potential for errors.
-            dueProtocolFeeAmounts = new uint256[](_getTotalTokens());
+            dueProtocolFeeAmounts = new uint256[](_TOTAL_TOKENS);
         }
 
         (bptAmountIn, amountsOut) = _doExit(balances, scalingFactors, userData);
@@ -492,7 +485,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         // This exit function is disabled if the contract is paused.
 
         (uint256[] memory amountsOut, uint256 maxBPTAmountIn) = userData.bptInForExactTokensOut();
-        InputHelpers.ensureInputLengthMatch(amountsOut.length, _getTotalTokens());
+        InputHelpers.ensureInputLengthMatch(amountsOut.length, _TOTAL_TOKENS);
         _upscaleArray(amountsOut, scalingFactors);
 
         _rateAdjustBalances(amountsOut);
@@ -530,7 +523,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         returns (uint256[] memory)
     {
         // Initialize with zeros
-        uint256[] memory dueProtocolFeeAmounts = new uint256[](_getTotalTokens());
+        uint256[] memory dueProtocolFeeAmounts = new uint256[](_TOTAL_TOKENS);
 
         // Early return if the protocol swap fee percentage is zero, saving gas.
         if (protocolSwapFeePercentage == 0) {
@@ -544,7 +537,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         // The protocol fee is charged using the token with the highest balance in the pool.
         uint256 chosenTokenIndex = 0;
         uint256 maxBalance = balances[0];
-        for (uint256 i = 1; i < _getTotalTokens(); ++i) {
+        for (uint256 i = 1; i < _TOTAL_TOKENS; ++i) {
             uint256 currentBalance = balances[i];
             if (currentBalance > maxBalance) {
                 chosenTokenIndex = i;
@@ -600,7 +593,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         uint256[] memory arguments,
         function(uint256, uint256) pure returns (uint256) mutation
     ) private view {
-        for (uint256 i = 0; i < _getTotalTokens(); ++i) {
+        for (uint256 i = 0; i < _TOTAL_TOKENS; ++i) {
             toMutate[i] = mutation(toMutate[i], arguments[i]);
         }
     }
@@ -754,11 +747,11 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
     }
 
     function _getMaxTokens() internal pure override returns (uint256) {
-        return _MAX_STABLE_TOKENS;
+        return _TOTAL_TOKENS;
     }
 
-    function _getTotalTokens() internal view virtual override returns (uint256) {
-        return _totalTokens;
+    function _getTotalTokens() internal pure virtual override returns (uint256) {
+        return _TOTAL_TOKENS;
     }
 
     function _scalingFactor(IERC20 token) internal view virtual override returns (uint256 scalingFactor) {
@@ -771,7 +764,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
     }
 
     function _scalingFactors() internal view virtual override returns (uint256[] memory) {
-        uint256 totalTokens = _getTotalTokens();
+        uint256 totalTokens = _TOTAL_TOKENS;
         uint256[] memory scalingFactors = new uint256[](totalTokens);
 
         // prettier-ignore
