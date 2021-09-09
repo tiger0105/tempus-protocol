@@ -210,7 +210,7 @@ describeForEachPool("TempusAMM", (testFixture:ITestPool) =>
   {
     await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5});
     await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
-    (await expectRevert(tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.EXACT_BPT_OUT_FOR_TOKEN_IN)));
+    (await expectRevert(tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INVALID)));
   });
 
   it("revert on join after maturity", async () =>
@@ -246,12 +246,6 @@ describeForEachPool("TempusAMM", (testFixture:ITestPool) =>
     const postPrincipalBalance = +await tempusAMM.principalShare.balanceOf(owner);
     expect(postPrincipalBalance - prePrincipalBalance).to.equal(50);
     expect(postYieldBalance - preYieldBalance).to.equal(500);
-  });
-
-  it("checks LP exiting pool for one token reverts", async () =>
-  {
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 100, ammBalanceYield: 1000});
-    await expectRevert(tempusAMM.exitPoolExactLpAmountIn(owner, 100, true));
   });
 
   it("checks second LP's pool token balance without swaps between", async () =>
