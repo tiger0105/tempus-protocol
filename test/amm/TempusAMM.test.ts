@@ -210,7 +210,7 @@ describeForEachPool("TempusAMM", (testFixture:ITestPool) =>
   {
     await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5});
     await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
-    (await expectRevert(tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.EXACT_BPT_OUT_FOR_TOKEN_IN)));
+    (await expectRevert(tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INVALID)));
   });
 
   it("revert on join after maturity", async () =>

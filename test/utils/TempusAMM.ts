@@ -27,7 +27,7 @@ export enum TempusAMMExitKind {
 export enum TempusAMMJoinKind {
   INIT = 0,  // first join to the pool, needs to pick token balances
   EXACT_TOKENS_IN_FOR_BPT_OUT,  // joining with exact amounts of both tokens
-  EXACT_BPT_OUT_FOR_TOKEN_IN,  // joining with one token for exact amount of lp tokens out
+  INVALID  // used to test invalid join type
 }
 
 export class TempusAMM extends ContractBase {

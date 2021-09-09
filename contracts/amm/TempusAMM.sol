@@ -82,8 +82,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
     enum JoinKind {
         INIT,
-        EXACT_TOKENS_IN_FOR_BPT_OUT,
-        TOKEN_IN_FOR_EXACT_BPT_OUT
+        EXACT_TOKENS_IN_FOR_BPT_OUT
     }
     enum ExitKind {
         EXACT_BPT_IN_FOR_ONE_TOKEN_OUT,
@@ -267,7 +266,6 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
             balances[0] = balanceTokenIn;
             balances[1] = balanceTokenOut;
         } else {
-            // _token0 == swapRequest.tokenOut
             indexOut = 0;
             indexIn = 1;
 
