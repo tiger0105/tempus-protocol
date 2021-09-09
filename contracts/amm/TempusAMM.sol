@@ -196,22 +196,12 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
     }
 
     function _onSwapGivenOut(
-        SwapRequest memory swapRequest,
-        uint256[] memory balances,
-        uint256 indexIn,
-        uint256 indexOut
+        SwapRequest memory,
+        uint256[] memory,
+        uint256,
+        uint256
     ) internal virtual override whenNotPaused beforeMaturity returns (uint256) {
-        (uint256 currentAmp, ) = _getAmplificationParameter();
-        (IPoolShare tokenIn, IPoolShare tokenOut) = indexIn == 0 ? (_token0, _token1) : (_token1, _token0);
-
-        _rateAdjustBalances(balances);
-        uint256 rateAdjustedSwapAmount = (swapRequest.amount * tokenOut.getPricePerFullShare()) /
-            _TEMPUS_SHARE_PRECISION;
-
-        uint256 amountIn = StableMath._calcInGivenOut(currentAmp, balances, indexIn, indexOut, rateAdjustedSwapAmount);
-        amountIn = (amountIn * _TEMPUS_SHARE_PRECISION) / tokenIn.getPricePerFullShare();
-
-        return amountIn;
+        revert("Unsupported swap type");
     }
 
     // Swap - Two Token Pool specialization (from BaseMinimalSwapInfoPool)
@@ -231,16 +221,11 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
     }
 
     function _onSwapGivenOut(
-        SwapRequest memory swapRequest,
-        uint256 balanceTokenIn,
-        uint256 balanceTokenOut
+        SwapRequest memory,
+        uint256,
+        uint256
     ) internal virtual override returns (uint256) {
-        (uint256[] memory balances, uint256 indexIn, uint256 indexOut) = _getSwapBalanceArrays(
-            swapRequest,
-            balanceTokenIn,
-            balanceTokenOut
-        );
-        return _onSwapGivenOut(swapRequest, balances, indexIn, indexOut);
+        revert("Unsupported swap type");
     }
 
     function _getSwapBalanceArrays(
@@ -589,7 +574,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         uint256[] memory toMutate,
         uint256[] memory arguments,
         function(uint256, uint256) pure returns (uint256) mutation
-    ) private view {
+    ) private pure {
         for (uint256 i = 0; i < _TOTAL_TOKENS; ++i) {
             toMutate[i] = mutation(toMutate[i], arguments[i]);
         }
