@@ -9,7 +9,7 @@ Smart contracts of Tempus Finance
 
 Installing dependancies `yarn install`
 
-To compile run `npx hardhat compile`
+To compile run `yarn build`
 
 To run the unit tests `yarn test`
 
