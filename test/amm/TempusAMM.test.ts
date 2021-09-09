@@ -248,12 +248,6 @@ describeForEachPool("TempusAMM", (testFixture:ITestPool) =>
     expect(postYieldBalance - preYieldBalance).to.equal(500);
   });
 
-  it("checks LP exiting pool for one token reverts", async () =>
-  {
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 100, ammBalanceYield: 1000});
-    await expectRevert(tempusAMM.exitPoolExactLpAmountIn(owner, 100, true));
-  });
-
   it("checks second LP's pool token balance without swaps between", async () =>
   {
     await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 100, ammBalanceYield: 1000});

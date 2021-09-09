@@ -19,9 +19,9 @@ export const WEEK = DAY * 7;
 export const MONTH = DAY * 30;
 
 export enum TempusAMMExitKind {
-  EXACT_BPT_IN_FOR_ONE_TOKEN_OUT = 0,
-  EXACT_BPT_IN_FOR_TOKENS_OUT,
+  EXACT_BPT_IN_FOR_TOKENS_OUT = 0,
   BPT_IN_FOR_EXACT_TOKENS_OUT,
+  INVALID
 }
 
 export enum TempusAMMJoinKind {
@@ -123,7 +123,7 @@ export class TempusAMM extends ContractBase {
     await this.vault.connect(from).joinPool(poolId, from.address, from.address, joinPoolRequest);
   }
 
-  async exitPoolExactLpAmountIn(from: SignerWithAddress, lpTokensAmount: Number, singleToken:boolean = false, singleTokenIndex:Number = 0) {
+  async exitPoolExactLpAmountIn(from: SignerWithAddress, lpTokensAmount: Number) {
     const poolId = await this.contract.getPoolId();
     
     const assets = [
@@ -132,9 +132,7 @@ export class TempusAMM extends ContractBase {
     ].sort(( asset1, asset2 ) => parseInt(asset1.address) - parseInt(asset2.address));
 
     const exitUserData = ethers.utils.defaultAbiCoder.encode(
-      singleToken ? ['uint256', 'uint256', 'uint256'] : ['uint256', 'uint256'], 
-      singleToken ? 
-        [TempusAMMExitKind.EXACT_BPT_IN_FOR_ONE_TOKEN_OUT, toWei(lpTokensAmount), singleTokenIndex] :
+        ['uint256', 'uint256'], 
         [TempusAMMExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT, toWei(lpTokensAmount)]
     );
     

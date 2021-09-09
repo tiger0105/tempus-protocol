@@ -85,7 +85,6 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         EXACT_TOKENS_IN_FOR_BPT_OUT
     }
     enum ExitKind {
-        EXACT_BPT_IN_FOR_ONE_TOKEN_OUT,
         EXACT_BPT_IN_FOR_TOKENS_OUT,
         BPT_IN_FOR_EXACT_TOKENS_OUT
     }
@@ -448,13 +447,13 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         bytes memory userData
     ) private returns (uint256, uint256[] memory) {
         ExitKind kind = userData.exitKind();
-        require(kind != ExitKind.EXACT_BPT_IN_FOR_ONE_TOKEN_OUT, "Exit kind not supported!");
 
         if (kind == ExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT) {
             return _exitExactBPTInForTokensOut(balances, userData);
-        } else {
-            // ExitKind.BPT_IN_FOR_EXACT_TOKENS_OUT
+        } else if (kind == ExitKind.BPT_IN_FOR_EXACT_TOKENS_OUT) {
             return _exitBPTInForExactTokensOut(balances, scalingFactors, userData);
+        } else {
+            revert("Unhandled exit kind.");
         }
     }
 
