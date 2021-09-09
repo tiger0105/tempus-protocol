@@ -4,7 +4,6 @@ import { ITestPool } from "./pool-utils/ITestPool";
 import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
 
 import { Signer } from "./utils/ContractBase";
-import { MAX_UINT256 } from "./utils/Decimal";
 
 describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
 {
@@ -82,6 +81,47 @@ describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
     expect(await pool.tempus.totalFees()).to.equal(2); // 2 as accumulated fees
     expect(await pool.tempus.contractBalance()).to.equal(2); // should have 2 in the pool (this is the fees)
     (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/498); // receive 98 back
+  });
+
+  it("Should collect tokens as fees after maturity with additional yield with fee percantage 0", async () =>
+  {
+    await pool.createDefault();
+    await pool.setupAccounts(owner, [[user, 500]]);
+
+    await pool.depositYBT(user, 100);
+    expect(await pool.tempus.contractBalance()).to.equal(100); // all 100 in the pool
+    (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/400);
+
+    await pool.fastForwardToMaturity();
+    await pool.setInterestRate(1.02);
+    (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/pool.yieldPeggedToAsset ? 408 : 400);
+
+    await pool.redeemToYBT(user, 100, 100);
+    
+    const ybtFeeAmount = await pool.tempus.numYieldTokensPerAsset(2, 1.02);
+    expect(await pool.tempus.totalFees()).to.equal(ybtFeeAmount);  
+    (await pool.userState(user)).expectMulti(0, 0, /*peggedYBT*/508, /*variableYBT*/498.03921568627453);
+  });
+
+  it("Should collect tokens as fees after maturity with additional yield with fee percantage != 0", async () =>
+  {
+    await pool.createDefault();
+    await pool.setupAccounts(owner, [[user, 500]]);
+
+    await pool.tempus.setFeesConfig(owner, { depositPercent: 0.0, earlyRedeemPercent: 0.0, matureRedeemPercent: 0.01 });
+    await pool.depositYBT(user, 100);
+    expect(await pool.tempus.contractBalance()).to.equal(100); // all 100 in the pool
+    (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/400);
+
+    await pool.fastForwardToMaturity();
+    await pool.setInterestRate(1.02);
+    (await pool.userState(user)).expectMulti(100, 100, /*peggedYBT*/408, /*variableYBT*/400);
+
+    await pool.redeemToYBT(user, 100, 100);
+
+    const ybtFeeAmount = await pool.tempus.numYieldTokensPerAsset(3, 1.02);
+    expect(await pool.tempus.totalFees()).to.equal(ybtFeeAmount);
+    (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/pool.yieldPeggedToAsset ? 507 : 497.05882352941177);
   });
 
   it("Should transfer fees to specified account", async () =>
