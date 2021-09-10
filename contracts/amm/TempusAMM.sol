@@ -28,10 +28,12 @@ import "./interfaces/IRateProvider.sol";
 import "./../ITempusPool.sol";
 import "./../token/IPoolShare.sol";
 import "./TempusAMMUserDataHelpers.sol";
+import "./VecMath.sol";
 
 contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRateProvider {
     using FixedPoint for uint256;
     using TempusAMMUserDataHelpers for bytes;
+    using VecMath for uint256[];
 
     // This contract uses timestamps to slowly update its Amplification parameter over time. These changes must occur
     // over a minimum time period much larger than the blocktime, making timestamp manipulation a non-issue.
@@ -163,7 +165,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         (uint256 indexIn, uint256 indexOut) = address(tokenIn) == address(_token0) ? (0, 1) : (1, 0);
 
         amount = _subtractSwapFeeAmount(amount);
-        _rateAdjustBalancesStored(balances);
+        balances.mul(_getTokenRatesStored());
         uint256 rateAdjustedSwapAmount = (amount * tokenIn.getPricePerFullShareStored()) / _TEMPUS_SHARE_PRECISION;
 
         uint256 amountOut = StableMath._calcOutGivenIn(currentAmp, balances, indexIn, indexOut, rateAdjustedSwapAmount);
@@ -185,7 +187,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         (uint256 currentAmp, ) = _getAmplificationParameter();
         (IPoolShare tokenIn, IPoolShare tokenOut) = indexIn == 0 ? (_token0, _token1) : (_token1, _token0);
 
-        _rateAdjustBalances(balances);
+        balances.mul(_getTokenRates());
         uint256 rateAdjustedSwapAmount = (swapRequest.amount * tokenIn.getPricePerFullShare()) /
             _TEMPUS_SHARE_PRECISION;
 
@@ -276,7 +278,8 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         InputHelpers.ensureInputLengthMatch(amountsIn.length, _TOTAL_TOKENS);
         _upscaleArray(amountsIn, scalingFactors);
 
-        _rateAdjustBalances(amountsIn);
+        uint256[] memory tokenRates = _getTokenRates();
+        amountsIn.mul(tokenRates);
         (uint256 currentAmp, ) = _getAmplificationParameter();
         uint256 invariantAfterJoin = StableMath._calculateInvariant(currentAmp, amountsIn, true);
 
@@ -285,7 +288,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
         _updateLastInvariant(invariantAfterJoin, currentAmp);
 
-        _undoRateAdjustBalances(amountsIn);
+        amountsIn.div(tokenRates);
 
         return (bptAmountOut, amountsIn);
     }
@@ -313,7 +316,8 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
             uint256[] memory
         )
     {
-        _rateAdjustBalances(balances);
+        uint256[] memory tokenRates = _getTokenRates();
+        balances.mul(tokenRates);
 
         // Due protocol swap fee amounts are computed by measuring the growth of the invariant between the previous join
         // or exit event and now - the invariant's growth is due exclusively to swap fees. This avoids spending gas to
@@ -321,15 +325,15 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         uint256[] memory dueProtocolFeeAmounts = _getDueProtocolFeeAmounts(balances, protocolSwapFeePercentage);
 
         // Update current balances by subtracting the protocol fee amounts
-        _mutateAmounts(balances, dueProtocolFeeAmounts, FixedPoint.sub);
+        balances.sub(dueProtocolFeeAmounts);
         (uint256 bptAmountOut, uint256[] memory amountsIn) = _doJoin(balances, scalingFactors, userData);
 
         // Update the invariant with the balances the Pool will have after the join, in order to compute the
         // protocol swap fee amounts due in future joins and exits.
         _updateInvariantAfterJoin(balances, amountsIn);
 
-        _undoRateAdjustBalances(amountsIn);
-        _undoRateAdjustBalances(dueProtocolFeeAmounts);
+        amountsIn.div(tokenRates);
+        dueProtocolFeeAmounts.div(tokenRates);
 
         return (bptAmountOut, amountsIn, dueProtocolFeeAmounts);
     }
@@ -360,7 +364,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
         (uint256 currentAmp, ) = _getAmplificationParameter();
 
-        _rateAdjustBalances(amountsIn);
+        amountsIn.mul(_getTokenRates());
         uint256 bptAmountOut = StableMath._calcBptOutGivenExactTokensIn(
             currentAmp,
             balances,
@@ -395,7 +399,8 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
             uint256[] memory dueProtocolFeeAmounts
         )
     {
-        _rateAdjustBalances(balances);
+        uint256[] memory tokenRates = _getTokenRates();
+        balances.mul(tokenRates);
 
         // Exits are not completely disabled while the contract is paused: proportional exits (exact BPT in for tokens
         // out) remain functional.
@@ -407,7 +412,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
             dueProtocolFeeAmounts = _getDueProtocolFeeAmounts(balances, protocolSwapFeePercentage);
 
             // Update current balances by subtracting the protocol fee amounts
-            _mutateAmounts(balances, dueProtocolFeeAmounts, FixedPoint.sub);
+            balances.sub(dueProtocolFeeAmounts);
         } else {
             // If the contract is paused, swap protocol fee amounts are not charged to avoid extra calculations and
             // reduce the potential for errors.
@@ -420,8 +425,8 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         // protocol swap fee amounts due in future joins and exits.
         _updateInvariantAfterExit(balances, amountsOut);
 
-        _undoRateAdjustBalances(amountsOut);
-        _undoRateAdjustBalances(dueProtocolFeeAmounts);
+        amountsOut.div(tokenRates);
+        dueProtocolFeeAmounts.div(tokenRates);
 
         return (bptAmountIn, amountsOut, dueProtocolFeeAmounts);
     }
@@ -470,7 +475,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         InputHelpers.ensureInputLengthMatch(amountsOut.length, _TOTAL_TOKENS);
         _upscaleArray(amountsOut, scalingFactors);
 
-        _rateAdjustBalances(amountsOut);
+        amountsOut.mul(_getTokenRates());
 
         (uint256 currentAmp, ) = _getAmplificationParameter();
         uint256 bptAmountIn = StableMath._calcBptInGivenExactTokensOut(
@@ -544,7 +549,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
      * in the future.
      */
     function _updateInvariantAfterJoin(uint256[] memory balances, uint256[] memory amountsIn) private {
-        _mutateAmounts(balances, amountsIn, FixedPoint.add);
+        balances.add(amountsIn);
 
         (uint256 currentAmp, ) = _getAmplificationParameter();
         // This invariant is used only to compute the final balance when calculating the protocol fees. These are
@@ -557,7 +562,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
      * in the future.
      */
     function _updateInvariantAfterExit(uint256[] memory balances, uint256[] memory amountsOut) private {
-        _mutateAmounts(balances, amountsOut, FixedPoint.sub);
+        balances.sub(amountsOut);
 
         (uint256 currentAmp, ) = _getAmplificationParameter();
         // This invariant is used only to compute the final balance when calculating the protocol fees. These are
@@ -565,66 +570,22 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         _updateLastInvariant(StableMath._calculateInvariant(currentAmp, balances, true), currentAmp);
     }
 
-    /**
-     * @dev Mutates `amounts` by applying `mutation` with each entry in `arguments`.
-     *
-     * Equivalent to `amounts = amounts.map(mutation)`.
-     */
-    function _mutateAmounts(
-        uint256[] memory toMutate,
-        uint256[] memory arguments,
-        function(uint256, uint256) pure returns (uint256) mutation
-    ) private pure {
-        for (uint256 i = 0; i < _TOTAL_TOKENS; ++i) {
-            toMutate[i] = mutation(toMutate[i], arguments[i]);
-        }
-    }
-
-    /// @dev Adjusting balances by getPricePerFullShare per each token
-    /// @param balances Array of token balances to be adjusted
-    function _rateAdjustBalances(uint256[] memory balances) private {
-        uint256[] memory rates = new uint256[](2); // (balances.length) == 2
+    /// @dev Creates 2 element array of token rates(pricePerFullshare)
+    /// @return Array of token rates
+    function _getTokenRates() private returns (uint256[] memory) {
+        uint256[] memory rates = new uint256[](_TOTAL_TOKENS);
         rates[0] = _token0.getPricePerFullShare();
         rates[1] = _token1.getPricePerFullShare();
-
-        _mutateAmounts(balances, rates, _mutateBalanceWithRate);
+        return rates;
     }
 
-    /// @dev Adjusting balances by getPricePerFullShareStored per each token.
-    ///      These balances are passed over to StableMath
-    /// @param balances Array of token balances to be adjusted
-    function _rateAdjustBalancesStored(uint256[] memory balances) private view {
-        uint256[] memory rates = new uint256[](2); // (balances.length) == 2
+    /// @dev Creates 2 element array of token rates(pricePerFullShareStored)
+    /// @return Array of stored token rates
+    function _getTokenRatesStored() private view returns (uint256[] memory) {
+        uint256[] memory rates = new uint256[](_TOTAL_TOKENS);
         rates[0] = _token0.getPricePerFullShareStored();
         rates[1] = _token1.getPricePerFullShareStored();
-
-        _mutateAmounts(balances, rates, _mutateBalanceWithRate);
-    }
-
-    /// @dev Mutate balance with rate, used to adjust rates for StableMath
-    /// @param balance Token balance to be mutated
-    /// @param rate Rate used for mutating balance
-    /// @return Mutated balance
-    function _mutateBalanceWithRate(uint256 balance, uint256 rate) private pure returns (uint256) {
-        return (balance * rate) / _TEMPUS_SHARE_PRECISION;
-    }
-
-    /// @dev Used to undo adjustment of balances which are result of StableMath calculations
-    /// @param balances Array of balances returned from StableMath
-    function _undoRateAdjustBalances(uint256[] memory balances) private {
-        uint256[] memory rates = new uint256[](2);
-        rates[0] = _token0.getPricePerFullShare();
-        rates[1] = _token1.getPricePerFullShare();
-
-        _mutateAmounts(balances, rates, _unmutateBalanceWithRate);
-    }
-
-    /// @dev Un-mutate balance with rate, used to adjust rates returned balances from StableMath
-    /// @param balance Token balance to be un-mutated
-    /// @param rate Rate used for un-mutating balance
-    /// @return Un-mutated balance
-    function _unmutateBalanceWithRate(uint256 balance, uint256 rate) private pure returns (uint256) {
-        return (balance * _TEMPUS_SHARE_PRECISION) / rate;
+        return rates;
     }
 
     function getRate() public view override returns (uint256) {
@@ -636,7 +597,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
         _upscaleArray(balances, _scalingFactors());
 
-        _rateAdjustBalancesStored(balances);
+        balances.mul(_getTokenRatesStored());
         uint256 invariant = StableMath._calculateInvariant(currentAmp, balances, false);
         return invariant.divDown(totalSupply());
     }
