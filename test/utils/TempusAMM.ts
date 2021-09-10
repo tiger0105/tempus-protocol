@@ -99,6 +99,11 @@ export class TempusAMM extends ContractBase {
     return fromWei(await this.contract.getExpectedReturnGivenIn(toWei(inAmount), yieldShareIn));
   }
 
+  async getExpectedTokensOutGivenBPTIn(inAmount: NumberOrString): Promise<{principals:number, yields:number}> {
+    const p = await this.contract.getExpectedTokensOutGivenBPTIn(toWei(inAmount));
+    return {principals: +fromWei(p.principals), yields: +fromWei(p.yields)};
+  }
+
   async provideLiquidity(from: SignerWithAddress, principalShareBalance: Number, yieldShareBalance: Number, joinKind: TempusAMMJoinKind) {
     await this.principalShare.approve(from, this.vault.address, principalShareBalance);
     await this.yieldShare.approve(from, this.vault.address, yieldShareBalance);
@@ -132,8 +137,8 @@ export class TempusAMM extends ContractBase {
     ].sort(( asset1, asset2 ) => parseInt(asset1.address) - parseInt(asset2.address));
 
     const exitUserData = ethers.utils.defaultAbiCoder.encode(
-        ['uint256', 'uint256'], 
-        [TempusAMMExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT, toWei(lpTokensAmount)]
+      ['uint256', 'uint256'], 
+      [TempusAMMExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT, toWei(lpTokensAmount)]
     );
     
     const exitPoolRequest = {
