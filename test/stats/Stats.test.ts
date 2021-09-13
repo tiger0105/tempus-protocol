@@ -4,17 +4,31 @@ import { TempusPool } from "../utils/TempusPool";
 import { describeForEachPool } from "../pool-utils/MultiPoolTestSuite";
 import { ITestPool } from "../pool-utils/ITestPool";
 import { Stats } from "../utils/Stats";
+import { TempusController } from "../utils/TempusController";
+import { TempusAMM, TempusAMMJoinKind } from "../utils/TempusAMM";
 
 describeForEachPool("Stats", (testPool:ITestPool) =>
 {
   let owner:Signer, user1:Signer, user2:Signer;
   let pool:TempusPool;
+  let amm:TempusAMM;
   let stats:Stats;
+  let controller:TempusController;
+
+  // pre-initialize AMM liquidity
+  async function initAMM(user:Signer, ybtDeposit:number, principals:number, yields:number)
+  {
+    await controller.depositYieldBearing(user, pool, ybtDeposit, user);
+    await amm.provideLiquidity(user1, principals, yields, TempusAMMJoinKind.INIT);
+  }
 
   beforeEach(async () =>
   {
     pool = await testPool.createDefault();
+    amm = testPool.amm;
+    controller = testPool.tempus.controller;
     [owner, user1, user2] = testPool.signers;
+    await testPool.setupAccounts(owner, [[user1,/*ybt*/1000000],[user2,/*ybt*/100000]]);
     stats = await Stats.create();
   });
 
@@ -52,5 +66,14 @@ describeForEachPool("Stats", (testPool:ITestPool) =>
       expect(await stats.estimatedRedeem(testPool, 10, 10, /*BT*/false)).to.equal(10, "1x YBT redeeming ALL with rate 2.0");
       expect(await stats.estimatedRedeem(testPool, 10, 10, /*BT*/true )).to.equal(20, "2x BT redeeming ALL with rate 2.0");
     }
+  });
+
+  it("Estimated DepositAndProvideLiquidity returns expected values", async () =>
+  {
+    await initAMM(user1, /*ybtDeposit*/1200, /*principals*/120, /*yields*/1200);
+    const result = await stats.estimatedDepositAndProvideLiquidity(testPool, 10, /*BT*/false);
+    expect(+result[0]).to.be.within(1.81, 1.82);
+    expect(result[1]).to.equal(9);
+    expect(result[2]).to.equal(0);
   });
 });

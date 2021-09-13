@@ -148,6 +148,28 @@ describeForEachPool("TempusAMM", (testFixture:ITestPool) =>
     expect(balanceYieldsBefore + expectedReturn.yields).to.be.within(0.999999 * balanceYieldsAfter, 1.0000001 * balanceYieldsAfter);
   });
 
+  it("[getExpectedLPTokensForTokensIn] verifies the expected amount is equivilant to actual join to TempusAMM", async () => {
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+    await testFixture.setTimeRelativeToPoolStart(0.5);
+    const expectedReturn = await testFixture.amm.getExpectedLPTokensForTokensIn(10, 100);
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+    await testFixture.setNextBlockTimestampRelativeToPoolStart(0.5);
+
+    await evmSetAutomine(false);
+    
+    try {
+      const balanceLpBefore = +await testFixture.amm.balanceOf(owner);
+      await testFixture.amm.provideLiquidity(owner, 10, 100, TempusAMMJoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT);
+      await evmMine();
+      const balanceLpAfter = +await testFixture.amm.balanceOf(owner);
+      await evmMine();
+      expect(balanceLpBefore + expectedReturn).to.be.within(0.999999 * balanceLpAfter, 1.0000001 * balanceLpAfter);
+    } finally {
+      await evmSetAutomine(true);
+    }
+    
+  });
+
   it("checks amplification and invariant in multiple stages", async () =>
   {
     await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5});

@@ -8,9 +8,12 @@ import "./ChainlinkTokenPairPriceFeed/ChainlinkTokenPairPriceFeed.sol";
 import "../ITempusPool.sol";
 import "../math/Fixed256x18.sol";
 import "../token/PoolShare.sol";
+import "../amm/interfaces/ITempusAMM.sol";
+import "../utils/AMMBalancesHelper.sol";
 
 contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
     using Fixed256x18 for uint256;
+    using AMMBalancesHelper for uint256[];
 
     /// @param pool The TempusPool to fetch its TVL (total value locked)
     /// @return total value locked of a TempusPool (denominated in BackingTokens)
@@ -78,5 +81,39 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
         bool toBackingToken
     ) public view returns (uint256) {
         return pool.estimatedRedeem(principals, yields, toBackingToken);
+    }
+
+    /// Gets the estimated amount of Shares and Lp token amounts
+    /// @param tempusAMM Tempus AMM to use to swap TYS for TPS
+    /// @param amount Amount of BackingTokens or YieldBearingTokens that would be deposited
+    /// @param isBackingToken If true, @param amount is in BackingTokens, otherwise YieldBearingTokens
+    /// @return lpTokens Ampunt of LP tokens that user could recieve
+    /// @return principals Amount of Principals that user could recieve in this action
+    /// @return yields Amount of Yields that user could recieve in this action
+    function estimatedDepositAndProvideLiquidity(
+        ITempusAMM tempusAMM,
+        uint256 amount,
+        bool isBackingToken
+    )
+        public
+        view
+        returns (
+            uint256 lpTokens,
+            uint256 principals,
+            uint256 yields
+        )
+    {
+        ITempusPool pool = tempusAMM.tempusPool();
+        uint256 shares = estimatedMintedShares(pool, amount, isBackingToken);
+
+        (IERC20[] memory ammTokens, uint256[] memory ammBalances, ) = tempusAMM.getVault().getPoolTokens(
+            tempusAMM.getPoolId()
+        );
+        uint256[] memory ammLiquidityProvisionAmounts = ammBalances.getLiquidityProvisionSharesAmounts(shares);
+
+        lpTokens = tempusAMM.getExpectedLPTokensForTokensIn(ammLiquidityProvisionAmounts);
+        (principals, yields) = (address(pool.principalShare()) == address(ammTokens[0]))
+            ? (shares - ammLiquidityProvisionAmounts[0], shares - ammLiquidityProvisionAmounts[1])
+            : (shares - ammLiquidityProvisionAmounts[1], shares - ammLiquidityProvisionAmounts[0]);
     }
 }
