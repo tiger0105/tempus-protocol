@@ -116,4 +116,18 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
             ? (shares - ammLiquidityProvisionAmounts[0], shares - ammLiquidityProvisionAmounts[1])
             : (shares - ammLiquidityProvisionAmounts[1], shares - ammLiquidityProvisionAmounts[0]);
     }
+
+    /// Gets the estimated amount of Shares and Lp token amounts
+    /// @param tempusAMM Tempus AMM to use to swap TYS for TPS
+    /// @param amount Amount of BackingTokens or YieldBearingTokens that would be deposited
+    /// @param isBackingToken If true, @param amount is in BackingTokens, otherwise YieldBearingTokens
+    /// @return principals Amount of Principals that user could recieve in this action
+    function estimatedDepositAndFix(
+        ITempusAMM tempusAMM,
+        uint256 amount,
+        bool isBackingToken
+    ) public view returns (uint256 principals) {
+        principals = estimatedMintedShares(tempusAMM.tempusPool(), amount, isBackingToken);
+        principals += tempusAMM.getExpectedReturnGivenIn(principals, true);
+    }
 }
