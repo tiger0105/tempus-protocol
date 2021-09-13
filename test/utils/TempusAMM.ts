@@ -104,6 +104,16 @@ export class TempusAMM extends ContractBase {
     return {principals: +fromWei(p.principals), yields: +fromWei(p.yields)};
   }
 
+  async getExpectedLPTokensForTokensIn(principalsIn:NumberOrString, yieldsIn:NumberOrString): Promise<number> {
+    const assets = [
+      { address: this.principalShare.address, amount: toWei(principalsIn) },
+      { address: this.yieldShare.address, amount: toWei(yieldsIn) }
+    ].sort(( asset1, asset2 ) => parseInt(asset1.address) - parseInt(asset2.address));
+    const amountsIn = assets.map(({ amount }) => amount);
+
+    return +fromWei(await this.contract.getExpectedLPTokensForTokensIn(amountsIn));
+  }
+
   async provideLiquidity(from: SignerWithAddress, principalShareBalance: Number, yieldShareBalance: Number, joinKind: TempusAMMJoinKind) {
     await this.principalShare.approve(from, this.vault.address, principalShareBalance);
     await this.yieldShare.approve(from, this.vault.address, yieldShareBalance);
