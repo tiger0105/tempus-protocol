@@ -731,10 +731,13 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         uint256 startTime,
         uint256 endTime
     ) private {
-        _amplificationData.startValue = uint64(startValue);
-        _amplificationData.endValue = uint64(endValue);
-        _amplificationData.startTime = uint64(startTime);
-        _amplificationData.endTime = uint64(endTime);
+        // Here we use inline assembly to save amount of sstores
+        // AmplificationData fits one storage slot, so we use inline assembly to update it with only one sstore
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            let value := or(or(shl(192, startValue), shl(128, endValue)), or(shl(64, startTime), endTime))
+            sstore(_amplificationData.slot, value)
+        }
 
         emit AmpUpdateStarted(startValue, endValue, startTime, endTime);
     }
@@ -749,10 +752,17 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
             uint256 endTime
         )
     {
-        startValue = _amplificationData.startValue;
-        endValue = _amplificationData.endValue;
-        startTime = _amplificationData.startTime;
-        endTime = _amplificationData.endTime;
+        // Here we use inline assembly to save amount of sloads
+        // AmplificationData fits one storage slot, so we use inline assembly to read it with only one sload
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            let mask := 0x000000000000000000000000000000000000000000000000000000000FFFFFFFFFFFFFFFF
+            let value := sload(_amplificationData.slot)
+            startValue := and(shr(192, value), mask)
+            endValue := and(shr(128, value), mask)
+            startTime := and(shr(64, value), mask)
+            endTime := and(value, mask)
+        }
     }
 
     function _isToken0(IERC20 token) internal view returns (bool) {
