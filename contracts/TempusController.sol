@@ -513,18 +513,7 @@ contract TempusController is PermanentlyOwnable {
             "AMM not initialized"
         );
     }
-
-<<<<<<< HEAD
-    function getAMMBalancesRatio(uint256[] memory ammBalances) private pure returns (uint256[2] memory balancesRatio) {
-        uint256 rate = ammBalances[0].divf18(ammBalances[1]);
-
-        (balancesRatio[0], balancesRatio[1]) = rate > Fixed256x18.ONE
-            ? (Fixed256x18.ONE, Fixed256x18.ONE.divf18(rate))
-            : (rate, Fixed256x18.ONE);
-    }
-
-=======
->>>>>>> 83181c3 (util: Adding helper library for AMM balances.)
+    
     function getAMMOrderedAmounts(
         ITempusPool tempusPool,
         uint256 principalAmount,
