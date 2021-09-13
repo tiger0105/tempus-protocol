@@ -10,9 +10,11 @@ import "../TempusController.sol";
 import "../math/Fixed256x18.sol";
 import "../token/PoolShare.sol";
 import "../amm/interfaces/ITempusAMM.sol";
+import "../utils/AMMBalancesHelper.sol";
 
 contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
     using Fixed256x18 for uint256;
+    using AMMBalancesHelper for uint256[];
 
     /// @param pool The TempusPool to fetch its TVL (total value locked)
     /// @return total value locked of a TempusPool (denominated in BackingTokens)
@@ -104,17 +106,13 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
         ITempusPool pool = tempusAMM.tempusPool();
         uint256 shares = estimatedMintedShares(pool, amount, isBackingToken);
 
-        (ammTokens, ammBalances, ) = vault.getPoolTokens(poolId);
-        uint256[2] memory ammDepositPercentages = getAMMBalancesRatio(ammBalances);
-        uint256[] memory ammLiquidityProvisionAmounts = new uint256[](2);
-
-        (ammLiquidityProvisionAmounts[0], ammLiquidityProvisionAmounts[1]) = (
-            ammTokens[0].balanceOf(address(this)).mulf18(ammDepositPercentages[0]),
-            ammTokens[1].balanceOf(address(this)).mulf18(ammDepositPercentages[1])
+        (IERC20[] memory ammTokens, uint256[] memory ammBalances, ) = tempusAMM.getVault().getPoolTokens(
+            tempusAMM.getPoolId()
         );
+        uint256[] memory ammLiquidityProvisionAmounts = ammBalances.getLiquidityProvisionSharesAmounts(shares);
 
         lpTokens = tempusAMM.getExpectedLPTokensForTokensIn(ammLiquidityProvisionAmounts);
-        (principals, yields) = (tempusAMM.tempusPool().principalShare() == ammTokens[0])
+        (principals, yields) = (address(pool.principalShare()) == address(ammTokens[0]))
             ? (shares - ammLiquidityProvisionAmounts[0], shares - ammLiquidityProvisionAmounts[1])
             : (shares - ammLiquidityProvisionAmounts[1], shares - ammLiquidityProvisionAmounts[0]);
 
