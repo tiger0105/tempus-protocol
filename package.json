@@ -46,7 +46,7 @@
   },
   "scripts": {
     "build": "npx hardhat compile",
-    "test": "npx hardhat test test/*.ts test/amm/*.ts test/mocks/**/*.ts test/token/*.ts",
+    "test": "npx hardhat test test/*.ts test/amm/*.ts test/mocks/**/*.ts test/token/*.ts test/stats/*.ts",
     "test:integration": "cross-env HARDHAT_FORK=mainnet HARDHAT_FORK_NUMBER=12862536 npx hardhat test integration-tests/*.ts integration-tests/**/*.ts",
     "coverage": "npx hardhat coverage --testfiles \"test/**/*.ts\"",
     "coverage:integration": "cross-env HARDHAT_FORK=mainnet HARDHAT_FORK_NUMBER=12862536 npx hardhat coverage --testfiles \"integration-tests/**/*.ts\"",
