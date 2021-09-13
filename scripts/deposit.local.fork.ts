@@ -88,10 +88,6 @@ class DeployLocalForked {
     await amm.swapGivenIn(owner, tokenInAddress, tokenOutAddress, amount);
   }
 
-  static async makeSwapGivenOut(amm: TempusAMM, owner: SignerWithAddress, tokenInAddress: string, tokenOutAddress: string, amount: number) {
-    await amm.swapGivenOut(owner, tokenInAddress, tokenOutAddress, amount);
-  }
-
   static async makeDeposit(amount: number, pool: TempusPool, from: string, token: ERC20) {
     const fromSigner = await ethers.getSigner(from);
 
