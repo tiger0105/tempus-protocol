@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./ITokenPairPriceFeed.sol";
 import "./ChainlinkTokenPairPriceFeed/ChainlinkTokenPairPriceFeed.sol";
 import "../ITempusPool.sol";
-import "../TempusController.sol";
 import "../math/Fixed256x18.sol";
 import "../token/PoolShare.sol";
 import "../amm/interfaces/ITempusAMM.sol";
