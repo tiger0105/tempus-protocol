@@ -174,10 +174,6 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         return amountOut;
     }
 
-    /// @dev queries exiting TempusAMM with exact BPT tokens in
-    /// @param bptAmountIn amount of LP tokens in
-    /// @return principals Amount of principals that user would recieve back
-    /// @return yields Amount of yields that user would recieve back
     function getExpectedTokensOutGivenBPTIn(uint256 bptAmountIn)
         external
         view
@@ -191,6 +187,24 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         (principals, yields) = (address(_token0) == address(tempusPool.principalShare()))
             ? (amountsOut[0], amountsOut[1])
             : (amountsOut[1], amountsOut[0]);
+    }
+
+    function getExpectedLPTokensForTokensIn(uint256[] memory amountsIn) external view returns (uint256) {
+        (, uint256[] memory balances, ) = getVault().getPoolTokens(getPoolId());
+        amountsIn.mul(_scalingFactors());
+        
+        uint256[] memory tokenRates = _getTokenRatesStored();
+        balances.mul(tokenRates);
+        amountsIn.mul(tokenRates);
+
+        (uint256 currentAmp, ) = _getAmplificationParameter();
+        return StableMath._calcBptOutGivenExactTokensIn(
+            currentAmp,
+            balances,
+            amountsIn,
+            totalSupply(),
+            getSwapFeePercentage()
+        );
     }
 
     // Base Pool handlers
@@ -380,10 +394,10 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         InputHelpers.ensureInputLengthMatch(_TOTAL_TOKENS, amountsIn.length);
 
         _upscaleArray(amountsIn, scalingFactors);
+        amountsIn.mul(_getTokenRates());
 
         (uint256 currentAmp, ) = _getAmplificationParameter();
 
-        amountsIn.mul(_getTokenRates());
         uint256 bptAmountOut = StableMath._calcBptOutGivenExactTokensIn(
             currentAmp,
             balances,

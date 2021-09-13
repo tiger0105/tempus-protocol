@@ -30,9 +30,24 @@ interface ITempusAMM {
 
     /// Calculates the expected returned swap amount
     /// @param amount The given input amount of tokens
-    /// @param yieldShareIn Specifies whether to calculate the swap from TYS to TPS (if true) or from TPS to TYS (if false)
+    /// @param yieldShareIn Specifies whether to calculate the swap from TYS to TPS (if true) or from TPS to TYS
     /// @return The expected returned amount of outToken
     function getExpectedReturnGivenIn(uint256 amount, bool yieldShareIn) external view returns (uint256);
+
+
+    /// @dev queries exiting TempusAMM with exact BPT tokens in
+    /// @param bptAmountIn amount of LP tokens in
+    /// @return principals Amount of principals that user would recieve back
+    /// @return yields Amount of yields that user would recieve back
+    function getExpectedTokensOutGivenBPTIn(uint256 bptAmountIn)
+        external
+        view
+        returns (uint256 principals, uint256 yields);
+
+    /// @dev queries joining TempusAMM with exact tokens in
+    /// @param amountsIn amount of tokens to be added to the pool
+    /// @return amount of LP tokens that could be recieved
+    function getExpectedLPTokensForTokensIn(uint256[] memory amountsIn) external view returns (uint256);
 
     /// @dev This function returns the appreciation of one BPT relative to the
     /// underlying tokens. This starts at 1 when the pool is created and grows over time
