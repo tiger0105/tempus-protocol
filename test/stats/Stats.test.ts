@@ -76,4 +76,11 @@ describeForEachPool("Stats", (testPool:ITestPool) =>
     expect(result[1]).to.equal(9);
     expect(result[2]).to.equal(0);
   });
+
+  it("Estimated DepositAndFix returns expected values", async () =>
+  {
+    await initAMM(user1, /*ybtDeposit*/1200, /*principals*/120, /*yields*/1200);
+    await testPool.setNextBlockTimestampRelativeToPoolStart(0.5);
+    expect(+await stats.estimatedDepositAndFix(testPool, 1, /*BT*/false)).to.be.within(1.097, 1.098);
+  });
 });

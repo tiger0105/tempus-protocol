@@ -1,5 +1,5 @@
 import { Contract } from "ethers";
-import { NumberOrString } from "./Decimal";
+import { fromWei, NumberOrString } from "./Decimal";
 import { ContractBase } from "./ContractBase";
 import { ITestPool } from "../pool-utils/ITestPool";
 
@@ -48,5 +48,10 @@ export class Stats extends ContractBase {
     const t = pool.tempus;
     const tuple = await this.contract.estimatedDepositAndProvideLiquidity(pool.amm.address, t.toBigNum(amount), isBackingToken);
     return [ t.fromBigNum(tuple[0]), t.fromBigNum(tuple[1]), t.fromBigNum(tuple[2]) ];
+  }
+  
+  async estimatedDepositAndFix(pool:ITestPool, amount:NumberOrString, isBackingToken:boolean): Promise<NumberOrString> {
+    const t = pool.tempus;
+    return t.fromBigNum(await this.contract.estimatedDepositAndFix(pool.amm.address, t.toBigNum(amount), isBackingToken));
   }
 }
