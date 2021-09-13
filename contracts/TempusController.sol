@@ -513,7 +513,7 @@ contract TempusController is PermanentlyOwnable {
             "AMM not initialized"
         );
     }
-    
+
     function getAMMOrderedAmounts(
         ITempusPool tempusPool,
         uint256 principalAmount,

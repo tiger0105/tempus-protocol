@@ -34,7 +34,6 @@ interface ITempusAMM {
     /// @return The expected returned amount of outToken
     function getExpectedReturnGivenIn(uint256 amount, bool yieldShareIn) external view returns (uint256);
 
-
     /// @dev queries exiting TempusAMM with exact BPT tokens in
     /// @param bptAmountIn amount of LP tokens in
     /// @return principals Amount of principals that user would recieve back

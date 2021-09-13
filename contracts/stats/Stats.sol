@@ -95,14 +95,15 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
         ITempusAMM tempusAMM,
         uint256 amount,
         bool isBackingToken
-    ) 
-        public 
-        view 
+    )
+        public
+        view
         returns (
             uint256 lpTokens,
             uint256 principals,
             uint256 yields
-        ) {
+        )
+    {
         ITempusPool pool = tempusAMM.tempusPool();
         uint256 shares = estimatedMintedShares(pool, amount, isBackingToken);
 
@@ -115,6 +116,5 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
         (principals, yields) = (address(pool.principalShare()) == address(ammTokens[0]))
             ? (shares - ammLiquidityProvisionAmounts[0], shares - ammLiquidityProvisionAmounts[1])
             : (shares - ammLiquidityProvisionAmounts[1], shares - ammLiquidityProvisionAmounts[0]);
-
     }
 }

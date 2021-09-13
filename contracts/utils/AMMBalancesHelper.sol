@@ -6,10 +6,11 @@ import "../math/Fixed256x18.sol";
 library AMMBalancesHelper {
     using Fixed256x18 for uint256;
 
-    function getLiquidityProvisionSharesAmounts(
-        uint256[] memory ammBalances,
-        uint256 shares
-    ) internal pure returns (uint256[] memory) {
+    function getLiquidityProvisionSharesAmounts(uint256[] memory ammBalances, uint256 shares)
+        internal
+        pure
+        returns (uint256[] memory)
+    {
         uint256[2] memory ammDepositPercentages = getAMMBalancesRatio(ammBalances);
         uint256[] memory ammLiquidityProvisionAmounts = new uint256[](2);
 
@@ -17,7 +18,7 @@ library AMMBalancesHelper {
             shares.mulf18(ammDepositPercentages[0]),
             shares.mulf18(ammDepositPercentages[1])
         );
-        
+
         return ammLiquidityProvisionAmounts;
     }
 

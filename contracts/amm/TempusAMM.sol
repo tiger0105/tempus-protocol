@@ -192,19 +192,20 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
     function getExpectedLPTokensForTokensIn(uint256[] memory amountsIn) external view returns (uint256) {
         (, uint256[] memory balances, ) = getVault().getPoolTokens(getPoolId());
         amountsIn.mul(_scalingFactors());
-        
+
         uint256[] memory tokenRates = _getTokenRatesStored();
         balances.mul(tokenRates);
         amountsIn.mul(tokenRates);
 
         (uint256 currentAmp, ) = _getAmplificationParameter();
-        return StableMath._calcBptOutGivenExactTokensIn(
-            currentAmp,
-            balances,
-            amountsIn,
-            totalSupply(),
-            getSwapFeePercentage()
-        );
+        return
+            StableMath._calcBptOutGivenExactTokensIn(
+                currentAmp,
+                balances,
+                amountsIn,
+                totalSupply(),
+                getSwapFeePercentage()
+            );
     }
 
     // Base Pool handlers
