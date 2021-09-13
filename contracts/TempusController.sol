@@ -9,10 +9,12 @@ import "./amm/interfaces/IVault.sol";
 import "./ITempusPool.sol";
 import "./math/Fixed256x18.sol";
 import "./utils/PermanentlyOwnable.sol";
+import "./utils/AMMBalancesHelper.sol";
 
 contract TempusController is PermanentlyOwnable {
     using Fixed256x18 for uint256;
     using SafeERC20 for IERC20;
+    using AMMBalancesHelper for uint256[];
 
     /// @dev Event emitted on a successful BT/YBT deposit.
     /// @param pool The Tempus Pool to which assets were deposited
@@ -84,7 +86,7 @@ contract TempusController is PermanentlyOwnable {
             depositYieldBearing(targetPool, tokenAmount, address(this));
         }
 
-        uint256[2] memory ammDepositPercentages = getAMMBalancesRatio(ammBalances);
+        uint256[2] memory ammDepositPercentages = ammBalances.getAMMBalancesRatio();
         uint256[] memory ammLiquidityProvisionAmounts = new uint256[](2);
 
         (ammLiquidityProvisionAmounts[0], ammLiquidityProvisionAmounts[1]) = (
@@ -512,6 +514,7 @@ contract TempusController is PermanentlyOwnable {
         );
     }
 
+<<<<<<< HEAD
     function getAMMBalancesRatio(uint256[] memory ammBalances) private pure returns (uint256[2] memory balancesRatio) {
         uint256 rate = ammBalances[0].divf18(ammBalances[1]);
 
@@ -520,6 +523,8 @@ contract TempusController is PermanentlyOwnable {
             : (rate, Fixed256x18.ONE);
     }
 
+=======
+>>>>>>> 83181c3 (util: Adding helper library for AMM balances.)
     function getAMMOrderedAmounts(
         ITempusPool tempusPool,
         uint256 principalAmount,
