@@ -130,6 +130,24 @@ describeForEachPool("TempusAMM", (testFixture:ITestPool) =>
     }
   });
 
+  it("[getExpectedTokensOutGivenBPTIn] verifies the expected amount is equivilant to actual exit from TempusAMM", async () => {
+    const inputAmount = 100;
+    
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+    await testFixture.setTimeRelativeToPoolStart(0.5);
+    const expectedReturn = await testFixture.amm.getExpectedTokensOutGivenBPTIn(inputAmount);
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+    await testFixture.setNextBlockTimestampRelativeToPoolStart(0.5);
+    
+    const balancePrincipalsBefore = +await testFixture.tempus.principalShare.balanceOf(owner);
+    const balanceYieldsBefore = +await testFixture.tempus.yieldShare.balanceOf(owner);
+    await testFixture.amm.exitPoolExactLpAmountIn(owner, inputAmount);
+    const balancePrincipalsAfter = +await testFixture.tempus.principalShare.balanceOf(owner);
+    const balanceYieldsAfter = +await testFixture.tempus.yieldShare.balanceOf(owner);
+    expect(balancePrincipalsBefore + expectedReturn.principals).to.be.within(0.999999 * balancePrincipalsAfter, 1.0000001 * balancePrincipalsAfter);
+    expect(balanceYieldsBefore + expectedReturn.yields).to.be.within(0.999999 * balanceYieldsAfter, 1.0000001 * balanceYieldsAfter);
+  });
+
   it("checks amplification and invariant in multiple stages", async () =>
   {
     await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5});

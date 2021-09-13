@@ -174,6 +174,25 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         return amountOut;
     }
 
+    /// @dev queries exiting TempusAMM with exact BPT tokens in
+    /// @param bptAmountIn amount of LP tokens in
+    /// @return principals Amount of principals that user would recieve back
+    /// @return yields Amount of yields that user would recieve back
+    function getExpectedTokensOutGivenBPTIn(uint256 bptAmountIn)
+        external
+        view
+        returns (uint256 principals, uint256 yields)
+    {
+        // We don't need to scale balances down here
+        // as calculation for amounts out is based on btpAmountIn / totalSupply() ratio
+        // Adjusting balances with rate, and then undoing it would just cause additional calculations
+        (, uint256[] memory balances, ) = getVault().getPoolTokens(getPoolId());
+        uint256[] memory amountsOut = StableMath._calcTokensOutGivenExactBptIn(balances, bptAmountIn, totalSupply());
+        (principals, yields) = (address(_token0) == address(tempusPool.principalShare()))
+            ? (amountsOut[0], amountsOut[1])
+            : (amountsOut[1], amountsOut[0]);
+    }
+
     // Base Pool handlers
 
     // Swap - General Pool specialization (from BaseGeneralPool)
