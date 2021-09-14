@@ -54,4 +54,9 @@ export class Stats extends ContractBase {
     const t = pool.tempus;
     return t.fromBigNum(await this.contract.estimatedDepositAndFix(pool.amm.address, t.toBigNum(amount), isBackingToken));
   }
+
+  async estimateExitAndRedeem(pool:ITestPool, lpTokens:NumberOrString, principals:NumberOrString, yields:NumberOrString, toBackingToken:boolean): Promise<NumberOrString> {
+    const t = pool.tempus;
+    return t.fromBigNum(await this.contract.estimateExitAndRedeem(pool.amm.address, t.toBigNum(lpTokens), t.toBigNum(principals), t.toBigNum(yields), toBackingToken));
+  }
 }
