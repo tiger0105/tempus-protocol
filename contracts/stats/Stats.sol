@@ -130,4 +130,27 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
         principals = estimatedMintedShares(tempusAMM.tempusPool(), amount, isBackingToken);
         principals += tempusAMM.getExpectedReturnGivenIn(principals, true);
     }
+
+    /// @dev Get estimated amount of Backing or Yield bearing tokens for exiting pool and redeeming shares
+    /// @notice This queries at certain block, actual results can differ as underlying pool state can change
+    /// @param tempusAMM Tempus AMM to exit LP tokens from
+    /// @param lpTokens Amount of LP tokens to use to query exit
+    /// @param principals Amount of principals to query redeem
+    /// @param yields Amount of yields to query redeem
+    function estimateExitAndRedeem(
+        ITempusAMM tempusAMM,
+        uint256 lpTokens,
+        uint256 principals,
+        uint256 yields,
+        bool toBackingToken
+    ) public view returns (uint256) {
+        (uint256 principalsFromLP, uint256 yieldsFromLp) = tempusAMM.getExpectedTokensOutGivenBPTIn(lpTokens);
+        return
+            estimatedRedeem(
+                tempusAMM.tempusPool(),
+                principalsFromLP + principals,
+                yieldsFromLp + yields,
+                toBackingToken
+            );
+    }
 }
