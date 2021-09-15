@@ -9,11 +9,13 @@ import "./token/PrincipalShare.sol";
 import "./token/YieldShare.sol";
 import "./math/Fixed256x18.sol";
 import "./utils/PermanentlyOwnable.sol";
+import "./utils/UntrustedERC20.sol";
 
 /// @author The tempus.finance team
 /// @title Implementation of Tempus Pool
 abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     using SafeERC20 for IERC20;
+    using UntrustedERC20 for IERC20;
     using Fixed256x18 for uint256;
 
     uint public constant override version = 1;
@@ -148,7 +150,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     {
         require(yieldTokenAmount > 0, "yieldTokenAmount must be greater than 0");
         // Collect the deposit
-        IERC20(yieldBearingToken).safeTransferFrom(msg.sender, address(this), yieldTokenAmount);
+        yieldTokenAmount = IERC20(yieldBearingToken).untrustedTransferFrom(msg.sender, address(this), yieldTokenAmount);
 
         (mintedShares, depositedBT, fee, rate) = _deposit(yieldTokenAmount, recipient);
     }
@@ -223,7 +225,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     {
         (redeemedYieldTokens, fee, rate) = burnShares(from, principalAmount, yieldAmount);
 
-        IERC20(yieldBearingToken).safeTransfer(recipient, redeemedYieldTokens);
+        redeemedYieldTokens = IERC20(yieldBearingToken).untrustedTransfer(recipient, redeemedYieldTokens);
     }
 
     function burnShares(

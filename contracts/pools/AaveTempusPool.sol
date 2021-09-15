@@ -7,9 +7,11 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../TempusPool.sol";
 import "../protocols/aave/IAToken.sol";
 import "../protocols/aave/ILendingPool.sol";
+import "../utils/UntrustedERC20.sol";
 
 contract AaveTempusPool is TempusPool {
     using SafeERC20 for IERC20;
+    using UntrustedERC20 for IERC20;
 
     ILendingPool internal immutable aavePool;
     bytes32 public immutable override protocolName = "Aave";
@@ -47,7 +49,7 @@ contract AaveTempusPool is TempusPool {
         require(msg.value == 0, "ETH deposits not supported");
 
         // Pull user's Backing Tokens
-        IERC20(backingToken).safeTransferFrom(msg.sender, address(this), amount);
+        amount = IERC20(backingToken).untrustedTransferFrom(msg.sender, address(this), amount);
 
         // Deposit to AAVE
         IERC20(backingToken).safeIncreaseAllowance(address(aavePool), amount);
