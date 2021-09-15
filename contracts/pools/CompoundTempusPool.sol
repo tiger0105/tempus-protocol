@@ -44,6 +44,8 @@ contract CompoundTempusPool is TempusPool {
         )
     {
         require(token.isCToken(), "token is not a CToken");
+        require(token.decimals() == 8, "CErc20 token must have 8 decimals precision");
+        require(ICErc20(token.underlying()).decimals() == 18, "Underlying ERC20 token must have 18 decimals precision");
 
         address[] memory markets = new address[](1);
         markets[0] = address(token);

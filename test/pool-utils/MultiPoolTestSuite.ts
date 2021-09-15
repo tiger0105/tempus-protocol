@@ -5,6 +5,9 @@ import { CompoundTestPool } from "./CompoundTestPool";
 import { PoolType } from "../utils/TempusPool";
 import { Suite } from "mocha";
 
+// Set this to `PoolType.XXX` if you want to only run one specific pool's tests
+let ONLY_RUN_POOL:PoolType = PoolType.Compound;
+
 function createTestPool(type:PoolType): ITestPool {
   switch (type) {
     case PoolType.Aave: return new AaveTestPool();
@@ -30,6 +33,10 @@ export function describeForEachPoolType(title:string, poolTypes:PoolType[], fn:(
 
   for (let type of poolTypes)
   {
+    if (ONLY_RUN_POOL && ONLY_RUN_POOL !== type) {
+      continue;
+    }
+
     // we want to describes suites by underlying pool type Prefix
     // this means tests are grouped and run by pool type, making fixtures faster
     let suite:Suite = describe(type.toString() + " <> " + title, () =>
