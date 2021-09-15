@@ -53,8 +53,8 @@ describeForEachPool("TempusPool YieldShare", (pool:ITestPool) =>
 
     let principalPrice:number = +await pool.tempus.principalShare.getPricePerFullShareStored();
     let yieldsPrice:number = +await pool.tempus.yieldShare.getPricePerFullShareStored();
-    expect(principalPrice).to.be.within(0.9047, 0.90499);
-    expect(yieldsPrice).to.be.within(0.0450, 0.0453);
+    expect(principalPrice).to.be.within(0.9047, 0.9052);
+    expect(yieldsPrice).to.be.within(0.0448, 0.0453);
     expect(principalPrice + yieldsPrice).to.be.within(0.94000009, 0.95000001);
   });
 
