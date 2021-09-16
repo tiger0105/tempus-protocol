@@ -20,26 +20,35 @@ class DeployLocalForked {
     const latestBlock = await ethers.provider.getBlock('latest');
     console.log(`Latest block number: ${latestBlock.number}`);
 
+    const maturityTimeOneYear = latestBlock.timestamp + DAY * 365;
+    
     // Deploy Tempus Controller
     const tempusController: TempusController = await TempusController.deploy();
 
     // Deploy Tempus pool backed by Aave (aDAI Token)
-    const maturityTimeAave = latestBlock.timestamp + DAY * 365;
-    const poolNamesAave = generateTempusSharesNames("aDai aave token", "aDai", maturityTimeAave);
-    const yieldEstAave = 0.1;
-    const tempusPoolAave = await TempusPool.deployAave(aDaiToken, tempusController, maturityTimeAave, yieldEstAave, poolNamesAave);
+    const tempusPoolAave = await TempusPool.deployAave(
+      aDaiToken,
+      tempusController,
+      maturityTimeOneYear,
+      0.1, // yield estimate 
+      generateTempusSharesNames("aDai aave token", "aDai", maturityTimeOneYear));
 
     // Deploy Tempus pool backed by Compound (cDAI Token)
-    const maturityTimeCompound = latestBlock.timestamp + DAY * 365;
-    const poolNamesCompound = generateTempusSharesNames("cDai compound token", "cDai", maturityTimeAave);
-    const yieldEstCompound = 0.13;
-    const tempusPoolCompound = await TempusPool.deployCompound(cDaiToken, tempusController, maturityTimeCompound, yieldEstCompound, poolNamesCompound);
+    const tempusPoolCompound = await TempusPool.deployCompound(
+      cDaiToken,
+      tempusController,
+      maturityTimeOneYear,
+      0.13, // yield estimate
+      generateTempusSharesNames("cDai compound token", "cDai", maturityTimeOneYear)
+    );
 
     // Deploy Tempus pool backed by Lido (stETH Token)
-    const maturityTimeLido = latestBlock.timestamp + DAY * 365;
-    const yieldEstLido = 0.1;
-    const namesLido = generateTempusSharesNames("Lido stETH", "stETH", maturityTimeLido);
-    const tempusPoolLido = await TempusPool.deployLido(stETHToken, tempusController, maturityTimeLido, yieldEstLido, namesLido);
+    const tempusPoolLido = await TempusPool.deployLido(
+      stETHToken,
+      tempusController,
+      maturityTimeOneYear,
+      0.1, // yield estimate
+      generateTempusSharesNames("Lido stETH", "stETH", maturityTimeOneYear));
 
     // Deploy TempusAMM for Aave TempusPool - we have one AMM per TempusPool
     let tempusAMMAave = await ContractBase.deployContract(
