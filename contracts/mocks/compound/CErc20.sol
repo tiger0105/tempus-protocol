@@ -2,6 +2,7 @@
 pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./CTokenMock.sol";
@@ -15,10 +16,10 @@ contract CErc20 is CTokenMock, CErc20Interface {
         ComptrollerMock comptrollerInterface,
         address underlyingAsset,
         string memory name,
-        string memory symbol,
-        uint8 decimalPrecision
-    ) CTokenMock(comptrollerInterface, name, symbol, decimalPrecision) {
+        string memory symbol
+    ) CTokenMock(comptrollerInterface, name, symbol) {
         underlying = underlyingAsset;
+        require(IERC20Metadata(underlyingAsset).decimals() == 18, "underlying decimals must be 18");
     }
 
     /// @notice Sender supplies assets into the market and receives cTokens in exchange
