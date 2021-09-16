@@ -3,19 +3,21 @@ import { join } from 'path';
 import { ethers } from 'hardhat';
 import { Contract } from '@ethersproject/contracts';
 import { ERC20 } from '../test/utils/ERC20';
-import { generateTempusSharesNames, TempusPool } from '../test/utils/TempusPool';
+import { generateTempusSharesNames, PoolType, TempusPool } from '../test/utils/TempusPool';
 import { ContractBase } from '../test/utils/ContractBase';
 import { TempusController } from '../test/utils/TempusController';
 import { DAY, MONTH } from '../test/utils/TempusAMM';
 import { toWei } from '../test/utils/Decimal';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signers';
 
-interface DeployedPoolInfo {
+export interface DeployedPoolInfo {
   address: string;
   principalShare: string;
   yieldShare: string;
   amm: string;
   backingToken: string;
+  yieldBearingToken: string;
+  protocol: PoolType;
 }
 
 interface DepositConfigData {
@@ -45,6 +47,7 @@ interface CookieConfigData {
 }
 
 interface DeployPoolParams {
+  poolType: PoolType;
   backingToken: string;
   ybt: ERC20;
   maturity: number;
@@ -89,6 +92,7 @@ class DeployLocalForked {
 
     console.log('Deploying Aave Pool - aDAI - 1 year duration...');
     await this.deployPool({
+      poolType: PoolType.Aave,
       backingToken: 'DAI',
       ybt: aDaiToken,
       maturity: maturityTimeOneYear,
@@ -102,6 +106,7 @@ class DeployLocalForked {
 
     console.log('Deploying Aave Pool - aDAI - 1 month duration...');
     await this.deployPool({
+      poolType: PoolType.Aave,
       backingToken: 'DAI',
       ybt: aDaiToken,
       maturity: maturityTimeOneMonth,
@@ -115,6 +120,7 @@ class DeployLocalForked {
 
     console.log('Deploying Compound Pool - cDAI - 1 year duration...');
     await this.deployPool({
+      poolType: PoolType.Compound,
       backingToken: 'DAI',
       ybt: cDaiToken,
       maturity: maturityTimeOneYear,
@@ -128,6 +134,7 @@ class DeployLocalForked {
 
     console.log('Deploying Compound Pool - cDAI - 1 month duration...');
     await this.deployPool({
+      poolType: PoolType.Compound,
       backingToken: 'DAI',
       ybt: cDaiToken,
       maturity: maturityTimeOneMonth,
@@ -141,6 +148,7 @@ class DeployLocalForked {
 
     console.log('Deploying Lido Pool - stETH - 1 year duration...');
     await this.deployPool({
+      poolType: PoolType.Lido,
       backingToken: 'ETH',
       ybt: stETHToken,
       maturity: maturityTimeOneYear,
@@ -154,6 +162,7 @@ class DeployLocalForked {
 
     console.log('Deploying Lido Pool - stETH - 1 month duration...');
     await this.deployPool({
+      poolType: PoolType.Lido,
       backingToken: 'ETH',
       ybt: stETHToken,
       maturity: maturityTimeOneMonth,
@@ -201,7 +210,9 @@ class DeployLocalForked {
       principalShare: pool.principalShare.address,
       yieldShare: pool.yieldShare.address,
       amm: tempusAMM.address,
-      backingToken: params.backingToken
+      backingToken: params.backingToken,
+      protocol: params.poolType,
+      yieldBearingToken: params.ybtSymbol
     });
   }
 
@@ -217,7 +228,9 @@ class DeployLocalForked {
             principalShare: poolInfo.principalShare,
             yieldShare: poolInfo.yieldShare,
             amm: poolInfo.amm,
-            backingToken: poolInfo.backingToken
+            backingToken: poolInfo.backingToken,
+            protocol: poolInfo.protocol,
+            yieldBearingToken: poolInfo.yieldBearingToken
           }
         })
       },
