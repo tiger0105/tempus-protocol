@@ -7,7 +7,7 @@ import { Signer } from "./utils/ContractBase";
 import { toWei } from "./utils/Decimal";
 import { expectRevert } from "./utils/Utils";
 
-describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
+describeForEachPool.only("TempusPool Deposit", (pool:ITestPool) =>
 {
   let owner:Signer, user:Signer, user2:Signer;
 

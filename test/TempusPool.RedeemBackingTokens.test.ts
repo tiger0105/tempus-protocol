@@ -1,10 +1,10 @@
 import { expect } from "chai";
 import { PoolType } from "./utils/TempusPool";
 import { ITestPool } from "./pool-utils/ITestPool";
-import { describeForEachPool, describeForEachPoolType } from "./pool-utils/MultiPoolTestSuite";
+import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
 import { expectRevert } from "./utils/Utils";
 
-describeForEachPoolType("TempusPool Redeem", [PoolType.Aave, PoolType.Compound], (pool:ITestPool) =>
+describeForEachPool.type("TempusPool Redeem", [PoolType.Aave, PoolType.Compound], (pool:ITestPool) =>
 {
   it("Should redeem correct BackingTokens after depositing BackingTokens", async () =>
   {
@@ -59,7 +59,7 @@ describeForEachPool("TempusPool Redeem", (pool: ITestPool) =>
   });
 });
 
-describeForEachPoolType("TempusPool Redeem", [PoolType.Lido], (pool:ITestPool) =>
+describeForEachPool.type("TempusPool Redeem", [PoolType.Lido], (pool:ITestPool) =>
 {
   it("Should revert on redeem", async () =>
   {

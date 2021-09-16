@@ -6,7 +6,8 @@ import { PoolType } from "../utils/TempusPool";
 import { Suite } from "mocha";
 
 // Set this to `PoolType.XXX` if you want to only run one specific pool's tests
-let ONLY_RUN_POOL:PoolType = PoolType.Compound;
+const ONLY_RUN_POOL:PoolType = PoolType.Compound;
+const ALL_POOLS = [PoolType.Aave, PoolType.Lido, PoolType.Compound];
 
 function createTestPool(type:PoolType): ITestPool {
   switch (type) {
@@ -16,18 +17,7 @@ function createTestPool(type:PoolType): ITestPool {
   }
 }
 
-/**
- * Batch describes unit test block for all PoolTypes
- */
-export function describeForEachPool(title:string, fn:(pool:ITestPool) => void)
-{
-  describeForEachPoolType(title, [PoolType.Aave, PoolType.Lido, PoolType.Compound], fn);
-}
-
-/**
- * Batch describes unit test block for each specified PoolType
- */
-export function describeForEachPoolType(title:string, poolTypes:PoolType[], fn:(pool:ITestPool) => void)
+function _describeForEachPoolType(title:string, poolTypes:PoolType[], only:boolean, fn:(pool:ITestPool) => void)
 {
   let parent:Suite = null;
 
@@ -37,9 +27,7 @@ export function describeForEachPoolType(title:string, poolTypes:PoolType[], fn:(
       continue;
     }
 
-    // we want to describes suites by underlying pool type Prefix
-    // this means tests are grouped and run by pool type, making fixtures faster
-    let suite:Suite = describe(type.toString() + " <> " + title, () =>
+    const describeTestBody = () =>
     {
       // HACK: manually measure time, since new yarn hardhat+mocha stopped reporting them
       let startTime:number;
@@ -58,10 +46,51 @@ export function describeForEachPoolType(title:string, poolTypes:PoolType[], fn:(
 
       const pool = createTestPool(type);
       fn(pool);
-    });
+    };
+
+    // we want to describes suites by underlying pool type Prefix
+    // this means tests are grouped and run by pool type, making fixtures faster
+    const suiteTitle = type.toString() + " <> " + title;
+    let suite:Suite = only ? describe.only(suiteTitle, describeTestBody) : describe(suiteTitle, describeTestBody);
     parent = suite.parent;
   }
 
   // make sure to sort these suites by title
   parent?.suites.sort((a:Suite, b:Suite) => a.title.localeCompare(b.title));
+  return parent;
 }
+
+interface MultiPoolSuiteFunction {
+  /**
+   * Batch describes unit test block for each specified PoolType
+   */
+  (title:string, fn:(pool:ITestPool) => void): void;
+
+  /**
+   * Batch describes unit test block for specific PoolTypes
+   */
+  type: (title:string, poolTypes:PoolType[], fn:(pool:ITestPool) => void) => void;
+
+  /**
+   * Indicates this suite should be executed exclusively.
+   */
+  only: (title:string, fn:(pool:ITestPool) => void) => void;
+}
+
+function createDescribeForEachPool(): MultiPoolSuiteFunction {
+  const f:MultiPoolSuiteFunction = (title:string, fn:(pool:ITestPool) => void) => {
+    _describeForEachPoolType(title, ALL_POOLS, /*only*/false, fn);
+  };
+  f.type = (title:string, poolTypes:PoolType[], fn:(pool:ITestPool) => void) => {
+    _describeForEachPoolType(title, poolTypes, /*only*/false, fn);
+  };
+  f.only = (title:string, fn:(pool:ITestPool) => void) => {
+    _describeForEachPoolType(title, ALL_POOLS, /*only*/true, fn);
+  };
+  return f;
+}
+
+/**
+ * Batch describes unit test block for all PoolTypes
+ */
+export const describeForEachPool:MultiPoolSuiteFunction = createDescribeForEachPool();

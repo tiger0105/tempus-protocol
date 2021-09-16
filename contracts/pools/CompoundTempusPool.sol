@@ -89,12 +89,16 @@ contract CompoundTempusPool is TempusPool {
     function updateInterestRate(address token) internal override returns (uint256) {
         // NOTE: exchangeRateCurrent() will accrue interest and gets the latest Interest Rate
         //       We do this to avoid arbitrage
-        return ICToken(token).exchangeRateCurrent();
+        uint256 rate28 = ICToken(token).exchangeRateCurrent();
+        uint256 rate18 = (1e28 / rate28) / 1e10;
+        return rate18;
     }
 
     /// @return Current Interest Rate as an 1e18 decimal
     function storedInterestRate(address token) internal view override returns (uint256) {
-        return ICToken(token).exchangeRateStored();
+        uint256 rate28 = ICToken(token).exchangeRateStored();
+        uint256 rate18 = (1e28 / rate28) / 1e10;
+        return rate18;
     }
 
     function numAssetsPerYieldToken(uint yieldTokens, uint rate) public pure override returns (uint) {
