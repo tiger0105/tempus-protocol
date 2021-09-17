@@ -18,6 +18,7 @@ export interface DeployedPoolInfo {
   backingToken: string;
   yieldBearingToken: string;
   protocol: PoolType;
+  estimatedYield: number;
 }
 
 interface DepositConfigData {
@@ -212,7 +213,8 @@ class DeployLocalForked {
       amm: tempusAMM.address,
       backingToken: params.backingToken,
       protocol: params.poolType,
-      yieldBearingToken: params.ybtSymbol
+      yieldBearingToken: params.ybtSymbol,
+      estimatedYield: params.yieldEstimate
     });
   }
 
@@ -230,7 +232,8 @@ class DeployLocalForked {
             amm: poolInfo.amm,
             backingToken: poolInfo.backingToken,
             protocol: poolInfo.protocol,
-            yieldBearingToken: poolInfo.yieldBearingToken
+            yieldBearingToken: poolInfo.yieldBearingToken,
+            estimatedYield: poolInfo.estimatedYield
           }
         })
       },
