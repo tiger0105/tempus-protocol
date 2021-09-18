@@ -10,10 +10,12 @@ import "./ITempusPool.sol";
 import "./math/Fixed256x18.sol";
 import "./utils/PermanentlyOwnable.sol";
 import "./utils/AMMBalancesHelper.sol";
+import "./utils/UntrustedERC20.sol";
 
 contract TempusController is PermanentlyOwnable {
     using Fixed256x18 for uint256;
     using SafeERC20 for IERC20;
+    using UntrustedERC20 for IERC20;
     using AMMBalancesHelper for uint256[];
 
     /// @dev Event emitted on a successful BT/YBT deposit.
@@ -185,7 +187,7 @@ contract TempusController is PermanentlyOwnable {
         IERC20 yieldBearingToken = IERC20(targetPool.yieldBearingToken());
 
         // Deposit to TempusPool
-        yieldBearingToken.safeTransferFrom(msg.sender, address(this), yieldTokenAmount);
+        yieldTokenAmount = yieldBearingToken.untrustedTransferFrom(msg.sender, address(this), yieldTokenAmount);
         yieldBearingToken.safeIncreaseAllowance(address(targetPool), yieldTokenAmount);
         (uint256 mintedShares, uint256 depositedBT, uint256 fee, uint256 interestRate) = targetPool.deposit(
             yieldTokenAmount,
@@ -219,7 +221,7 @@ contract TempusController is PermanentlyOwnable {
         IERC20 backingToken = IERC20(targetPool.backingToken());
 
         if (msg.value == 0) {
-            backingToken.safeTransferFrom(msg.sender, address(this), backingTokenAmount);
+            backingTokenAmount = backingToken.untrustedTransferFrom(msg.sender, address(this), backingTokenAmount);
             backingToken.safeIncreaseAllowance(address(targetPool), backingTokenAmount);
         } else {
             require(address(backingToken) == address(0), "given TempusPool's Backing Token is not ETH");

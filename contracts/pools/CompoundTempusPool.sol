@@ -7,10 +7,12 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../TempusPool.sol";
 import "../protocols/compound/ICErc20.sol";
 import "../math/Fixed256x18.sol";
+import "../utils/UntrustedERC20.sol";
 
 /// Allows depositing ERC20 into Compound's CErc20 contracts
 contract CompoundTempusPool is TempusPool {
     using SafeERC20 for IERC20;
+    using UntrustedERC20 for IERC20;
     using Fixed256x18 for uint256;
 
     ICErc20 internal immutable cToken;
@@ -54,7 +56,7 @@ contract CompoundTempusPool is TempusPool {
         uint256 preDepositBalance = IERC20(yieldBearingToken).balanceOf(address(this));
 
         // Pull user's Backing Tokens
-        IERC20(backingToken).safeTransferFrom(msg.sender, address(this), amount);
+        amount = IERC20(backingToken).untrustedTransferFrom(msg.sender, address(this), amount);
 
         // Deposit to Compound
         IERC20(backingToken).safeIncreaseAllowance(address(cToken), amount);
@@ -74,7 +76,7 @@ contract CompoundTempusPool is TempusPool {
         require(cToken.redeem(yieldBearingTokensAmount) == 0, "CErc20 redeem failed");
 
         uint256 backing = (yieldBearingTokensAmount * cToken.exchangeRateCurrent()) / 1e18;
-        IERC20(backingToken).safeTransfer(recipient, backing);
+        backing = IERC20(backingToken).untrustedTransfer(recipient, backing);
 
         return backing;
     }
