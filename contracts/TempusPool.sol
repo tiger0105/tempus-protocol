@@ -3,6 +3,7 @@ pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 
 import "./ITempusPool.sol";
 import "./token/PrincipalShare.sol";
@@ -13,7 +14,7 @@ import "./utils/UntrustedERC20.sol";
 
 /// @author The tempus.finance team
 /// @title Implementation of Tempus Pool
-abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
+abstract contract TempusPool is ITempusPool, PermanentlyOwnable, Pausable {
     using SafeERC20 for IERC20;
     using UntrustedERC20 for IERC20;
     using Fixed256x18 for uint256;
@@ -122,6 +123,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         payable
         override
         onlyController
+        whenNotPaused
         returns (
             uint256 mintedShares,
             uint256 depositedYBT,
@@ -141,6 +143,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         external
         override
         onlyController
+        whenNotPaused
         returns (
             uint256 mintedShares,
             uint256 depositedBT,
