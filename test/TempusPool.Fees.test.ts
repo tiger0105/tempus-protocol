@@ -4,6 +4,7 @@ import { ITestPool } from "./pool-utils/ITestPool";
 import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
 
 import { Signer } from "./utils/ContractBase";
+import { expectRevert } from "./utils/Utils";
 
 describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
 {
@@ -33,6 +34,27 @@ describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
     expect(feesConfig.depositPercent).to.equal(0.15);
     expect(feesConfig.earlyRedeemPercent).to.equal(0.05);
     expect(feesConfig.matureRedeemPercent).to.equal(0.02);
+  });
+
+  it("Fee configuration should revert if deposit percent > max", async () =>
+  {
+    await pool.createDefault();
+
+    (await expectRevert(pool.tempus.setFeesConfig(owner, { depositPercent: 0.6, earlyRedeemPercent: 0.0, matureRedeemPercent: 0.0 }))).to.be.equal("Deposit fee percent > max");
+  });
+
+  it("Fee configuration should revert if early redeem percent > max", async () =>
+  {
+    await pool.createDefault();
+
+    (await expectRevert(pool.tempus.setFeesConfig(owner, { depositPercent: 0.0, earlyRedeemPercent: 1.1, matureRedeemPercent: 0.0 }))).to.be.equal("Early redeem fee percent > max");
+  });
+
+  it("Fee configuration should revert if mature redeem percent > max", async () =>
+  {
+    await pool.createDefault();
+
+    (await expectRevert(pool.tempus.setFeesConfig(owner, { depositPercent: 0.0, earlyRedeemPercent: 0.0, matureRedeemPercent: 0.6 }))).to.be.equal("Mature redeem fee percent > max");
   });
 
   it("Should collect tokens as fees during deposit() if fees != 0", async () =>
