@@ -26,7 +26,8 @@ contract CompoundTempusPool is TempusPool {
         string memory principalName,
         string memory principalSymbol,
         string memory yieldName,
-        string memory yieldSymbol
+        string memory yieldSymbol,
+        FeesConfig memory maxFeeSetup
     )
         TempusPool(
             address(token),
@@ -38,7 +39,8 @@ contract CompoundTempusPool is TempusPool {
             principalName,
             principalSymbol,
             yieldName,
-            yieldSymbol
+            yieldSymbol,
+            maxFeeSetup
         )
     {
         require(token.isCToken(), "token is not a CToken");

@@ -38,6 +38,10 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
 
     FeesConfig feesConfig;
 
+    uint256 public immutable override maxDepositFee;
+    uint256 public immutable override maxEarlyRedeemFee;
+    uint256 public immutable override maxMatureRedeemFee;
+
     /// total amount of fees accumulated in pool
     uint256 public override totalFees;
 
@@ -52,6 +56,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     /// @param principalSymbol symbol of Tempus Principal Share
     /// @param yieldName name of Tempus Yield Share
     /// @param yieldSymbol symbol of Tempus Yield Share
+    /// @param maxFeeSetup Maximum fee percentages that this pool can have
     constructor(
         address token,
         address bToken,
@@ -62,7 +67,8 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         string memory principalName,
         string memory principalSymbol,
         string memory yieldName,
-        string memory yieldSymbol
+        string memory yieldSymbol,
+        FeesConfig memory maxFeeSetup
     ) {
         require(maturity > block.timestamp, "maturityTime is after startTime");
 
@@ -73,6 +79,10 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         maturityTime = maturity;
         initialInterestRate = initInterestRate;
         initialEstimatedYield = estimatedFinalYield;
+
+        maxDepositFee = maxFeeSetup.depositPercent;
+        maxEarlyRedeemFee = maxFeeSetup.earlyRedeemPercent;
+        maxMatureRedeemFee = maxFeeSetup.matureRedeemPercent;
 
         principalShare = new PrincipalShare(this, principalName, principalSymbol);
         yieldShare = new YieldShare(this, yieldName, yieldSymbol);
@@ -106,6 +116,9 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     }
 
     function setFeesConfig(FeesConfig calldata newFeesConfig) external override onlyOwner {
+        require(newFeesConfig.depositPercent <= maxDepositFee, "Deposit fee percent > max");
+        require(newFeesConfig.earlyRedeemPercent <= maxEarlyRedeemFee, "Early redeem fee percent > max");
+        require(newFeesConfig.matureRedeemPercent <= maxMatureRedeemFee, "Mature redeem fee percent > max");
         feesConfig = newFeesConfig;
     }
 
