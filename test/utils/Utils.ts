@@ -65,6 +65,9 @@ export function getRevertMessage(e:Error): string {
 /**
  * Expect called promise to revert with message
  * (await expectRevert(lido.withdraw(..))).to.equal("expected revert msg");
+ *
+ * We use this helper instead of `.to.be.revertedWith`, because that doesn't allow showing a stack trace,
+ * and this one does.
  */
 export async function expectRevert(promise: Promise<any>): Promise<Chai.Assertion> {
   try {
