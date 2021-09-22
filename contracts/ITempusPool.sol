@@ -19,6 +19,15 @@ interface ITempusFees {
     /// By default all the fees are expected to be set to zero.
     function setFeesConfig(FeesConfig calldata newFeesConfig) external;
 
+    /// @return Maximum possible fee percentage that can be set for deposit
+    function maxDepositFee() external view returns (uint256);
+
+    /// @return Maximum possible fee percentage that can be set for early redeem
+    function maxEarlyRedeemFee() external view returns (uint256);
+
+    /// @return Maximum possible fee percentage that can be set for mature redeem
+    function maxMatureRedeemFee() external view returns (uint256);
+
     /// Accumulated fees available for withdrawal.
     function totalFees() external view returns (uint256);
 

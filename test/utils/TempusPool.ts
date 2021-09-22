@@ -113,6 +113,11 @@ export class TempusPool extends ContractBase {
         tempusShareNames.principalSymbol,
         tempusShareNames.yieldName,
         tempusShareNames.yieldSymbol,
+        {
+          depositPercent: toWei(0.5),
+          earlyRedeemPercent: toWei(1),
+          matureRedeemPercent: toWei(0.5)
+        },
         "0x00000" /* hardcoded referral code */
       );
     } else if (type === PoolType.Lido) {
@@ -126,6 +131,11 @@ export class TempusPool extends ContractBase {
         tempusShareNames.principalSymbol,
         tempusShareNames.yieldName,
         tempusShareNames.yieldSymbol,
+        {
+          depositPercent: toWei(0.5),
+          earlyRedeemPercent: toWei(1),
+          matureRedeemPercent: toWei(0.5)
+        },
         "0x0000000000000000000000000000000000000000" /* hardcoded referrer */
       );
     } else {
@@ -138,7 +148,12 @@ export class TempusPool extends ContractBase {
         tempusShareNames.principalName,
         tempusShareNames.principalSymbol,
         tempusShareNames.yieldName,
-        tempusShareNames.yieldSymbol
+        tempusShareNames.yieldSymbol,
+        {
+          depositPercent: toWei(0.5),
+          earlyRedeemPercent: toWei(1),
+          matureRedeemPercent: toWei(0.5)
+        }
       );
     }
 
