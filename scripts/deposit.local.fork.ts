@@ -74,7 +74,7 @@ class DepositLocalForked {
     }
 
     // Provide liquidity
-    await tempusPoolAMM.provideLiquidity(this.owner, 100, 100 + (100 * poolDepositConfig.estimatedYield), TempusAMMJoinKind.INIT);
+    await tempusPoolAMM.provideLiquidity(this.owner, (100 * poolDepositConfig.estimatedYield), 100, TempusAMMJoinKind.INIT);
 
     // Make a swap
     await tempusPoolAMM.swapGivenIn(this.owner, principalShareToken.address, yieldShareToken.address, 25);
