@@ -66,15 +66,15 @@ class DepositLocalForked {
 
     // Deposit
     if (depositBacking) {
-      await bt.approve(this.owner, tempusPool.controller.address, 500);
-      await tempusPool.controller.depositBacking(this.owner, tempusPool, 500, this.owner);
+      await bt.approve(this.owner, tempusPool.controller.address, 5000);
+      await tempusPool.controller.depositBacking(this.owner, tempusPool, 5000, this.owner);
     }
     else {
-      await tempusPool.controller.depositYieldBearing(this.owner, tempusPool, 500, this.owner);
+      await tempusPool.controller.depositYieldBearing(this.owner, tempusPool, 5000, this.owner);
     }
 
     // Provide liquidity
-    await tempusPoolAMM.provideLiquidity(this.owner, (100 * poolDepositConfig.estimatedYield), 100, TempusAMMJoinKind.INIT);
+    await tempusPoolAMM.provideLiquidity(this.owner, (1000 * poolDepositConfig.estimatedYield), 1000, TempusAMMJoinKind.INIT);
 
     // Make a swap
     await tempusPoolAMM.swapGivenIn(this.owner, principalShareToken.address, yieldShareToken.address, 25);
