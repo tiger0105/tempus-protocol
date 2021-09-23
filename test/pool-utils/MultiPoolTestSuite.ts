@@ -6,7 +6,7 @@ import { PoolType } from "../utils/TempusPool";
 import { Suite } from "mocha";
 
 // Set this to `PoolType.XXX` if you want to only run one specific pool's tests
-const ONLY_RUN_POOL:PoolType = PoolType.Compound;
+const ONLY_RUN_POOL:PoolType = null;
 const ALL_POOLS = [PoolType.Aave, PoolType.Lido, PoolType.Compound];
 
 function createTestPool(type:PoolType): ITestPool {

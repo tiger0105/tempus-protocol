@@ -11,7 +11,7 @@ import { BigNumber } from "@ethersproject/bignumber";
 
 const SWAP_LIMIT_ERROR_MESSAGE = "BAL#507";
 
-describeForEachPool.only("TempusController", (testPool:ITestPool) =>
+describeForEachPool("TempusController", (testPool:ITestPool) =>
 {
   let owner:Signer, user1:Signer, user2:Signer;
   let pool:TempusPool;
@@ -254,7 +254,7 @@ describeForEachPool.only("TempusController", (testPool:ITestPool) =>
 
     });
 
-    it.only("Complete exit to backing", async () => 
+    it("Complete exit to backing", async () => 
     {
       await initAMM(user1, /*ybtDeposit*/1000000, /*principals*/100000, /*yields*/1000000);
       expect(await pool.yieldShare.balanceOf(user1)).to.equal(0, "all yields are in amm");
