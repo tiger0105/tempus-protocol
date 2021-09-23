@@ -78,18 +78,14 @@ contract CompoundTempusPool is TempusPool {
     {
         // tempus pool owns YBT
         uint contractYBTAmount = fixed18ToYieldTokenAmount(yieldBearingTokensAmount);
-        console.log("withdrawFromUnderlyingProtocol:", yieldBearingTokensAmount, contractYBTAmount);
         assert(cToken.balanceOf(address(this)) >= contractYBTAmount);
         require(cToken.redeem(contractYBTAmount) == 0, "CErc20 redeem failed");
 
+        // need to rescale the truncated amount which was used during cToken.redeem()
+        uint redeemedYBT = yieldTokenAmountToFixed18(contractYBTAmount);
         uint rate = updateInterestRate(address(cToken));
-        uint backing = numAssetsPerYieldToken(yieldBearingTokensAmount, rate);
-        console.log("withdrawAmount YBT F18:", yieldBearingTokensAmount);
-        console.log("withdrawAmount YBT  F8:", contractYBTAmount);
-        console.log("withdrawAmount  BT:", backing);
-        console.log("contractBalance BT:", IERC20(backingToken).balanceOf(address(this)));
+        uint backing = numAssetsPerYieldToken(redeemedYBT, rate);
         backing = IERC20(backingToken).untrustedTransfer(recipient, backing);
-
         return backing;
     }
 
@@ -111,9 +107,6 @@ contract CompoundTempusPool is TempusPool {
 
     function numAssetsPerYieldToken(uint yieldTokens, uint rate) public pure override returns (uint) {
         return yieldTokens.mulf18(rate);
-        // uint assets = yieldTokens.mulf18(rate);
-        // // because yieldTokens actually has less precision, the remainder needs to be truncated
-        // return (assets / 1e10) * 1e10; // truncate and rescale
     }
 
     // NOTE: Return value is in Fixed18, additional conversion to fixed8 is needed depending on usage
