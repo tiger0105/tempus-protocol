@@ -54,20 +54,20 @@ contract CompoundTempusPool is TempusPool {
         cToken = token;
     }
 
-    function depositToUnderlying(uint256 amount) internal override returns (uint256) {
+    function depositToUnderlying(uint256 backingAmount) internal override returns (uint256) {
         require(msg.value == 0, "ETH deposits not supported");
 
-        uint256 preDepositBalance = IERC20(yieldBearingToken).balanceOf(address(this));
+        uint preDepositBalance = IERC20(yieldBearingToken).balanceOf(address(this));
 
         // Pull user's Backing Tokens
-        amount = IERC20(backingToken).untrustedTransferFrom(msg.sender, address(this), amount);
+        backingAmount = IERC20(backingToken).untrustedTransferFrom(msg.sender, address(this), backingAmount);
 
         // Deposit to Compound
-        IERC20(backingToken).safeIncreaseAllowance(address(cToken), amount);
-        require(cToken.mint(amount) == 0, "CErc20 mint failed");
+        IERC20(backingToken).safeIncreaseAllowance(address(cToken), backingAmount);
+        require(cToken.mint(backingAmount) == 0, "CErc20 mint failed");
 
-        uint256 mintedTokens = IERC20(yieldBearingToken).balanceOf(address(this)) - preDepositBalance;
-        return mintedTokens;
+        uint mintedTokens = IERC20(yieldBearingToken).balanceOf(address(this)) - preDepositBalance;
+        return yieldTokenAmountToFixed18(mintedTokens);
     }
 
     function withdrawFromUnderlyingProtocol(uint256 yieldBearingTokensAmount, address recipient)
@@ -76,10 +76,12 @@ contract CompoundTempusPool is TempusPool {
         returns (uint256 backingTokenAmount)
     {
         // tempus pool owns YBT
-        assert(cToken.balanceOf(address(this)) >= yieldBearingTokensAmount);
-        require(cToken.redeem(yieldBearingTokensAmount) == 0, "CErc20 redeem failed");
+        uint contractYBTAmount = fixed18ToYieldTokenAmount(yieldBearingTokensAmount);
+        assert(cToken.balanceOf(address(this)) >= contractYBTAmount);
+        require(cToken.redeem(contractYBTAmount) == 0, "CErc20 redeem failed");
 
-        uint256 backing = (yieldBearingTokensAmount * cToken.exchangeRateCurrent()) / 1e18;
+        uint rate = updateInterestRate(address(cToken));
+        uint backing = numAssetsPerYieldToken(yieldBearingTokensAmount, rate);
         backing = IERC20(backingToken).untrustedTransfer(recipient, backing);
 
         return backing;
@@ -89,23 +91,32 @@ contract CompoundTempusPool is TempusPool {
     function updateInterestRate(address token) internal override returns (uint256) {
         // NOTE: exchangeRateCurrent() will accrue interest and gets the latest Interest Rate
         //       We do this to avoid arbitrage
-        uint256 rate28 = ICToken(token).exchangeRateCurrent();
-        uint256 rate18 = (1e28 / rate28) / 1e10;
-        return rate18;
+        //       The default exchange rate for Compound is 0.02 and grows
+        //       cTokens are minted as (backingAmount / rate), so 1 DAI = 50 cDAI with 0.02 rate
+        uint256 rate = ICToken(token).exchangeRateCurrent() / 1e10;
+        return rate;
     }
 
     /// @return Current Interest Rate as an 1e18 decimal
     function storedInterestRate(address token) internal view override returns (uint256) {
-        uint256 rate28 = ICToken(token).exchangeRateStored();
-        uint256 rate18 = (1e28 / rate28) / 1e10;
-        return rate18;
+        uint256 rate = ICToken(token).exchangeRateStored() / 1e10;
+        return rate;
     }
 
     function numAssetsPerYieldToken(uint yieldTokens, uint rate) public pure override returns (uint) {
         return yieldTokens.mulf18(rate);
     }
 
+    // NOTE: Return value is in Fixed18, additional conversion to fixed8 is needed depending on usage
     function numYieldTokensPerAsset(uint backingTokens, uint rate) public pure override returns (uint) {
         return backingTokens.divf18(rate);
+    }
+
+    function yieldTokenAmountToFixed18(uint yieldTokens) public pure override returns (uint) {
+        return yieldTokens * 1e10; // from fixed8 to fixed18
+    }
+
+    function fixed18ToYieldTokenAmount(uint fixed18amount) public pure override returns (uint) {
+        return fixed18amount / 1e10; // from fixed18 to fixed8
     }
 }

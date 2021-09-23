@@ -93,7 +93,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         _;
     }
 
-    function depositToUnderlying(uint256 amount) internal virtual returns (uint256 mintedYieldTokenAmount);
+    function depositToUnderlying(uint256 backingAmount) internal virtual returns (uint256 mintedYieldTokenAmount);
 
     function withdrawFromUnderlyingProtocol(uint256 amount, address recipient)
         internal
@@ -163,11 +163,14 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     {
         require(yieldTokenAmount > 0, "yieldTokenAmount must be greater than 0");
         // Collect the deposit
-        yieldTokenAmount = IERC20(yieldBearingToken).untrustedTransferFrom(msg.sender, address(this), yieldTokenAmount);
+        uint contractYBT = fixed18ToYieldTokenAmount(yieldTokenAmount);
+        contractYBT = IERC20(yieldBearingToken).untrustedTransferFrom(msg.sender, address(this), contractYBT);
+        uint transferredYBT = yieldTokenAmountToFixed18(contractYBT);
 
-        (mintedShares, depositedBT, fee, rate) = _deposit(yieldTokenAmount, recipient);
+        (mintedShares, depositedBT, fee, rate) = _deposit(transferredYBT, recipient);
     }
 
+    /// @param yieldTokenAmount Must be a Fixed18 decimal
     function _deposit(uint256 yieldTokenAmount, address recipient)
         internal
         returns (
@@ -238,7 +241,9 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     {
         (redeemedYieldTokens, fee, rate) = burnShares(from, principalAmount, yieldAmount);
 
-        redeemedYieldTokens = IERC20(yieldBearingToken).untrustedTransfer(recipient, redeemedYieldTokens);
+        uint contractYBTAmount = fixed18ToYieldTokenAmount(redeemedYieldTokens);
+        uint transferredYBT = IERC20(yieldBearingToken).untrustedTransfer(recipient, contractYBTAmount);
+        redeemedYieldTokens = yieldTokenAmountToFixed18(transferredYBT);
     }
 
     function burnShares(
@@ -435,4 +440,8 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     function numYieldTokensPerAsset(uint backingTokens, uint interestRate) public view virtual override returns (uint);
 
     function numAssetsPerYieldToken(uint yieldTokens, uint interestRate) public pure virtual override returns (uint);
+
+    function yieldTokenAmountToFixed18(uint yieldTokens) public pure virtual override returns (uint);
+
+    function fixed18ToYieldTokenAmount(uint fixed18amount) public pure virtual override returns (uint);
 }
