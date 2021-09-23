@@ -191,7 +191,7 @@ contract TempusController is PermanentlyOwnable {
         contractYBTAmount = yieldBearingToken.untrustedTransferFrom(msg.sender, address(this), contractYBTAmount);
         yieldBearingToken.safeIncreaseAllowance(address(targetPool), contractYBTAmount);
 
-        uint transferredYBT = yieldTokenAmountToFixed18(contractYBTAmount);
+        uint transferredYBT = targetPool.yieldTokenAmountToFixed18(contractYBTAmount);
         (uint mintedShares, uint depositedBT, uint fee, uint rate) = targetPool.deposit(transferredYBT, recipient);
 
         emit Deposited(

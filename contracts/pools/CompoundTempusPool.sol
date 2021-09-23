@@ -8,7 +8,6 @@ import "../TempusPool.sol";
 import "../protocols/compound/ICErc20.sol";
 import "../math/Fixed256x18.sol";
 import "../utils/UntrustedERC20.sol";
-import "hardhat/console.sol";
 
 /// Allows depositing ERC20 into Compound's CErc20 contracts
 contract CompoundTempusPool is TempusPool {
@@ -105,6 +104,7 @@ contract CompoundTempusPool is TempusPool {
         return rate;
     }
 
+    // NOTE: yieldTokens must be fixed18 regardless of cToken YBT decimals
     function numAssetsPerYieldToken(uint yieldTokens, uint rate) public pure override returns (uint) {
         return yieldTokens.mulf18(rate);
     }
