@@ -28,7 +28,7 @@ class DepositLocalForked {
     const tempusControllerContract = await ethers.getContractAt('TempusController', depositConfig.addresses.tempusController);
     this.controller = new TempusController('TempusController', tempusControllerContract);
 
-    await this.sendTransaction(10000, depositConfig.holders.DAI, this.owner.address, tokenMap.get('DAI'));
+    await this.sendTransaction(100000000, depositConfig.holders.DAI, this.owner.address, tokenMap.get('DAI'));
     console.log('Sent 10000 DAI to owner address');
     await this.sendTransaction(10000, depositConfig.holders.aDAI, this.owner.address, tokenMap.get('aDai'));
     console.log('Sent 10000 aDAI to owner address');
@@ -66,15 +66,15 @@ class DepositLocalForked {
 
     // Deposit
     if (depositBacking) {
-      await bt.approve(this.owner, tempusPool.controller.address, 5000);
-      await tempusPool.controller.depositBacking(this.owner, tempusPool, 5000, this.owner);
+      await bt.approve(this.owner, tempusPool.controller.address, 10000000);
+      await tempusPool.controller.depositBacking(this.owner, tempusPool, 10000000, this.owner);
     }
     else {
-      await tempusPool.controller.depositYieldBearing(this.owner, tempusPool, 5000, this.owner);
+      await tempusPool.controller.depositYieldBearing(this.owner, tempusPool, 10000000, this.owner);
     }
 
     // Provide liquidity
-    await tempusPoolAMM.provideLiquidity(this.owner, (1000 * poolDepositConfig.estimatedYield), 1000, TempusAMMJoinKind.INIT);
+    await tempusPoolAMM.provideLiquidity(this.owner, (9000000 * poolDepositConfig.estimatedYield), 9000000, TempusAMMJoinKind.INIT);
 
     // Make a swap
     await tempusPoolAMM.swapGivenIn(this.owner, principalShareToken.address, yieldShareToken.address, 25);

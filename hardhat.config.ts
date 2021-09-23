@@ -103,7 +103,7 @@ module.exports = {
     deployer: {
       default: 0
     },
-    daiHolder: '0xf977814e90da44bfa03b6295a0616a897441acec',
+    daiHolder: '0xE78388b4CE79068e89Bf8aA7f218eF6b9AB0e9d0',
     aDaiHolder: '0x3ddfa8ec3052539b6c9549f12cea2c295cff5296',
     aWethHolder: '0x3ddfa8ec3052539b6c9549f12cea2c295cff5296',
     cDaiHolder: '0x9b4772e59385ec732bccb06018e318b7b3477459',
