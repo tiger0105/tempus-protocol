@@ -44,7 +44,7 @@ export class TempusController extends ContractBase {
    */
   async depositYieldBearing(user:SignerOrAddress, pool: TempusPool, yieldBearingAmount:NumberOrString, recipient:SignerOrAddress = user, ethValue: NumberOrString = 0): Promise<Transaction> {
     await pool.yieldBearing.approve(user, this.contract.address, yieldBearingAmount);
-    return this.connect(user).depositYieldBearing(pool.address, this.toBigNum(yieldBearingAmount), addressOf(recipient), { value: toWei(ethValue) });
+    return this.connect(user).depositYieldBearing(pool.address, toWei(yieldBearingAmount), addressOf(recipient), { value: toWei(ethValue) });
   }
 
   /**
@@ -56,7 +56,7 @@ export class TempusController extends ContractBase {
   * @param ethValue value of ETH to send with the tx
   */
    async depositBacking(user:SignerOrAddress, pool: TempusPool, backingAmount:NumberOrString, recipient:SignerOrAddress = user, ethValue: NumberOrString = 0): Promise<Transaction> {
-    return this.connect(user).depositBacking(pool.address, this.toBigNum(backingAmount), addressOf(recipient), { value: toWei(ethValue) });
+    return this.connect(user).depositBacking(pool.address, toWei(backingAmount), addressOf(recipient), { value: toWei(ethValue) });
   }
 
   /**
@@ -67,7 +67,7 @@ export class TempusController extends ContractBase {
    * @param yieldAmount How many yield shares to redeem
    */
   async redeemToBacking(user:SignerOrAddress, pool: TempusPool, principalAmount:NumberOrString, yieldAmount:NumberOrString): Promise<Transaction> {
-    return this.contract.connect(user).redeemToBacking(pool.address, addressOf(user), this.toBigNum(principalAmount), this.toBigNum(yieldAmount), addressOf(user));
+    return this.contract.connect(user).redeemToBacking(pool.address, addressOf(user), toWei(principalAmount), toWei(yieldAmount), addressOf(user));
   }
 
   /**
@@ -78,7 +78,7 @@ export class TempusController extends ContractBase {
    * @param yieldAmount How many yield shares to redeem
    */
   async redeemToYieldBearing(user:SignerOrAddress, pool: TempusPool, principalAmount:NumberOrString, yieldAmount:NumberOrString): Promise<Transaction> {
-    return this.contract.connect(user).redeemToYieldBearing(pool.address, addressOf(user), this.toBigNum(principalAmount), this.toBigNum(yieldAmount), addressOf(user));
+    return this.contract.connect(user).redeemToYieldBearing(pool.address, addressOf(user), toWei(principalAmount), toWei(yieldAmount), addressOf(user));
   }
 
   /**

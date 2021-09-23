@@ -15,14 +15,14 @@ describe("Compound Mock", async () =>
     beforeEach(async () =>
     {
       testPool = new CompoundTestPool();
-      await testPool.createDefault();
+      await testPool.create({ initialRate:0.02, poolDuration:60*60, yieldEst:0.1 })
       pool = testPool.compound;
 
       [owner, user] = testPool.signers;
       await pool.asset.transfer(owner, user, 10); // give user 10 asset coins
     });
 
-    it("Should have 1.0 rate at initial deposit", async () =>
+    it("Should have 0.02 rate at initial deposit", async () =>
     {
       expect(await pool.exchangeRate()).to.equal(0.02);
       expect(await pool.isParticipant(user)).to.be.false;
@@ -35,7 +35,7 @@ describe("Compound Mock", async () =>
       expect(await pool.yieldBalance(user)).to.equal(200);
     });
 
-    it("Should receive 0.5x yield tokens if rate is 2.0", async () =>
+    it("Should receive 0.5x yield tokens if rate is 0.04", async () =>
     {
       await pool.setExchangeRate(0.04);
       expect(await pool.exchangeRate()).to.equal(0.04);
@@ -48,7 +48,7 @@ describe("Compound Mock", async () =>
       expect(await pool.yieldBalance(user)).to.equal(100);
     });
 
-    it("Should receive 2.0x yield tokens if rate is 0.5", async () =>
+    it("Should receive 2.0x yield tokens if rate is 0.01", async () =>
     {
       await pool.setExchangeRate(0.01);
       expect(await pool.exchangeRate()).to.equal(0.01);

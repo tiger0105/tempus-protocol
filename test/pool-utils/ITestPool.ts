@@ -18,7 +18,7 @@ export class UserState {
 
   // non-async to give us actual test failure line #
   public expectMulti(principalShares:number, yieldShares:number, yieldBearingPegged:number, yieldBearingVariable:number, message:string = null) {
-    const msg = message === null ? "" : ": expected" + message;
+    const msg = message ? (": expected " + message) : "";
     expect(this.principalShares).to.equal(principalShares, "principalShares did not match expected value"+msg);
     expect(this.yieldShares).to.equal(yieldShares, "yieldShares did not match expected value"+msg);
     expect(this.yieldBearing).to.equal(this.yieldPeggedToAsset ? yieldBearingPegged : yieldBearingVariable, "yieldBearing did not match expected value"+msg);
@@ -26,10 +26,10 @@ export class UserState {
 
   // non-async to give us actual test failure line #
   public expect(principalShares:number, yieldShares:number, yieldBearing:number, message:string = null) {
-    const msg = message === null ? "" : ": expected" + message;
-    expect(this.principalShares).to.equal(principalShares, "principalShares did not match expected value"+msg);
-    expect(this.yieldShares).to.equal(yieldShares, "yieldShares did not match expected value"+msg);
-    expect(this.yieldBearing).to.equal(yieldBearing, "yieldBearing did not match expected value"+msg);
+    const msg = message ? (": expected " + message) : "";
+    expect(this.principalShares).to.equal(principalShares, ("principalShares did not match expected value"+msg));
+    expect(this.yieldShares).to.equal(yieldShares, ("yieldShares did not match expected value"+msg));
+    expect(this.yieldBearing).to.equal(yieldBearing, ("yieldBearing did not match expected value"+msg));
   }
 }
 
@@ -73,6 +73,7 @@ export abstract class ITestPool {
 
   // initialized by initPool()
   tempus:TempusPool;
+  controller:TempusController;
   amm:TempusAMM;
   signers:Signer[];
 
@@ -107,6 +108,13 @@ export abstract class ITestPool {
    * @return Current Yield Bearing Token balance of the user
    */
   abstract yieldTokenBalance(user:SignerOrAddress): Promise<NumberOrString>;
+
+  /**
+   * @return Current Backing Token balance of the user
+   */
+  async backingTokenBalance(user:SignerOrAddress): Promise<NumberOrString> {
+    return this.asset().balanceOf(user);
+  }
 
   /**
    * This will create TempusPool, TempusAMM and TempusController instances.
@@ -146,36 +154,29 @@ export abstract class ITestPool {
   /**
    * Deposit YieldBearingTokens into TempusPool
    */
-  async depositYBT(user:Signer, yieldBearingAmount:number, recipient:Signer = user): Promise<Transaction> {
+  async depositYBT(user:Signer, yieldBearingAmount:NumberOrString, recipient:Signer = user): Promise<Transaction> {
     return this.tempus.controller.depositYieldBearing(user, this.tempus, yieldBearingAmount, recipient);
   }
 
   /**
    * Deposit BackingTokens into TempusPool
    */
-   async depositBT(user:Signer, backingTokenAmount:number, recipient:Signer = user): Promise<Transaction> {
+  async depositBT(user:Signer, backingTokenAmount:NumberOrString, recipient:Signer = user): Promise<Transaction> {
     return this.tempus.controller.depositBacking(user, this.tempus, backingTokenAmount, recipient);
   }
 
   /**
    * Redeems TempusShares to YieldBearingTokens
    */
-   async redeemToYBT(user:Signer, principalAmount:number, yieldAmount:number): Promise<Transaction> {
+  async redeemToYBT(user:Signer, principalAmount:NumberOrString, yieldAmount:NumberOrString): Promise<Transaction> {
     return this.tempus.controller.redeemToYieldBearing(user, this.tempus, principalAmount, yieldAmount);
   }
 
   /**
    * Redeems TempusShares to BackingTokens
    */
-   async redeemToBT(user:Signer, principalAmount:number, yieldAmount:number): Promise<Transaction> {
+  async redeemToBT(user:Signer, principalAmount:NumberOrString, yieldAmount:NumberOrString): Promise<Transaction> {
     return this.tempus.controller.redeemToBacking(user, this.tempus, principalAmount, yieldAmount);
-  }
-
-  /**
-   * @return Current Backing Token balance of the user
-   */
-   async backingTokenBalance(user:Signer): Promise<NumberOrString> {
-    return this.asset().balanceOf(user);
   }
 
   /**
@@ -184,7 +185,7 @@ export abstract class ITestPool {
    * @example (await pool.expectDepositYBT(user, 100)).to.equal('success');
    * @returns RevertMessage assertion, or 'success' assertion
    */
-  async expectDepositYBT(user:Signer, yieldBearingAmount:number, recipient:Signer = user): Promise<Chai.Assertion> {
+  async expectDepositYBT(user:Signer, yieldBearingAmount:NumberOrString, recipient:Signer = user): Promise<Chai.Assertion> {
     try {
       await this.depositYBT(user, yieldBearingAmount, recipient);
       return expect('success');
@@ -199,7 +200,7 @@ export abstract class ITestPool {
    * @example (await pool.expectDepositBT(user, 100)).to.equal('success');
    * @returns RevertMessage assertion, or 'success' assertion
    */
-  async expectDepositBT(user:Signer, backingTokenAmount:number, recipient:Signer = user): Promise<Chai.Assertion> {
+  async expectDepositBT(user:Signer, backingTokenAmount:NumberOrString, recipient:Signer = user): Promise<Chai.Assertion> {
     try {
       await this.depositBT(user, backingTokenAmount, recipient);
       return expect('success');
@@ -214,7 +215,7 @@ export abstract class ITestPool {
    * @example (await pool.expectRedeemYBT(user, 100, 100)).to.equal('success');
    * @returns RevertMessage assertion, or 'success' assertion
    */
-   async expectRedeemYBT(user:Signer, principalShares:number, yieldShares:number): Promise<Chai.Assertion> {
+  async expectRedeemYBT(user:Signer, principalShares:NumberOrString, yieldShares:NumberOrString): Promise<Chai.Assertion> {
     try {
       await this.redeemToYBT(user, principalShares, yieldShares);
       return expect('success');
@@ -229,7 +230,7 @@ export abstract class ITestPool {
    * @example (await pool.expectRedeemYBT(user, 100, 100)).to.equal('success');
    * @returns RevertMessage assertion, or 'success' assertion
    */
-   async expectRedeemBT(user:Signer, principalShares:number, yieldShares:number): Promise<Chai.Assertion> {
+  async expectRedeemBT(user:Signer, principalShares:NumberOrString, yieldShares:NumberOrString): Promise<Chai.Assertion> {
     try {
       await this.redeemToBT(user, principalShares, yieldShares);
       return expect('success');
@@ -265,7 +266,7 @@ export abstract class ITestPool {
   /**
    * Sets the next block timestamp relative to the pool's duration (without mining a block)
    */
-   async setNextBlockTimestampRelativeToPoolStart(percentDuration: number): Promise<void> {
+  async setNextBlockTimestampRelativeToPoolStart(percentDuration: number): Promise<void> {
     const startTime:number = +await this.tempus.startTime();
     const duration:number = +await this.tempus.maturityTime() - startTime;
     await setNextBlockTimestamp(startTime + percentDuration * duration);
@@ -355,6 +356,7 @@ export abstract class ITestPool {
 
     setPool(s.contracts.pool);
     this.tempus = s.contracts.tempus;
+    this.controller = this.tempus.controller;
     this.amm = s.contracts.amm;
     return this.tempus;
   }

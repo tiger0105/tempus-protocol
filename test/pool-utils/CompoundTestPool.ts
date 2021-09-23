@@ -24,7 +24,7 @@ export class CompoundTestPool extends ITestPool {
     return this.compound.yieldToken.balanceOf(user);
   }
   async setInterestRate(rate:number): Promise<void> {
-    await this.compound.setExchangeRate(rate);
+    return this.compound.setExchangeRate(rate);
   }
   async forceFailNextDepositOrRedeem(): Promise<void> {
     await this.compound.contract.setFailNextDepositOrRedeem(true);

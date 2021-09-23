@@ -122,7 +122,7 @@ describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
     
     const ybtFeeAmount = await pool.tempus.numYieldTokensPerAsset(2, 1.02);
     expect(await pool.tempus.totalFees()).to.equal(ybtFeeAmount);  
-    (await pool.userState(user)).expectMulti(0, 0, /*peggedYBT*/508, /*variableYBT*/498.03921568627453);
+    (await pool.userState(user)).expectMulti(0, 0, /*peggedYBT*/508, /*variableYBT*/498.03921568);
   });
 
   it("Should collect tokens as fees after maturity with additional yield with fee percantage != 0", async () =>
@@ -143,7 +143,7 @@ describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
 
     const ybtFeeAmount = await pool.tempus.numYieldTokensPerAsset(3, 1.02);
     expect(await pool.tempus.totalFees()).to.equal(ybtFeeAmount);
-    (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/pool.yieldPeggedToAsset ? 507 : 497.05882352941177);
+    (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/pool.yieldPeggedToAsset ? 507 : 497.05882352);
   });
 
   it("Should transfer fees to specified account", async () =>

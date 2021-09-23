@@ -21,12 +21,12 @@ export class Comptroller extends ContractBase {
    * @param totalErc20Supply Total supply amount of the asset token
    * @param initialRate Initial interest rate
    */
-  static async create(totalErc20Supply:Number = 0, initialRate:Number = 1.0): Promise<Comptroller> {
+  static async create(totalErc20Supply:number = 0, initialRate:number = 1.0): Promise<Comptroller> {
     const pool = await ContractBase.deployContract("ComptrollerMock");
     let asset = await ERC20.deploy("ERC20FixedSupply", "DAI Stablecoin", "DAI", toWei(totalErc20Supply));
     const cDAI = await ERC20.deploy("CErc20", pool.address, asset.address, "Compound DAI Yield Token", "cDAI");
     const comptroller = new Comptroller(pool, asset, cDAI);
-    if (initialRate != 1.0) {
+    if (initialRate != 0.02) {
       await comptroller.setExchangeRate(initialRate);
     }
     return comptroller;
@@ -57,7 +57,7 @@ export class Comptroller extends ContractBase {
   /**
    * Sets the pool Exchange Rate, converting it to an 1e28 decimal
    */
-  async setExchangeRate(exchangeRate:NumberOrString, owner:SignerOrAddress = null) {
+  async setExchangeRate(exchangeRate:NumberOrString, owner:SignerOrAddress = null): Promise<void> {
     if (owner !== null) {
       const prevExchangeRate = await this.exchangeRate();
       const difference = (Number(exchangeRate) / Number(prevExchangeRate)) - 1;
