@@ -44,7 +44,10 @@ export class TempusController extends ContractBase {
    */
   async depositYieldBearing(user:SignerOrAddress, pool: TempusPool, yieldBearingAmount:NumberOrString, recipient:SignerOrAddress = user, ethValue: NumberOrString = 0): Promise<Transaction> {
     await pool.yieldBearing.approve(user, this.contract.address, yieldBearingAmount);
-    return this.connect(user).depositYieldBearing(pool.address, toWei(yieldBearingAmount), addressOf(recipient), { value: toWei(ethValue) });
+    const amount = pool.yieldBearing.toBigNum(yieldBearingAmount);
+    return this.connect(user).depositYieldBearing(
+      pool.address, amount, addressOf(recipient), { value: toWei(ethValue) }
+    );
   }
 
   /**
@@ -55,8 +58,10 @@ export class TempusController extends ContractBase {
   * @param recipient Address or User who will receive the minted shares
   * @param ethValue value of ETH to send with the tx
   */
-   async depositBacking(user:SignerOrAddress, pool: TempusPool, backingAmount:NumberOrString, recipient:SignerOrAddress = user, ethValue: NumberOrString = 0): Promise<Transaction> {
-    return this.connect(user).depositBacking(pool.address, toWei(backingAmount), addressOf(recipient), { value: toWei(ethValue) });
+  async depositBacking(user:SignerOrAddress, pool: TempusPool, backingAmount:NumberOrString, recipient:SignerOrAddress = user, ethValue: NumberOrString = 0): Promise<Transaction> {
+    return this.connect(user).depositBacking(
+      pool.address, toWei(backingAmount), addressOf(recipient), { value: toWei(ethValue) }
+    );
   }
 
   /**
@@ -67,7 +72,9 @@ export class TempusController extends ContractBase {
    * @param yieldAmount How many yield shares to redeem
    */
   async redeemToBacking(user:SignerOrAddress, pool: TempusPool, principalAmount:NumberOrString, yieldAmount:NumberOrString): Promise<Transaction> {
-    return this.contract.connect(user).redeemToBacking(pool.address, addressOf(user), toWei(principalAmount), toWei(yieldAmount), addressOf(user));
+    return this.connect(user).redeemToBacking(
+      pool.address, addressOf(user), toWei(principalAmount), toWei(yieldAmount), addressOf(user)
+    );
   }
 
   /**
@@ -78,7 +85,9 @@ export class TempusController extends ContractBase {
    * @param yieldAmount How many yield shares to redeem
    */
   async redeemToYieldBearing(user:SignerOrAddress, pool: TempusPool, principalAmount:NumberOrString, yieldAmount:NumberOrString): Promise<Transaction> {
-    return this.contract.connect(user).redeemToYieldBearing(pool.address, addressOf(user), toWei(principalAmount), toWei(yieldAmount), addressOf(user));
+    return this.connect(user).redeemToYieldBearing(
+      pool.address, addressOf(user), toWei(principalAmount), toWei(yieldAmount), addressOf(user)
+    );
   }
 
   /**
@@ -106,8 +115,9 @@ export class TempusController extends ContractBase {
     ethValue: NumberOrString = 0
   ): Promise<Transaction> {
     await this.approve(pool, user, tokenAmount, isBackingToken);
-    return this.contract.connect(user).depositAndProvideLiquidity(
-      pool.amm.address, toWei(tokenAmount), isBackingToken, { value: toWei(ethValue) }
+    const amount = isBackingToken ? toWei(tokenAmount) : pool.tempus.yieldBearing.toBigNum(tokenAmount);
+    return this.connect(user).depositAndProvideLiquidity(
+      pool.amm.address, amount, isBackingToken, { value: toWei(ethValue) }
     );
   }
 
@@ -129,8 +139,9 @@ export class TempusController extends ContractBase {
     ethValue: NumberOrString = 0
   ): Promise<Transaction> {
     await this.approve(pool, user, tokenAmount, isBackingToken);
-    return this.contract.connect(user).depositAndFix(
-      pool.amm.address, toWei(tokenAmount), isBackingToken, toWei(minTYSRate), { value: toWei(ethValue) }
+    const amount = isBackingToken ? toWei(tokenAmount) : pool.tempus.yieldBearing.toBigNum(tokenAmount);
+    return this.connect(user).depositAndFix(
+      pool.amm.address, amount, isBackingToken, toWei(minTYSRate), { value: toWei(ethValue) }
     );
   }
 
@@ -140,14 +151,11 @@ export class TempusController extends ContractBase {
     sharesAmount: Number,
     toBackingToken: boolean
   ): Promise<Transaction> {
-    await pool.amm.contract.connect(user).approve(this.address, pool.amm.contract.balanceOf(addressOf(user)));
-    await pool.tempus.principalShare.approve(user, pool.tempus.address, sharesAmount);
-    await pool.tempus.yieldShare.approve(user, pool.tempus.address, sharesAmount);
-    return this.contract.connect(user).exitTempusAMMAndRedeem(
-      pool.amm.address,
-      toWei(sharesAmount),
-      toBackingToken
-    );
+    const amm = pool.amm, t = pool.tempus;
+    await amm.contract.connect(user).approve(this.address, amm.contract.balanceOf(addressOf(user)));
+    await t.principalShare.approve(user, t.address, sharesAmount);
+    await t.yieldShare.approve(user, t.address, sharesAmount);
+    return this.connect(user).exitTempusAMMAndRedeem(amm.address, toWei(sharesAmount), toBackingToken);
   }
 
   async exitTempusAmm(
@@ -155,21 +163,16 @@ export class TempusController extends ContractBase {
     user: SignerOrAddress,
     lpTokensAmount: Number
   ): Promise<Transaction> {
-    await pool.amm.contract.connect(user).approve(this.address, pool.amm.contract.balanceOf(addressOf(user)));
-    return this.contract.connect(user).exitTempusAMM(
-      pool.amm.address,
-      toWei(lpTokensAmount),
-      1,
-      1,
-      false
-    );
+    const amm = pool.amm;
+    await amm.contract.connect(user).approve(this.address, amm.contract.balanceOf(addressOf(user)));
+    return this.connect(user).exitTempusAMM(amm.address, toWei(lpTokensAmount), 1, 1, false);
   }
 
   async completeExitAndRedeem(pool:ITestPool, user: SignerOrAddress, toBacking: boolean): Promise<Transaction> {
-    await pool.amm.contract.connect(user).approve(this.address, pool.amm.contract.balanceOf(addressOf(user)));
-    await pool.tempus.principalShare.connect(user).approve(this.address, pool.tempus.principalShare.contract.balanceOf(addressOf(user)));
-    await pool.tempus.yieldShare.connect(user).approve(this.address, pool.tempus.yieldShare.contract.balanceOf(addressOf(user)));
-    
-    return this.contract.connect(user).completeExitAndRedeem(pool.amm.address, toBacking);
+    const amm = pool.amm, t = pool.tempus, addr = addressOf(user);
+    await amm.connect(user).approve(this.address, amm.contract.balanceOf(addr));
+    await t.principalShare.connect(user).approve(this.address, t.principalShare.contract.balanceOf(addr));
+    await t.yieldShare.connect(user).approve(this.address, t.yieldShare.contract.balanceOf(addr));
+    return this.connect(user).completeExitAndRedeem(amm.address, toBacking);
   }
 }

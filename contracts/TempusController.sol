@@ -175,7 +175,8 @@ contract TempusController is PermanentlyOwnable {
 
     /// @dev Deposits Yield Bearing Tokens to a Tempus Pool.
     /// @param targetPool The Tempus Pool to which tokens will be deposited
-    /// @param yieldTokenAmount amount of Yield Bearing Tokens to be deposited as a Fixed18 decimal
+    /// @param yieldTokenAmount amount of Yield Bearing Tokens to be deposited
+    ///                         in YBT Contract precision which can be 18 or 8 decimals
     /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
     function depositYieldBearing(
         ITempusPool targetPool,
@@ -186,13 +187,13 @@ contract TempusController is PermanentlyOwnable {
 
         IERC20 yieldBearingToken = IERC20(targetPool.yieldBearingToken());
 
-        // Deposit to TempusPool
-        uint contractYBTAmount = targetPool.fixed18ToYieldTokenAmount(yieldTokenAmount);
-        contractYBTAmount = yieldBearingToken.untrustedTransferFrom(msg.sender, address(this), contractYBTAmount);
-        yieldBearingToken.safeIncreaseAllowance(address(targetPool), contractYBTAmount);
+        // Deposit to controller and approve transfer from controller to targetPool
+        uint transferredYBT = yieldBearingToken.untrustedTransferFrom(msg.sender, address(this), yieldTokenAmount);
+        yieldBearingToken.safeIncreaseAllowance(address(targetPool), transferredYBT);
 
-        uint transferredYBT = targetPool.yieldTokenAmountToFixed18(contractYBTAmount);
-        (uint mintedShares, uint depositedBT, uint fee, uint rate) = targetPool.deposit(transferredYBT, recipient);
+        // internal TempusPool takes Fixed18 amount
+        uint transferredYBTf18 = targetPool.yieldTokenAmountToFixed18(transferredYBT);
+        (uint mintedShares, uint depositedBT, uint fee, uint rate) = targetPool.deposit(transferredYBTf18, recipient);
 
         emit Deposited(
             address(targetPool),
