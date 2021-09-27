@@ -101,7 +101,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         returns (uint256 backingTokenAmount);
 
     /// Finalize the pool after maturity.
-    function finalize() external override {
+    function finalize() external override onlyController {
         if (!matured) {
             require(block.timestamp >= maturityTime, "Maturity not been reached yet.");
             maturityInterestRate = currentInterestRate();

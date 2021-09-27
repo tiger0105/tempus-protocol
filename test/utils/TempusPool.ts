@@ -221,13 +221,6 @@ export class TempusPool extends ContractBase {
   }
 
   /**
-   * Finalize the pool after maturity
-   */
-  async finalize() {
-    await this.contract.finalize();
-  }
-
-  /**
    * @returns True if maturity has been reached and the pool was finalized.
    */
   async matured() {

@@ -45,7 +45,7 @@ describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
 
   it("Finalize prior to maturity", async () =>
   {
-    (await expectRevert(pool.finalize())).to.equal("Maturity not been reached yet.");
+    (await expectRevert(testPool.finalize())).to.equal("Maturity not been reached yet.");
   });
 
   it("Finalize on/after maturity", async () =>
@@ -56,12 +56,12 @@ describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
 
   it("Finalizing multiple times", async () =>
   {
-    (await expectRevert(pool.finalize())).to.equal("Maturity not been reached yet.");
+    (await expectRevert(testPool.finalize())).to.equal("Maturity not been reached yet.");
     await testPool.fastForwardToMaturity();
     expect(await pool.matured()).to.equal(true);
-    await pool.finalize();
-    await pool.finalize();
-    await pool.finalize();
+    await testPool.finalize();
+    await testPool.finalize();
+    await testPool.finalize();
     expect(await pool.matured()).to.equal(true);
   });
 

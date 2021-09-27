@@ -243,7 +243,7 @@ export abstract class ITestPool {
    * Finalize the pool after maturity
    */
   async finalize(): Promise<void> {
-    return this.tempus.finalize();
+    return this.controller.finalize(this);
   }
 
   /**
@@ -251,7 +251,7 @@ export abstract class ITestPool {
    */
   async fastForwardToMaturity(): Promise<void> {
     await setEvmTime(this.maturityTime + 1);
-    return this.tempus.finalize();
+    return this.controller.finalize(this);
   }
 
   /**
