@@ -23,8 +23,8 @@ contract TempusController is PermanentlyOwnable {
     /// @param depositor Address of the user who deposited Yield Bearing Tokens to mint
     ///                  Tempus Principal Share (TPS) and Tempus Yield Shares
     /// @param recipient Address of the recipient who will receive TPS and TYS tokens
-    /// @param yieldTokenAmount Amount of yield tokens received from underlying pool as a Fixed18 decimal
-    /// @param backingTokenValue Value of @param yieldTokenAmount expressed in backing tokens as a Fixed18 decimal
+    /// @param yieldTokenAmount Amount of yield tokens received from underlying pool
+    /// @param backingTokenValue Value of @param yieldTokenAmount expressed in backing tokens
     /// @param shareAmounts Number of Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS) granted to `recipient`
     /// @param interestRate Interest Rate of the underlying pool from Yield Bearing Tokens to the underlying asset
     /// @param fee The fee which was deducted (in terms of yield bearing tokens)
@@ -45,7 +45,7 @@ contract TempusController is PermanentlyOwnable {
     /// @param recipient Address of user that recieved Yield Bearing Tokens
     /// @param principalShareAmount Number of Tempus Principal Shares (TPS) to redeem into the Yield Bearing Token (YBT)
     /// @param yieldShareAmount Number of Tempus Yield Shares (TYS) to redeem into the Yield Bearing Token (YBT)
-    /// @param yieldTokenAmount Number of Yield bearing tokens redeemed from the pool as a Fixed18 decimal
+    /// @param yieldTokenAmount Number of Yield bearing tokens redeemed from the pool
     /// @param backingTokenValue Value of @param yieldTokenAmount expressed in backing tokens
     /// @param interestRate Interest Rate of the underlying pool from Yield Bearing Tokens to the underlying asset
     /// @param fee The fee which was deducted (in terms of yield bearing tokens)
@@ -66,7 +66,7 @@ contract TempusController is PermanentlyOwnable {
     /// @dev Atomically deposits YBT/BT to TempusPool and provides liquidity
     ///      to the corresponding Tempus AMM with the issued TYS & TPS
     /// @param tempusAMM Tempus AMM to use to swap TYS for TPS
-    /// @param tokenAmount Amount of YBT/BT to be deposited as a Fixed18 decimal
+    /// @param tokenAmount Amount of YBT/BT to be deposited
     /// @param isBackingToken specifies whether the deposited asset is the Backing Token or Yield Bearing Token
     function depositAndProvideLiquidity(
         ITempusAMM tempusAMM,
