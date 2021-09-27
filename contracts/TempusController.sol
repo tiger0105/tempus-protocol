@@ -367,19 +367,6 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
         );
     }
 
-    function _redeem(
-        ITempusPool pool,
-        uint256 principals,
-        uint256 yields,
-        bool toBackingToken
-    ) private {
-        if (toBackingToken) {
-            _redeemToBacking(pool, msg.sender, principals, yields, msg.sender);
-        } else {
-            _redeemToYieldBearing(pool, msg.sender, principals, yields, msg.sender);
-        }
-    }
-
     function _redeemToYieldBearing(
         ITempusPool targetPool,
         address sender,
@@ -452,14 +439,9 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
     ) private {
         require(tempusAMM.transferFrom(msg.sender, address(this), lpTokensAmount), "LP token transfer failed");
 
-        _exitTempusAMMGivenLP(
-            tempusAMM,
-            address(this),
-            msg.sender,
-            lpTokensAmount,
-            getAMMOrderedAmounts(tempusAMM.tempusPool(), principalAmountOutMin, yieldAmountOutMin),
-            toInternalBalances
-        );
+        ITempusPool tempusPool = tempusAMM.tempusPool();
+        uint256[] memory amounts = getAMMOrderedAmounts(tempusPool, principalAmountOutMin, yieldAmountOutMin);
+        _exitTempusAMMGivenLP(tempusAMM, address(this), msg.sender, lpTokensAmount, amounts, toInternalBalances);
 
         assert(tempusAMM.balanceOf(address(this)) == 0);
     }
@@ -532,7 +514,11 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
         uint256 lpTokenBalance = tempusAMM.balanceOf(address(this));
         require(tempusAMM.transferFrom(address(this), msg.sender, lpTokenBalance), "LP token transfer failed");
 
-        _redeem(tempusPool, sharesAmount, sharesAmount, toBackingToken);
+        if (toBackingToken) {
+            _redeemToBacking(tempusPool, msg.sender, sharesAmount, sharesAmount, msg.sender);
+        } else {
+            _redeemToYieldBearing(tempusPool, msg.sender, sharesAmount, sharesAmount, msg.sender);
+        }
     }
 
     function _completeExitAndRedeem(ITempusAMM tempusAMM, bool toBackingToken) private {
@@ -561,7 +547,11 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
 
         uint256 principals = principalShare.balanceOf(address(this));
         uint256 yields = yieldShare.balanceOf(address(this));
-        _redeem(tempusPool, principals, yields, toBackingToken);
+        if (toBackingToken) {
+            _redeemToBacking(tempusPool, address(this), principals, yields, msg.sender);
+        } else {
+            _redeemToYieldBearing(tempusPool, address(this), principals, yields, msg.sender);
+        }
     }
 
     function _getAMMDetailsAndEnsureInitialized(ITempusAMM tempusAMM)
