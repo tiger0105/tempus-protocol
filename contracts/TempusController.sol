@@ -3,6 +3,7 @@ pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./amm/interfaces/ITempusAMM.sol";
 import "./amm/interfaces/IVault.sol";
@@ -12,7 +13,7 @@ import "./utils/PermanentlyOwnable.sol";
 import "./utils/AMMBalancesHelper.sol";
 import "./utils/UntrustedERC20.sol";
 
-contract TempusController is PermanentlyOwnable {
+contract TempusController is PermanentlyOwnable, ReentrancyGuard {
     using Fixed256x18 for uint256;
     using SafeERC20 for IERC20;
     using UntrustedERC20 for IERC20;
@@ -72,21 +73,152 @@ contract TempusController is PermanentlyOwnable {
         ITempusAMM tempusAMM,
         uint256 tokenAmount,
         bool isBackingToken
-    ) external payable {
+    ) external payable nonReentrant {
+        _depositAndProvideLiquidity(tempusAMM, tokenAmount, isBackingToken);
+    }
+
+    /// @dev Atomically deposits YBT/BT to TempusPool and swaps TYS for TPS to get fixed yield
+    ///      See https://docs.balancer.fi/developers/guides/single-swaps#swap-overview
+    /// @param tempusAMM Tempus AMM to use to swap TYS for TPS
+    /// @param tokenAmount Amount of YBT/BT to be deposited as a Fixed18 decimal
+    /// @param isBackingToken specifies whether the deposited asset is the Backing Token or Yield Bearing Token
+    /// @param minTYSRate Minimum exchange rate of TYS (denominated in TPS) to receive in exchange for TPS
+    function depositAndFix(
+        ITempusAMM tempusAMM,
+        uint256 tokenAmount,
+        bool isBackingToken,
+        uint256 minTYSRate
+    ) external payable nonReentrant {
+        _depositAndFix(tempusAMM, tokenAmount, isBackingToken, minTYSRate);
+    }
+
+    /// @dev Deposits Yield Bearing Tokens to a Tempus Pool.
+    /// @param targetPool The Tempus Pool to which tokens will be deposited
+    /// @param yieldTokenAmount amount of Yield Bearing Tokens to be deposited
+    ///                         in YBT Contract precision which can be 18 or 8 decimals
+    /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
+    function depositYieldBearing(
+        ITempusPool targetPool,
+        uint256 yieldTokenAmount,
+        address recipient
+    ) public nonReentrant {
+        _depositYieldBearing(targetPool, yieldTokenAmount, recipient);
+    }
+
+    /// @dev Deposits Backing Tokens into the underlying protocol and
+    ///      then deposited the minted Yield Bearing Tokens to the Tempus Pool.
+    /// @param targetPool The Tempus Pool to which tokens will be deposited
+    /// @param backingTokenAmount amount of Backing Tokens to be deposited into the underlying protocol
+    /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
+    function depositBacking(
+        ITempusPool targetPool,
+        uint256 backingTokenAmount,
+        address recipient
+    ) public payable nonReentrant {
+        _depositBacking(targetPool, backingTokenAmount, recipient);
+    }
+
+    /// @dev Redeem TPS+TYS held by msg.sender into Yield Bearing Tokens
+    /// @notice `msg.sender` must approve Principals and Yields amounts to `targetPool`
+    /// @notice `msg.sender` will receive yield bearing tokens
+    /// @notice Before maturity, `principalAmount` must equal to `yieldAmount`
+    /// @param targetPool The Tempus Pool from which to redeem Tempus Shares
+    /// @param sender Address of user whose Shares are going to be redeemed
+    /// @param principalAmount Amount of Tempus Principals to redeem as a Fixed18 decimal
+    /// @param yieldAmount Amount of Tempus Yields to redeem as a Fixed18 decimal
+    /// @param recipient Address of user that will recieve yield bearing tokens
+    function redeemToYieldBearing(
+        ITempusPool targetPool,
+        address sender,
+        uint256 principalAmount,
+        uint256 yieldAmount,
+        address recipient
+    ) public nonReentrant {
+        _redeemToYieldBearing(targetPool, sender, principalAmount, yieldAmount, recipient);
+    }
+
+    /// @dev Redeem TPS+TYS held by msg.sender into Backing Tokens
+    /// @notice `sender` must approve Principals and Yields amounts to this TempusPool
+    /// @notice `recipient` will receive the backing tokens
+    /// @notice Before maturity, `principalAmount` must equal to `yieldAmount`
+    /// @param targetPool The Tempus Pool from which to redeem Tempus Shares
+    /// @param sender Address of user whose Shares are going to be redeemed
+    /// @param principalAmount Amount of Tempus Principals to redeem as a Fixed18 decimal
+    /// @param yieldAmount Amount of Tempus Yields to redeem as a Fixed18 decimal
+    /// @param recipient Address of user that will recieve yield bearing tokens
+    function redeemToBacking(
+        ITempusPool targetPool,
+        address sender,
+        uint256 principalAmount,
+        uint256 yieldAmount,
+        address recipient
+    ) public nonReentrant {
+        _redeemToBacking(targetPool, sender, principalAmount, yieldAmount, recipient);
+    }
+
+    /// @dev Withdraws liquidity from TempusAMM
+    /// @notice `msg.sender` needs to approve controller for @param lpTokensAmount of LP tokens
+    /// @notice Transfers LP tokens to controller and exiting tempusAmm with `msg.sender` as recipient
+    /// @param tempusAMM Tempus AMM instance
+    /// @param lpTokensAmount Amount of LP tokens to be withdrawn
+    /// @param principalAmountOutMin Minimal amount of TPS to be withdrawn
+    /// @param yieldAmountOutMin Minimal amount of TYS to be withdrawn
+    /// @param toInternalBalances Withdrawing liquidity to internal balances
+    function exitTempusAMM(
+        ITempusAMM tempusAMM,
+        uint256 lpTokensAmount,
+        uint256 principalAmountOutMin,
+        uint256 yieldAmountOutMin,
+        bool toInternalBalances
+    ) external nonReentrant {
+        _exitTempusAMM(tempusAMM, lpTokensAmount, principalAmountOutMin, yieldAmountOutMin, toInternalBalances);
+    }
+
+    /// @dev Withdraws liquidity from TempusAMM and redeems Shares to Yield Bearing or Backing Tokens
+    ///      Checks user's balance of principal shares and yield shares
+    ///      and exits AMM with exact amounts needed for redemption.
+    /// @notice `msg.sender` needs to approve `tempusAMM.tempusPool` for both Yields and Principals
+    ///         for `sharesAmount`
+    /// @notice `msg.sender` needs to approve controller for whole balance of LP token
+    /// @notice Transfers users' LP tokens to controller, then exits tempusAMM with `msg.sender` as recipient.
+    ///         After exit transfers remainder of LP tokens back to user
+    /// @notice Can fail if there is not enough user balance
+    /// @notice Only available before maturity since exiting AMM with exact amounts is disallowed after maturity
+    /// @param tempusAMM TempusAMM instance to withdraw liquidity from
+    /// @param sharesAmount Amount of Principals and Yields
+    /// @param toBackingToken If true redeems to backing token, otherwise redeems to yield bearing
+    function exitTempusAMMAndRedeem(
+        ITempusAMM tempusAMM,
+        uint256 sharesAmount,
+        bool toBackingToken
+    ) external nonReentrant {
+        _exitTempusAMMAndRedeem(tempusAMM, sharesAmount, toBackingToken);
+    }
+
+    /// @dev Withdraws ALL liquidity from TempusAMM and redeems Shares to Yield Bearing or Backing Tokens
+    /// @notice `msg.sender` needs to approve controller for whole balance for both Yields and Principals
+    /// @notice `msg.sender` needs to approve controller for whole balance of LP token
+    /// @notice Can fail if there is not enough user balance
+    /// @param tempusAMM TempusAMM instance to withdraw liquidity from
+    /// @param toBackingToken If true redeems to backing token, otherwise redeems to yield bearing
+    function completeExitAndRedeem(ITempusAMM tempusAMM, bool toBackingToken) external nonReentrant {
+        _completeExitAndRedeem(tempusAMM, toBackingToken);
+    }
+
+    function _depositAndProvideLiquidity(
+        ITempusAMM tempusAMM,
+        uint256 tokenAmount,
+        bool isBackingToken
+    ) private {
         (
             IVault vault,
             bytes32 poolId,
             IERC20[] memory ammTokens,
             uint256[] memory ammBalances
-        ) = getAMMDetailsAndEnsureInitialized(tempusAMM);
+        ) = _getAMMDetailsAndEnsureInitialized(tempusAMM);
 
         ITempusPool targetPool = tempusAMM.tempusPool();
-
-        if (isBackingToken) {
-            depositBacking(targetPool, tokenAmount, address(this));
-        } else {
-            depositYieldBearing(targetPool, tokenAmount, address(this));
-        }
+        _deposit(targetPool, tokenAmount, isBackingToken);
 
         uint256[2] memory ammDepositPercentages = ammBalances.getAMMBalancesRatio();
         uint256[] memory ammLiquidityProvisionAmounts = new uint256[](2);
@@ -118,27 +250,16 @@ contract TempusController is PermanentlyOwnable {
         }
     }
 
-    /// @dev Atomically deposits YBT/BT to TempusPool and swaps TYS for TPS to get fixed yield
-    ///      See https://docs.balancer.fi/developers/guides/single-swaps#swap-overview
-    /// @param tempusAMM Tempus AMM to use to swap TYS for TPS
-    /// @param tokenAmount Amount of YBT/BT to be deposited as a Fixed18 decimal
-    /// @param isBackingToken specifies whether the deposited asset is the Backing Token or Yield Bearing Token
-    /// @param minTYSRate Minimum exchange rate of TYS (denominated in TPS) to receive in exchange for TPS
-    function depositAndFix(
+    function _depositAndFix(
         ITempusAMM tempusAMM,
         uint256 tokenAmount,
         bool isBackingToken,
         uint256 minTYSRate
-    ) external payable {
-        (IVault vault, bytes32 poolId, , ) = getAMMDetailsAndEnsureInitialized(tempusAMM);
+    ) private {
+        (IVault vault, bytes32 poolId, , ) = _getAMMDetailsAndEnsureInitialized(tempusAMM);
 
         ITempusPool targetPool = tempusAMM.tempusPool();
-
-        if (isBackingToken) {
-            depositBacking(targetPool, tokenAmount, address(this));
-        } else {
-            depositYieldBearing(targetPool, tokenAmount, address(this));
-        }
+        _deposit(targetPool, tokenAmount, isBackingToken);
 
         IERC20 principalShares = IERC20(address(targetPool.principalShare()));
         IERC20 yieldShares = IERC20(address(targetPool.yieldShare()));
@@ -173,16 +294,23 @@ contract TempusController is PermanentlyOwnable {
         principalShares.safeTransfer(msg.sender, TPSBalance);
     }
 
-    /// @dev Deposits Yield Bearing Tokens to a Tempus Pool.
-    /// @param targetPool The Tempus Pool to which tokens will be deposited
-    /// @param yieldTokenAmount amount of Yield Bearing Tokens to be deposited
-    ///                         in YBT Contract precision which can be 18 or 8 decimals
-    /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
-    function depositYieldBearing(
+    function _deposit(
+        ITempusPool targetPool,
+        uint256 tokenAmount,
+        bool isBackingToken
+    ) private {
+        if (isBackingToken) {
+            _depositBacking(targetPool, tokenAmount, address(this));
+        } else {
+            _depositYieldBearing(targetPool, tokenAmount, address(this));
+        }
+    }
+
+    function _depositYieldBearing(
         ITempusPool targetPool,
         uint256 yieldTokenAmount,
         address recipient
-    ) public {
+    ) private {
         require(yieldTokenAmount > 0, "yieldTokenAmount is 0");
 
         IERC20 yieldBearingToken = IERC20(targetPool.yieldBearingToken());
@@ -207,16 +335,11 @@ contract TempusController is PermanentlyOwnable {
         );
     }
 
-    /// @dev Deposits Backing Tokens into the underlying protocol and
-    ///      then deposited the minted Yield Bearing Tokens to the Tempus Pool.
-    /// @param targetPool The Tempus Pool to which tokens will be deposited
-    /// @param backingTokenAmount amount of Backing Tokens to be deposited into the underlying protocol
-    /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
-    function depositBacking(
+    function _depositBacking(
         ITempusPool targetPool,
         uint256 backingTokenAmount,
         address recipient
-    ) public payable {
+    ) private {
         require(backingTokenAmount > 0, "backingTokenAmount is 0");
 
         IERC20 backingToken = IERC20(targetPool.backingToken());
@@ -244,39 +367,43 @@ contract TempusController is PermanentlyOwnable {
         );
     }
 
-    /// @dev Redeem TPS+TYS held by msg.sender into Yield Bearing Tokens
-    /// @notice `msg.sender` must approve Principals and Yields amounts to `targetPool`
-    /// @notice `msg.sender` will receive yield bearing tokens
-    /// @notice Before maturity, `principalAmount` must equal to `yieldAmount`
-    /// @param targetPool The Tempus Pool from which to redeem Tempus Shares
-    /// @param sender Address of user whose Shares are going to be redeemed
-    /// @param principalAmount Amount of Tempus Principals to redeem as a Fixed18 decimal
-    /// @param yieldAmount Amount of Tempus Yields to redeem as a Fixed18 decimal
-    /// @param recipient Address of user that will recieve yield bearing tokens
-    function redeemToYieldBearing(
+    function _redeem(
+        ITempusPool pool,
+        uint256 principals,
+        uint256 yields,
+        bool toBackingToken
+    ) private {
+        if (toBackingToken) {
+            _redeemToBacking(pool, msg.sender, principals, yields, msg.sender);
+        } else {
+            _redeemToYieldBearing(pool, msg.sender, principals, yields, msg.sender);
+        }
+    }
+
+    function _redeemToYieldBearing(
         ITempusPool targetPool,
         address sender,
-        uint256 principalAmount,
-        uint256 yieldAmount,
+        uint256 principals,
+        uint256 yields,
         address recipient
-    ) public {
-        require((principalAmount > 0) || (yieldAmount > 0), "principalAmount and yieldAmount cannot both be 0");
+    ) private {
+        require((principals > 0) || (yields > 0), "principalAmount and yieldAmount cannot both be 0");
 
-        (uint256 redeemedYBT, uint256 fee, uint256 interestRate) = targetPool.redeem(
+        (uint redeemedYBT, uint fee, uint interestRate) = targetPool.redeem(
             sender,
-            principalAmount,
-            yieldAmount,
+            principals,
+            yields,
             recipient
         );
 
-        uint256 redeemedBT = targetPool.numAssetsPerYieldToken(redeemedYBT, targetPool.currentInterestRate());
+        uint redeemedBT = targetPool.numAssetsPerYieldToken(redeemedYBT, targetPool.currentInterestRate());
         bool earlyRedeem = !targetPool.matured();
         emit Redeemed(
             address(targetPool),
             sender,
             recipient,
-            principalAmount,
-            yieldAmount,
+            principals,
+            yields,
             redeemedYBT,
             redeemedBT,
             fee,
@@ -285,28 +412,19 @@ contract TempusController is PermanentlyOwnable {
         );
     }
 
-    /// @dev Redeem TPS+TYS held by msg.sender into Backing Tokens
-    /// @notice `sender` must approve Principals and Yields amounts to this TempusPool
-    /// @notice `recipient` will receive the backing tokens
-    /// @notice Before maturity, `principalAmount` must equal to `yieldAmount`
-    /// @param targetPool The Tempus Pool from which to redeem Tempus Shares
-    /// @param sender Address of user whose Shares are going to be redeemed
-    /// @param principalAmount Amount of Tempus Principals to redeem as a Fixed18 decimal
-    /// @param yieldAmount Amount of Tempus Yields to redeem as a Fixed18 decimal
-    /// @param recipient Address of user that will recieve yield bearing tokens
-    function redeemToBacking(
+    function _redeemToBacking(
         ITempusPool targetPool,
         address sender,
-        uint256 principalAmount,
-        uint256 yieldAmount,
+        uint256 principals,
+        uint256 yields,
         address recipient
-    ) public {
-        require((principalAmount > 0) || (yieldAmount > 0), "principalAmount and yieldAmount cannot both be 0");
+    ) private {
+        require((principals > 0) || (yields > 0), "principalAmount and yieldAmount cannot both be 0");
 
-        (uint256 redeemedYBT, uint256 redeemedBT, uint256 fee, uint256 interestRate) = targetPool.redeemToBacking(
+        (uint redeemedYBT, uint redeemedBT, uint fee, uint rate) = targetPool.redeemToBacking(
             sender,
-            principalAmount,
-            yieldAmount,
+            principals,
+            yields,
             recipient
         );
 
@@ -315,34 +433,26 @@ contract TempusController is PermanentlyOwnable {
             address(targetPool),
             sender,
             recipient,
-            principalAmount,
-            yieldAmount,
+            principals,
+            yields,
             redeemedYBT,
             redeemedBT,
             fee,
-            interestRate,
+            rate,
             earlyRedeem
         );
     }
 
-    /// @dev Withdraws liquidity from TempusAMM
-    /// @notice `msg.sender` needs to approve controller for @param lpTokensAmount of LP tokens
-    /// @notice Transfers LP tokens to controller and exiting tempusAmm with `msg.sender` as recipient
-    /// @param tempusAMM Tempus AMM instance
-    /// @param lpTokensAmount Amount of LP tokens to be withdrawn
-    /// @param principalAmountOutMin Minimal amount of TPS to be withdrawn
-    /// @param yieldAmountOutMin Minimal amount of TYS to be withdrawn
-    /// @param toInternalBalances Withdrawing liquidity to internal balances
-    function exitTempusAMM(
+    function _exitTempusAMM(
         ITempusAMM tempusAMM,
         uint256 lpTokensAmount,
         uint256 principalAmountOutMin,
         uint256 yieldAmountOutMin,
         bool toInternalBalances
-    ) external {
+    ) private {
         require(tempusAMM.transferFrom(msg.sender, address(this), lpTokensAmount), "LP token transfer failed");
 
-        doExitTempusAMMGivenLP(
+        _exitTempusAMMGivenLP(
             tempusAMM,
             address(this),
             msg.sender,
@@ -354,24 +464,55 @@ contract TempusController is PermanentlyOwnable {
         assert(tempusAMM.balanceOf(address(this)) == 0);
     }
 
-    /// @dev Withdraws liquidity from TempusAMM and redeems Shares to Yield Bearing or Backing Tokens
-    ///      Checks user's balance of principal shares and yield shares
-    ///      and exits AMM with exact amounts needed for redemption.
-    /// @notice `msg.sender` needs to approve `tempusAMM.tempusPool` for both Yields and Principals
-    ///         for `sharesAmount`
-    /// @notice `msg.sender` needs to approve controller for whole balance of LP token
-    /// @notice Transfers users' LP tokens to controller, then exits tempusAMM with `msg.sender` as recipient.
-    ///         After exit transfers remainder of LP tokens back to user
-    /// @notice Can fail if there is not enough user balance
-    /// @notice Only available before maturity since exiting AMM with exact amounts is disallowed after maturity
-    /// @param tempusAMM TempusAMM instance to withdraw liquidity from
-    /// @param sharesAmount Amount of Principals and Yields
-    /// @param toBackingToken If true redeems to backing token, otherwise redeems to yield bearing
-    function exitTempusAMMAndRedeem(
+    function _exitTempusAMMGivenLP(
+        ITempusAMM tempusAMM,
+        address sender,
+        address recipient,
+        uint256 lpTokensAmount,
+        uint256[] memory minAmountsOut,
+        bool toInternalBalances
+    ) private {
+        require(lpTokensAmount > 0, "LP token amount is 0");
+
+        (IVault vault, bytes32 poolId, IERC20[] memory ammTokens, ) = _getAMMDetailsAndEnsureInitialized(tempusAMM);
+
+        IVault.ExitPoolRequest memory request = IVault.ExitPoolRequest({
+            assets: ammTokens,
+            minAmountsOut: minAmountsOut,
+            userData: abi.encode(uint8(ITempusAMM.ExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT), lpTokensAmount),
+            toInternalBalance: toInternalBalances
+        });
+        vault.exitPool(poolId, sender, payable(recipient), request);
+    }
+
+    function _exitTempusAMMGivenAmountsOut(
+        ITempusAMM tempusAMM,
+        address sender,
+        address recipient,
+        uint256[] memory amountsOut,
+        uint256 lpTokensAmountInMax,
+        bool toInternalBalances
+    ) private {
+        (IVault vault, bytes32 poolId, IERC20[] memory ammTokens, ) = _getAMMDetailsAndEnsureInitialized(tempusAMM);
+
+        IVault.ExitPoolRequest memory request = IVault.ExitPoolRequest({
+            assets: ammTokens,
+            minAmountsOut: amountsOut,
+            userData: abi.encode(
+                uint8(ITempusAMM.ExitKind.BPT_IN_FOR_EXACT_TOKENS_OUT),
+                amountsOut,
+                lpTokensAmountInMax
+            ),
+            toInternalBalance: toInternalBalances
+        });
+        vault.exitPool(poolId, sender, payable(recipient), request);
+    }
+
+    function _exitTempusAMMAndRedeem(
         ITempusAMM tempusAMM,
         uint256 sharesAmount,
         bool toBackingToken
-    ) external {
+    ) private {
         ITempusPool tempusPool = tempusAMM.tempusPool();
         require(!tempusPool.matured(), "Pool already finalized");
         uint256 userPrincipalBalance = IERC20(address(tempusPool.principalShare())).balanceOf(msg.sender);
@@ -384,33 +525,17 @@ contract TempusController is PermanentlyOwnable {
         uint256 userBalanceLP = tempusAMM.balanceOf(msg.sender);
         require(tempusAMM.transferFrom(msg.sender, address(this), userBalanceLP), "LP token transfer failed");
 
-        doExitTempusAMMGivenAmountsOut(
-            tempusAMM,
-            address(this),
-            msg.sender,
-            getAMMOrderedAmounts(tempusPool, ammExitAmountPrincipal, ammExitAmountYield),
-            userBalanceLP,
-            false
-        );
+        uint256[] memory amounts = getAMMOrderedAmounts(tempusPool, ammExitAmountPrincipal, ammExitAmountYield);
+        _exitTempusAMMGivenAmountsOut(tempusAMM, address(this), msg.sender, amounts, userBalanceLP, false);
 
         // transfer remainder of LP tokens back to user
         uint256 lpTokenBalance = tempusAMM.balanceOf(address(this));
         require(tempusAMM.transferFrom(address(this), msg.sender, lpTokenBalance), "LP token transfer failed");
 
-        if (toBackingToken) {
-            redeemToBacking(tempusPool, msg.sender, sharesAmount, sharesAmount, msg.sender);
-        } else {
-            redeemToYieldBearing(tempusPool, msg.sender, sharesAmount, sharesAmount, msg.sender);
-        }
+        _redeem(tempusPool, sharesAmount, sharesAmount, toBackingToken);
     }
 
-    /// @dev Withdraws ALL liquidity from TempusAMM and redeems Shares to Yield Bearing or Backing Tokens
-    /// @notice `msg.sender` needs to approve controller for whole balance for both Yields and Principals
-    /// @notice `msg.sender` needs to approve controller for whole balance of LP token
-    /// @notice Can fail if there is not enough user balance
-    /// @param tempusAMM TempusAMM instance to withdraw liquidity from
-    /// @param toBackingToken If true redeems to backing token, otherwise redeems to yield bearing
-    function completeExitAndRedeem(ITempusAMM tempusAMM, bool toBackingToken) external {
+    function _completeExitAndRedeem(ITempusAMM tempusAMM, bool toBackingToken) private {
         ITempusPool tempusPool = tempusAMM.tempusPool();
         require(tempusPool.matured(), "Not supported before maturity");
 
@@ -431,73 +556,15 @@ contract TempusController is PermanentlyOwnable {
             uint256[] memory minAmountsOut = new uint256[](2);
 
             // exit amm and sent shares to controller
-            doExitTempusAMMGivenLP(tempusAMM, address(this), address(this), userBalanceLP, minAmountsOut, false);
+            _exitTempusAMMGivenLP(tempusAMM, address(this), address(this), userBalanceLP, minAmountsOut, false);
         }
 
-        if (toBackingToken) {
-            redeemToBacking(
-                tempusPool,
-                address(this),
-                principalShare.balanceOf(address(this)),
-                yieldShare.balanceOf(address(this)),
-                msg.sender
-            );
-        } else {
-            redeemToYieldBearing(
-                tempusPool,
-                address(this),
-                principalShare.balanceOf(address(this)),
-                yieldShare.balanceOf(address(this)),
-                msg.sender
-            );
-        }
+        uint256 principals = principalShare.balanceOf(address(this));
+        uint256 yields = yieldShare.balanceOf(address(this));
+        _redeem(tempusPool, principals, yields, toBackingToken);
     }
 
-    function doExitTempusAMMGivenLP(
-        ITempusAMM tempusAMM,
-        address sender,
-        address recipient,
-        uint256 lpTokensAmount,
-        uint256[] memory minAmountsOut,
-        bool toInternalBalances
-    ) private {
-        require(lpTokensAmount > 0, "LP token amount is 0");
-
-        (IVault vault, bytes32 poolId, IERC20[] memory ammTokens, ) = getAMMDetailsAndEnsureInitialized(tempusAMM);
-
-        IVault.ExitPoolRequest memory request = IVault.ExitPoolRequest({
-            assets: ammTokens,
-            minAmountsOut: minAmountsOut,
-            userData: abi.encode(uint8(ITempusAMM.ExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT), lpTokensAmount),
-            toInternalBalance: toInternalBalances
-        });
-        vault.exitPool(poolId, sender, payable(recipient), request);
-    }
-
-    function doExitTempusAMMGivenAmountsOut(
-        ITempusAMM tempusAMM,
-        address sender,
-        address recipient,
-        uint256[] memory amountsOut,
-        uint256 lpTokensAmountInMax,
-        bool toInternalBalances
-    ) private {
-        (IVault vault, bytes32 poolId, IERC20[] memory ammTokens, ) = getAMMDetailsAndEnsureInitialized(tempusAMM);
-
-        IVault.ExitPoolRequest memory request = IVault.ExitPoolRequest({
-            assets: ammTokens,
-            minAmountsOut: amountsOut,
-            userData: abi.encode(
-                uint8(ITempusAMM.ExitKind.BPT_IN_FOR_EXACT_TOKENS_OUT),
-                amountsOut,
-                lpTokensAmountInMax
-            ),
-            toInternalBalance: toInternalBalances
-        });
-        vault.exitPool(poolId, sender, payable(recipient), request);
-    }
-
-    function getAMMDetailsAndEnsureInitialized(ITempusAMM tempusAMM)
+    function _getAMMDetailsAndEnsureInitialized(ITempusAMM tempusAMM)
         private
         view
         returns (
