@@ -202,8 +202,8 @@ contract TempusController is PermanentlyOwnable {
             transferredYBT,
             depositedBT,
             mintedShares,
-            fee,
-            rate
+            rate,
+            fee
         );
     }
 
@@ -239,8 +239,8 @@ contract TempusController is PermanentlyOwnable {
             depositedYBT,
             backingTokenAmount,
             mintedShares,
-            fee,
-            interestRate
+            interestRate,
+            fee
         );
     }
 
