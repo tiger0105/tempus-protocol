@@ -205,6 +205,11 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
         _completeExitAndRedeem(tempusAMM, toBackingToken);
     }
 
+    /// Finalize the pool after maturity.
+    function finalize(ITempusPool targetPool) external nonReentrant {
+        targetPool.finalize();
+    }
+
     function _depositAndProvideLiquidity(
         ITempusAMM tempusAMM,
         uint256 tokenAmount,

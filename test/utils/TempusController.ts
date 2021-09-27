@@ -175,4 +175,11 @@ export class TempusController extends ContractBase {
     await t.yieldShare.connect(user).approve(this.address, t.yieldShare.contract.balanceOf(addr));
     return this.connect(user).completeExitAndRedeem(amm.address, toBacking);
   }
+
+  /**
+   * Finalize the pool after maturity.
+   */ 
+  async finalize(pool:ITestPool): Promise<void> {
+    await this.contract.finalize(pool.tempus.address);
+  }
 }
