@@ -173,7 +173,7 @@ export class TempusController extends ContractBase {
     await amm.connect(user).approve(this.address, amm.contract.balanceOf(addr));
     await t.principalShare.connect(user).approve(this.address, t.principalShare.contract.balanceOf(addr));
     await t.yieldShare.connect(user).approve(this.address, t.yieldShare.contract.balanceOf(addr));
-    return this.connect(user).completeExitAndRedeem(amm.address, toBacking);
+    return this.connect(user).completeExitAndRedeem(amm.address, 10e13, toBacking);
   }
 
   /**
