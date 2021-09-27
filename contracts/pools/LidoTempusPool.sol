@@ -84,4 +84,12 @@ contract LidoTempusPool is TempusPool {
     function numYieldTokensPerAsset(uint backingTokens, uint) public pure override returns (uint) {
         return backingTokens;
     }
+
+    function yieldTokenAmountToFixed18(uint yieldTokens) public pure override returns (uint) {
+        return yieldTokens; // already Fixed18
+    }
+
+    function fixed18ToYieldTokenAmount(uint fixed18amount) public pure override returns (uint) {
+        return fixed18amount; // already Fixed18
+    }
 }

@@ -1,5 +1,5 @@
 import { Contract, BigNumber } from "ethers";
-import { NumberOrString, toWei } from "./Decimal";
+import { formatDecimal, NumberOrString, parseDecimal, toWei } from "./Decimal";
 import { addressOf, ContractBase, SignerOrAddress } from "./ContractBase";
 import { ERC20 } from "./ERC20";
 
@@ -11,6 +11,9 @@ export class Comptroller extends ContractBase {
     super("ComptrollerMock", 18, pool);
     this.asset = asset!;
     this.yieldToken = yieldToken;
+    if (yieldToken.decimals !== 8) {
+      throw new Error("Compound's YieldToken cDAI must have 8 decimal precision");
+    }
   }
 
   /**
@@ -18,12 +21,12 @@ export class Comptroller extends ContractBase {
    * @param totalErc20Supply Total supply amount of the asset token
    * @param initialRate Initial interest rate
    */
-  static async create(totalErc20Supply:Number = 0, initialRate:Number = 1.0): Promise<Comptroller> {
+  static async create(totalErc20Supply:number = 0, initialRate:number = 1.0): Promise<Comptroller> {
     const pool = await ContractBase.deployContract("ComptrollerMock");
     let asset = await ERC20.deploy("ERC20FixedSupply", "DAI Stablecoin", "DAI", toWei(totalErc20Supply));
     const cDAI = await ERC20.deploy("CErc20", pool.address, asset.address, "Compound DAI Yield Token", "cDAI");
     const comptroller = new Comptroller(pool, asset, cDAI);
-    if (initialRate != 1.0) {
+    if (initialRate != 0.02) {
       await comptroller.setExchangeRate(initialRate);
     }
     return comptroller;
@@ -44,16 +47,17 @@ export class Comptroller extends ContractBase {
   }
 
   /**
-   * @return Current Exchange Rate in 1e18 decimal
+   * @return Current Exchange Rate, converted from 1e28 decimal
+   *         The default initial exchange rate on compound is 0.02
    */
   async exchangeRate(): Promise<NumberOrString> {
-    return this.fromBigNum(await this.contract.exchangeRate());
+    return formatDecimal(await this.contract.exchangeRate(), 28);
   }
 
   /**
-   * Sets the pool Exchange Rate in 1e18 decimal
+   * Sets the pool Exchange Rate, converting it to an 1e28 decimal
    */
-  async setExchangeRate(exchangeRate:NumberOrString, owner:SignerOrAddress = null) {
+  async setExchangeRate(exchangeRate:NumberOrString, owner:SignerOrAddress = null): Promise<void> {
     if (owner !== null) {
       const prevExchangeRate = await this.exchangeRate();
       const difference = (Number(exchangeRate) / Number(prevExchangeRate)) - 1;
@@ -63,7 +67,7 @@ export class Comptroller extends ContractBase {
         await this.asset.transfer(owner, this.yieldToken.address, increaseBy);
       }
     }
-    await this.contract.setExchangeRate(toWei(exchangeRate));
+    await this.contract.setExchangeRate(parseDecimal(exchangeRate.toString(), 28));
   }
 
   /**
@@ -101,15 +105,14 @@ export class Comptroller extends ContractBase {
    * @param mintAmount How much he wants to mint
    */
   async mintAllowed(user:SignerOrAddress, mintAmount:NumberOrString): Promise<boolean> {
-    return await this.contract.mintAllowed(this.yieldToken.address, addressOf(user), this.toBigNum(mintAmount)) == 0;
+    return await this.contract.mintAllowed(this.yieldToken.address, addressOf(user), this.asset.toBigNum(mintAmount)) == 0;
   }
 
   /**
    * Calls CErc20 mint() on the CToken, which means CToken must be CErc20 (like cDAI)
    */
   async mint(user:SignerOrAddress, amount:NumberOrString) {
-    const assetAmount = this.asset.toBigNum(amount);
     await this.asset.approve(user, this.yieldToken.address, amount);
-    await this.yieldToken.contract.connect(user).mint(assetAmount);
+    await this.yieldToken.contract.connect(user).mint(this.asset.toBigNum(amount));
   }
 }

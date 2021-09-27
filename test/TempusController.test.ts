@@ -257,8 +257,8 @@ describeForEachPool("TempusController", (testPool:ITestPool) =>
     it("Complete exit to backing", async () => 
     {
       await initAMM(user1, /*ybtDeposit*/1000000, /*principals*/100000, /*yields*/1000000);
-      expect(await testPool.tempus.yieldShare.balanceOf(user1)).to.equal(0, "all yields are in amm");
-      expect(await testPool.tempus.principalShare.balanceOf(user1)).to.equal(
+      expect(await pool.yieldShare.balanceOf(user1)).to.equal(0, "all yields are in amm");
+      expect(await pool.principalShare.balanceOf(user1)).to.equal(
         900000,
         "balance should decrease as there is some of it locked in amm"
       );
@@ -267,15 +267,18 @@ describeForEachPool("TempusController", (testPool:ITestPool) =>
       await testPool.setInterestRate(1.1);
       await testPool.fastForwardToMaturity();
 
-      if (testPool.type == PoolType.Lido) {
+      if (testPool.type == PoolType.Lido)
+      {
         (await expectRevert(controller.completeExitAndRedeem(testPool, user1, true))).to.equal(
           "LidoTempusPool.withdrawFromUnderlyingProtocol not supported"
         );
-      } else {
+      }
+      else
+      {
         expect(await testPool.backingTokenBalance(user1)).to.equal(100000);
         await controller.completeExitAndRedeem(testPool, user1, true);
-        expect(await testPool.tempus.yieldShare.balanceOf(user1)).to.equal(0);
-        expect(await testPool.tempus.principalShare.balanceOf(user1)).to.equal(0);
+        expect(await pool.yieldShare.balanceOf(user1)).to.equal(0);
+        expect(await pool.principalShare.balanceOf(user1)).to.equal(0);
         expect(await testPool.amm.contract.balanceOf(user1.address)).to.equal(0);
         expect(+await testPool.backingTokenBalance(user1)).to.be.within(1199000, 1200000);
       }

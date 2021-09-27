@@ -40,14 +40,14 @@ describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
     await pool.createDefault();
     await pool.setupAccounts(owner, [[user, 100]]);
     await expect(pool.depositYBT(user, 100)).to.emit(pool.tempus.controller.contract, 'Deposited').withArgs(
-      pool.tempus.address,
-      user.address,
-      user.address,
-      toWei(100),
-      toWei(100),
-      toWei(100),
-      toWei(0),
-      toWei(1.0)
+      pool.tempus.address, /*pool*/
+      user.address, /*depositor*/
+      user.address, /*recipient*/
+      pool.tempus.yieldBearing.toBigNum(100), /*yieldTokenAmount*/
+      toWei(100), /*backingTokenValue*/
+      toWei(100), /*shareAmounts*/
+      toWei(1.0), /*interestRate*/
+      toWei(0) /*fee*/
     );
   });
 

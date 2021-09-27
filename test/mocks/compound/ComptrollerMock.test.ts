@@ -15,63 +15,63 @@ describe("Compound Mock", async () =>
     beforeEach(async () =>
     {
       testPool = new CompoundTestPool();
-      await testPool.createDefault();
+      await testPool.create({ initialRate:0.02, poolDuration:60*60, yieldEst:0.1 })
       pool = testPool.compound;
 
       [owner, user] = testPool.signers;
       await pool.asset.transfer(owner, user, 10); // give user 10 asset coins
     });
 
-    it("Should have 1.0 rate at initial deposit", async () =>
+    it("Should have 0.02 rate at initial deposit", async () =>
     {
-      expect(await pool.exchangeRate()).to.equal(1.0);
+      expect(await pool.exchangeRate()).to.equal(0.02);
       expect(await pool.isParticipant(user)).to.be.false;
 
       await pool.enterMarkets(user);
       expect(await pool.isParticipant(user)).to.be.true;
       await pool.mint(user, 4);
-      
+
       expect(await pool.assetBalance(user)).to.equal(6);
-      expect(await pool.yieldBalance(user)).to.equal(4);
+      expect(await pool.yieldBalance(user)).to.equal(200);
     });
 
-    it("Should receive 0.5x yield tokens if rate is 2.0", async () =>
+    it("Should receive 0.5x yield tokens if rate is 0.04", async () =>
     {
-      await pool.setExchangeRate(2.0);
-      expect(await pool.exchangeRate()).to.equal(2.0);
+      await pool.setExchangeRate(0.04);
+      expect(await pool.exchangeRate()).to.equal(0.04);
 
-      // with 2.0 rate, user deposits 4 asset tokens and receives 2 yield tokens
+      // with 0.04 rate, user deposits 4 asset tokens and receives 4/0.04=100 yield tokens
       await pool.enterMarkets(user);
       await pool.mint(user, 4);
 
       expect(await pool.assetBalance(user)).to.equal(6);
-      expect(await pool.yieldBalance(user)).to.equal(2);
+      expect(await pool.yieldBalance(user)).to.equal(100);
     });
 
-    it("Should receive 2.0x yield tokens if rate is 0.5", async () =>
+    it("Should receive 2.0x yield tokens if rate is 0.01", async () =>
     {
-      await pool.setExchangeRate(0.5);
-      expect(await pool.exchangeRate()).to.equal(0.5);
+      await pool.setExchangeRate(0.01);
+      expect(await pool.exchangeRate()).to.equal(0.01);
 
-      // with 0.5 rate, user deposits 4 asset tokens and receives 8 yield tokens
+      // with 0.01 rate, user deposits 4 asset tokens and receives 4/0.01=400 yield tokens
       await pool.enterMarkets(user);
       await pool.mint(user, 4);
 
       expect(await pool.assetBalance(user)).to.equal(6);
-      expect(await pool.yieldBalance(user)).to.equal(8);
+      expect(await pool.yieldBalance(user)).to.equal(400);
     });
 
     it("Should receive different amount of yield tokens if rate changes", async () =>
     {
-      // with 1.0 rate, user deposits 4 assets and receives 4 yield tokens
+      // with default 0.02 rate, user deposits 4 assets and receives 4/0.02=200 yield tokens
       await pool.enterMarkets(user);
       await pool.mint(user, 4);
-      expect(await pool.yieldBalance(user)).to.equal(4);
+      expect(await pool.yieldBalance(user)).to.equal(200);
       
-      // with 2.0 rate, user deposits 4 asset tokens and receives 2 yield tokens
-      await pool.setExchangeRate(2.0);
+      // with 0.04 rate, user deposits 4 asset tokens and receives 4/0.04=100 yield tokens
+      await pool.setExchangeRate(0.04);
       await pool.mint(user, 4);
-      expect(await pool.yieldBalance(user)).to.equal(6);
+      expect(await pool.yieldBalance(user)).to.equal(200 + 100);
     });
     
     it("Should be non-participant after exitMarket was called", async () =>

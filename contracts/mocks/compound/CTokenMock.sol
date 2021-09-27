@@ -15,6 +15,13 @@ abstract contract CTokenMock is ERC20, CTokenInterface {
         comptroller = comptrollerInterface;
     }
 
+    // For cDAI and friends, the precision must always be 8
+    // and some of the internal math here also relies on 8 decimals
+    function decimals() public pure override returns (uint8) {
+        return 8;
+    }
+
+    // Stored exchange rate as 1e28 decimal
     function exchangeRateStored() public view override returns (uint) {
         return ComptrollerMock(address(comptroller)).exchangeRate();
     }
@@ -26,9 +33,9 @@ abstract contract CTokenMock is ERC20, CTokenInterface {
     /**
      * @notice Sender supplies assets into the market and receives cTokens in exchange
      * @dev Accrues interest whether or not the operation succeeds, unless reverted
-     * @param mintAmount The amount of the underlying asset to supply
+     * @param mintAmount The amount of the underlying asset to supply (in 1e18 decimals)
      * @return (uint, uint) An error code (0=success, otherwise a failure,
-               see ErrorReporter.sol), and the actual mint amount.
+               see ErrorReporter.sol), and the actual mint amount (in 1e18 decimals)
      */
     function mintInternal(uint mintAmount) internal returns (uint, uint) {
         // mintFresh emits the actual Mint event if successful and logs on errors, so we don't need to
@@ -39,7 +46,7 @@ abstract contract CTokenMock is ERC20, CTokenInterface {
         uint err = comptroller.mintAllowed(address(this), minter, mintAmount);
         require(err == 0, "mint is not allowed");
 
-        uint exchangeRate = exchangeRateStored();
+        uint exchangeRate = exchangeRateStored(); // exchangeRate is 28 decimal precision
 
         /*
          *  We call `doTransferIn` for the minter and the mintAmount.
@@ -49,9 +56,9 @@ abstract contract CTokenMock is ERC20, CTokenInterface {
          *  in case of a fee. On success, the cToken holds an additional `actualMintAmount`
          *  of cash.
          */
-        actualMintAmount = doTransferIn(minter, mintAmount);
+        actualMintAmount = doTransferIn(minter, mintAmount); // 18 decimal precision
 
-        uint mintTokens = (actualMintAmount * 1e18) / exchangeRate;
+        uint mintTokens = (actualMintAmount * 1e18) / exchangeRate; // (18 + 18) - 28 = 8 decimal precision
         _mint(minter, mintTokens);
         errorCode = 0;
     }

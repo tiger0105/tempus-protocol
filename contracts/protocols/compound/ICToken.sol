@@ -2,12 +2,13 @@
 pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "./IComptroller.sol";
 
 // Based on https://github.com/compound-finance/compound-protocol/blob/v2.8.1/contracts/CToken.sol
 // and https://github.com/compound-finance/compound-protocol/blob/v2.8.1/contracts/CTokenInterfaces.sol
-interface ICToken is IERC20 {
+interface ICToken is IERC20, IERC20Metadata {
     /// Indicator that this is a CToken contract (for inspection)
     function isCToken() external view returns (bool);
 

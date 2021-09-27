@@ -121,7 +121,7 @@ contract TempusController is PermanentlyOwnable {
     /// @dev Atomically deposits YBT/BT to TempusPool and swaps TYS for TPS to get fixed yield
     ///      See https://docs.balancer.fi/developers/guides/single-swaps#swap-overview
     /// @param tempusAMM Tempus AMM to use to swap TYS for TPS
-    /// @param tokenAmount Amount of YBT/BT to be deposited
+    /// @param tokenAmount Amount of YBT/BT to be deposited as a Fixed18 decimal
     /// @param isBackingToken specifies whether the deposited asset is the Backing Token or Yield Bearing Token
     /// @param minTYSRate Minimum exchange rate of TYS (denominated in TPS) to receive in exchange for TPS
     function depositAndFix(
@@ -176,6 +176,7 @@ contract TempusController is PermanentlyOwnable {
     /// @dev Deposits Yield Bearing Tokens to a Tempus Pool.
     /// @param targetPool The Tempus Pool to which tokens will be deposited
     /// @param yieldTokenAmount amount of Yield Bearing Tokens to be deposited
+    ///                         in YBT Contract precision which can be 18 or 8 decimals
     /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
     function depositYieldBearing(
         ITempusPool targetPool,
@@ -186,23 +187,23 @@ contract TempusController is PermanentlyOwnable {
 
         IERC20 yieldBearingToken = IERC20(targetPool.yieldBearingToken());
 
-        // Deposit to TempusPool
-        yieldTokenAmount = yieldBearingToken.untrustedTransferFrom(msg.sender, address(this), yieldTokenAmount);
-        yieldBearingToken.safeIncreaseAllowance(address(targetPool), yieldTokenAmount);
-        (uint256 mintedShares, uint256 depositedBT, uint256 fee, uint256 interestRate) = targetPool.deposit(
-            yieldTokenAmount,
-            recipient
-        );
+        // Deposit to controller and approve transfer from controller to targetPool
+        uint transferredYBT = yieldBearingToken.untrustedTransferFrom(msg.sender, address(this), yieldTokenAmount);
+        yieldBearingToken.safeIncreaseAllowance(address(targetPool), transferredYBT);
+
+        // internal TempusPool takes Fixed18 amount
+        uint transferredYBTf18 = targetPool.yieldTokenAmountToFixed18(transferredYBT);
+        (uint mintedShares, uint depositedBT, uint fee, uint rate) = targetPool.deposit(transferredYBTf18, recipient);
 
         emit Deposited(
             address(targetPool),
             msg.sender,
             recipient,
-            yieldTokenAmount,
+            transferredYBT,
             depositedBT,
             mintedShares,
-            fee,
-            interestRate
+            rate,
+            fee
         );
     }
 
@@ -238,8 +239,8 @@ contract TempusController is PermanentlyOwnable {
             depositedYBT,
             backingTokenAmount,
             mintedShares,
-            fee,
-            interestRate
+            interestRate,
+            fee
         );
     }
 
@@ -249,8 +250,8 @@ contract TempusController is PermanentlyOwnable {
     /// @notice Before maturity, `principalAmount` must equal to `yieldAmount`
     /// @param targetPool The Tempus Pool from which to redeem Tempus Shares
     /// @param sender Address of user whose Shares are going to be redeemed
-    /// @param principalAmount Amount of Tempus Principals to redeem
-    /// @param yieldAmount Amount of Tempus Yields to redeem
+    /// @param principalAmount Amount of Tempus Principals to redeem as a Fixed18 decimal
+    /// @param yieldAmount Amount of Tempus Yields to redeem as a Fixed18 decimal
     /// @param recipient Address of user that will recieve yield bearing tokens
     function redeemToYieldBearing(
         ITempusPool targetPool,
@@ -289,10 +290,9 @@ contract TempusController is PermanentlyOwnable {
     /// @notice `recipient` will receive the backing tokens
     /// @notice Before maturity, `principalAmount` must equal to `yieldAmount`
     /// @param targetPool The Tempus Pool from which to redeem Tempus Shares
-    /// @param targetPool The Tempus Pool from which to redeem Tempus Shares
     /// @param sender Address of user whose Shares are going to be redeemed
-    /// @param principalAmount Amount of Tempus Principals to redeem
-    /// @param yieldAmount Amount of Tempus Yields to redeem
+    /// @param principalAmount Amount of Tempus Principals to redeem as a Fixed18 decimal
+    /// @param yieldAmount Amount of Tempus Yields to redeem as a Fixed18 decimal
     /// @param recipient Address of user that will recieve yield bearing tokens
     function redeemToBacking(
         ITempusPool targetPool,
