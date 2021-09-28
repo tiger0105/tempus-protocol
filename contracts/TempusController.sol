@@ -13,8 +13,6 @@ import "./utils/PermanentlyOwnable.sol";
 import "./utils/AMMBalancesHelper.sol";
 import "./utils/UntrustedERC20.sol";
 
-import "hardhat/console.sol";
-
 contract TempusController is PermanentlyOwnable, ReentrancyGuard {
     using Fixed256x18 for uint256;
     using SafeERC20 for IERC20;
