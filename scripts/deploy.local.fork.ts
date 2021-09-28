@@ -19,6 +19,7 @@ export interface DeployedPoolInfo {
   yieldBearingToken: string;
   protocol: PoolType;
   estimatedYield: number;
+  spotPrice: string;
 }
 
 interface DepositConfigData {
@@ -57,6 +58,7 @@ interface DeployPoolParams {
   yieldEstimate: number;
   lpName: string;
   lpSymbol: string;
+  spotPrice: string;
   deploy: typeof TempusPool.deployAave | typeof TempusPool.deployCompound | typeof TempusPool.deployCompound;
 }
 
@@ -102,6 +104,7 @@ class DeployLocalForked {
       ybtSymbol: 'aDai',
       lpName: 'Tempus Aave LP Token',
       lpSymbol: 'LPaDAI',
+      spotPrice: '10000',
       deploy: TempusPool.deployAave
     });
 
@@ -116,6 +119,7 @@ class DeployLocalForked {
       ybtSymbol: 'aDai',
       lpName: 'Tempus Aave LP Token - 1',
       lpSymbol: 'LPaDAI - 1',
+      spotPrice: '10000',
       deploy: TempusPool.deployAave
     });
 
@@ -158,6 +162,7 @@ class DeployLocalForked {
       ybtSymbol: 'stETH',
       lpName: 'Tempus Lido LP Token',
       lpSymbol: 'LPstETH',
+      spotPrice: '2',
       deploy: TempusPool.deployLido
     });
 
@@ -172,6 +177,7 @@ class DeployLocalForked {
       ybtSymbol: 'stETH',
       lpName: 'Tempus Lido LP Token - 1',
       lpSymbol: 'LPstETH - 1',
+      spotPrice: '2',
       deploy: TempusPool.deployLido
     });
 
@@ -214,7 +220,8 @@ class DeployLocalForked {
       backingToken: params.backingToken,
       protocol: params.poolType,
       yieldBearingToken: params.ybtSymbol,
-      estimatedYield: params.yieldEstimate
+      estimatedYield: params.yieldEstimate,
+      spotPrice: params.spotPrice
     });
   }
 
@@ -233,7 +240,8 @@ class DeployLocalForked {
             backingToken: poolInfo.backingToken,
             protocol: poolInfo.protocol,
             yieldBearingToken: poolInfo.yieldBearingToken,
-            estimatedYield: poolInfo.estimatedYield
+            estimatedYield: poolInfo.estimatedYield,
+            spotPrice: poolInfo.spotPrice
           }
         })
       },
@@ -261,7 +269,8 @@ class DeployLocalForked {
         return {
           address: deployedPoolInfo.address,
           ammAddress: deployedPoolInfo.amm,
-          backingToken: deployedPoolInfo.backingToken
+          backingToken: deployedPoolInfo.backingToken,
+          spotPrice: deployedPoolInfo.spotPrice,
         }
       }),
       networkUrl: local ? 'http://127.0.0.1:8545' : 'https://network.tempus.finance',
