@@ -34,7 +34,7 @@ contract CompoundTempusPool is TempusPool {
             token.underlying(),
             controller,
             maturity,
-            updateInterestRate(address(token)),
+            token.exchangeRateCurrent() / 1e10,
             estYield,
             principalName,
             principalSymbol,
@@ -82,26 +82,23 @@ contract CompoundTempusPool is TempusPool {
 
         // need to rescale the truncated amount which was used during cToken.redeem()
         uint redeemedYBT = yieldTokenAmountToFixed18(contractYBTAmount);
-        uint rate = updateInterestRate(address(cToken));
-        uint backing = numAssetsPerYieldToken(redeemedYBT, rate);
+        uint backing = numAssetsPerYieldToken(redeemedYBT, updateInterestRate());
         backing = IERC20(backingToken).untrustedTransfer(recipient, backing);
         return backing;
     }
 
     /// @return Updated current Interest Rate as an 1e18 decimal
-    function updateInterestRate(address token) internal override returns (uint256) {
+    function updateInterestRate() internal override returns (uint256) {
         // NOTE: exchangeRateCurrent() will accrue interest and gets the latest Interest Rate
         //       We do this to avoid arbitrage
         //       The default exchange rate for Compound is 0.02 and grows
         //       cTokens are minted as (backingAmount / rate), so 1 DAI = 50 cDAI with 0.02 rate
-        uint256 rate = ICToken(token).exchangeRateCurrent() / 1e10;
-        return rate;
+        return cToken.exchangeRateCurrent() / 1e10;
     }
 
     /// @return Current Interest Rate as an 1e18 decimal
-    function storedInterestRate(address token) internal view override returns (uint256) {
-        uint256 rate = ICToken(token).exchangeRateStored() / 1e10;
-        return rate;
+    function currentInterestRate() public view override returns (uint256) {
+        return cToken.exchangeRateStored() / 1e10;
     }
 
     // NOTE: yieldTokens must be fixed18 regardless of cToken YBT decimals
