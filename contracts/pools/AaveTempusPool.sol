@@ -34,7 +34,7 @@ contract AaveTempusPool is TempusPool {
             token.UNDERLYING_ASSET_ADDRESS(),
             controller,
             maturity,
-            updateInterestRate(address(token)),
+            getInitialInterestRate(token),
             estYield,
             principalName,
             principalSymbol,
@@ -68,17 +68,19 @@ contract AaveTempusPool is TempusPool {
         return aavePool.withdraw(backingToken, yieldBearingTokensAmount, recipient);
     }
 
+    function getInitialInterestRate(IAToken token) internal view returns (uint256) {
+        return token.POOL().getReserveNormalizedIncome(token.UNDERLYING_ASSET_ADDRESS()) / 1e9;
+    }
+
     /// @return Updated current Interest Rate as an 1e18 decimal
-    function updateInterestRate(address token) internal view override returns (uint256) {
-        return storedInterestRate(token);
+    function updateInterestRate() internal view override returns (uint256) {
+        // convert from RAY 1e27 to WAD 1e18 decimal
+        return aavePool.getReserveNormalizedIncome(backingToken) / 1e9;
     }
 
     /// @return Stored Interest Rate as an 1e18 decimal
-    function storedInterestRate(address token) internal view override returns (uint256) {
-        IAToken atoken = IAToken(token);
-        uint rateInRay = atoken.POOL().getReserveNormalizedIncome(atoken.UNDERLYING_ASSET_ADDRESS());
-        // convert from RAY 1e27 to WAD 1e18 decimal
-        return rateInRay / 1e9;
+    function currentInterestRate() public view override returns (uint256) {
+        return aavePool.getReserveNormalizedIncome(backingToken) / 1e9;
     }
 
     /// NOTE: Aave AToken is pegged 1:1 with backing token

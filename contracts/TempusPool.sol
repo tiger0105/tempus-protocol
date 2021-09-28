@@ -182,7 +182,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         )
     {
         require(!matured, "Maturity reached.");
-        rate = updateInterestRate(yieldBearingToken);
+        rate = updateInterestRate();
         require(rate >= initialInterestRate, "Negative yield!");
 
         // Collect fees if they are set, reducing the number of tokens for the sender
@@ -269,7 +269,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         PrincipalShare(address(principalShare)).burnFrom(from, principalAmount);
         YieldShare(address(yieldShare)).burnFrom(from, yieldAmount);
 
-        uint256 currentRate = updateInterestRate(yieldBearingToken);
+        uint256 currentRate = updateInterestRate();
         (redeemedYieldTokens, , fee, interestRate) = getRedemptionAmounts(principalAmount, yieldAmount, currentRate);
         totalFees += fee;
     }
@@ -321,10 +321,6 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         }
     }
 
-    function currentInterestRate() public view override returns (uint256) {
-        return storedInterestRate(yieldBearingToken);
-    }
-
     function effectiveRate(uint256 currentRate) private view returns (uint256) {
         if (matured) {
             return (currentRate < maturityInterestRate) ? currentRate : maturityInterestRate;
@@ -342,11 +338,11 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     }
 
     function currentYield() private returns (uint256) {
-        return currentYield(updateInterestRate(yieldBearingToken));
+        return currentYield(updateInterestRate());
     }
 
     function currentYieldStored() private view returns (uint256) {
-        return currentYield(storedInterestRate(yieldBearingToken));
+        return currentYield(currentInterestRate());
     }
 
     function estimatedYield() private returns (uint256) {
@@ -411,7 +407,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     }
 
     function estimatedMintedShares(uint256 amount, bool isBackingToken) public view override returns (uint256) {
-        uint256 currentRate = storedInterestRate(yieldBearingToken);
+        uint256 currentRate = currentInterestRate();
         uint256 depositedBT = isBackingToken ? amount : numAssetsPerYieldToken(amount, currentRate);
         return numSharesToMint(depositedBT, currentRate);
     }
@@ -421,7 +417,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         uint256 yields,
         bool toBackingToken
     ) public view override returns (uint256) {
-        uint256 currentRate = storedInterestRate(yieldBearingToken);
+        uint256 currentRate = currentInterestRate();
         (uint256 yieldTokens, uint256 backingTokens, , ) = getRedemptionAmounts(principals, yields, currentRate);
         return toBackingToken ? backingTokens : yieldTokens;
     }
@@ -429,14 +425,12 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     /// @dev This updates the underlying pool's interest rate
     ///      It should be done first thing before deposit/redeem to avoid arbitrage
     /// @return Updated current Interest Rate as an 1e18 decimal
-    function updateInterestRate(address token) internal virtual returns (uint256);
+    function updateInterestRate() internal virtual returns (uint256);
 
     /// @dev This returns the stored Interest Rate of the YBT (Yield Bearing Token) pool
     ///      it is safe to call this after updateInterestRate() was called
-    /// @param token The address of the YBT protocol
-    /// e.g it is an AToken in case of Aave, CToken in case of Compound, StETH in case of Lido
     /// @return Stored Interest Rate as an 1e18 decimal
-    function storedInterestRate(address token) internal view virtual returns (uint256);
+    function currentInterestRate() public view virtual override returns (uint256);
 
     function numYieldTokensPerAsset(uint backingTokens, uint interestRate) public view virtual override returns (uint);
 

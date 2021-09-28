@@ -188,9 +188,9 @@ interface ITempusPool is ITempusFees {
         bool toBackingToken
     ) external view returns (uint256);
 
-    /// The current interest rate of the underlying pool
-    /// Calling this can accrue interest in the underlying pool
-    /// @return The interest rate
+    /// @dev This returns the stored Interest Rate of the YBT (Yield Bearing Token) pool
+    ///      it is safe to call this after updateInterestRate() was called
+    /// @return Stored Interest Rate as an 1e18 decimal
     function currentInterestRate() external view returns (uint256);
 
     /// @return Initial interest rate of the underlying pool

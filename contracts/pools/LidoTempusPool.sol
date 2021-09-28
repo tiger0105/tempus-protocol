@@ -26,7 +26,7 @@ contract LidoTempusPool is TempusPool {
             address(0),
             controller,
             maturity,
-            updateInterestRate(address(token)),
+            token.getPooledEthByShares(1e18),
             estYield,
             principalName,
             principalSymbol,
@@ -62,15 +62,15 @@ contract LidoTempusPool is TempusPool {
     }
 
     /// @return Updated current Interest Rate as an 1e18 decimal
-    function updateInterestRate(address token) internal view override returns (uint256) {
-        return storedInterestRate(token);
+    function updateInterestRate() internal view override returns (uint256) {
+        return lido.getPooledEthByShares(1e18);
     }
 
-    // @return Stored Interest Rate as an 1e18 decimal
-    function storedInterestRate(address token) internal view override returns (uint256) {
+    /// @return Stored Interest Rate as an 1e18 decimal
+    function currentInterestRate() public view override returns (uint256) {
         // NOTE: if totalShares() is 0, then rate is also 0,
         //       but this only happens right after deploy, so we ignore it
-        return ILido(token).getPooledEthByShares(1e18);
+        return lido.getPooledEthByShares(1e18);
     }
 
     /// NOTE: Lido StETH is pegged 1:1 to ETH
