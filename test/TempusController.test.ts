@@ -220,10 +220,20 @@ describeForEachPool("TempusController", (testPool:ITestPool) =>
     it("Complete exit before maturity", async () => 
     {
       await initAMM(user1, /*ybtDeposit*/1000000, /*principals*/100000, /*yields*/1000000);
+      
+      const preBalanceUser2 = +await testPool.yieldTokenBalance(user2);
+      const preBalanceOwner = +await testPool.yieldTokenBalance(owner);
+      await testPool.controller.depositAndProvideLiquidity(testPool, user2, 10000, false);
+      await testPool.controller.depositAndFix(testPool, owner, 100, false, 0);
 
-      (await expectRevert(controller.completeExitAndRedeem(testPool, user1, false))).to.equal(
-        "Not supported before maturity"
-      );
+      await controller.completeExitAndRedeem(testPool, user2, false);
+      await controller.completeExitAndRedeem(testPool, owner, false);
+
+      const postBalanceUser2 = +await testPool.yieldTokenBalance(user2);
+      const postBalanceOwner = +await testPool.yieldTokenBalance(owner);
+
+      expect(postBalanceOwner).to.be.within(preBalanceOwner - 1, preBalanceOwner + 1);
+      expect(postBalanceUser2).to.be.within(postBalanceUser2 - 1, postBalanceUser2 + 1);
     });
 
     it("Complete exit to yield bearing", async () => 

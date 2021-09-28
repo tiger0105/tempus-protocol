@@ -13,6 +13,8 @@ import "./utils/PermanentlyOwnable.sol";
 import "./utils/AMMBalancesHelper.sol";
 import "./utils/UntrustedERC20.sol";
 
+import "hardhat/console.sol";
+
 contract TempusController is PermanentlyOwnable, ReentrancyGuard {
     using Fixed256x18 for uint256;
     using SafeERC20 for IERC20;
@@ -200,14 +202,98 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
     /// @notice `msg.sender` needs to approve controller for whole balance of LP token
     /// @notice Can fail if there is not enough user balance
     /// @param tempusAMM TempusAMM instance to withdraw liquidity from
+    /// @param maxLeftoverShares Maximum amount of Principals or Yields to be left in case of early exit
     /// @param toBackingToken If true redeems to backing token, otherwise redeems to yield bearing
-    function completeExitAndRedeem(ITempusAMM tempusAMM, bool toBackingToken) external nonReentrant {
-        _completeExitAndRedeem(tempusAMM, toBackingToken);
+    function completeExitAndRedeem(
+        ITempusAMM tempusAMM,
+        uint256 maxLeftoverShares,
+        bool toBackingToken
+    ) external nonReentrant {
+        _completeExitAndRedeem(tempusAMM, maxLeftoverShares, toBackingToken);
     }
 
     /// Finalize the pool after maturity.
     function finalize(ITempusPool targetPool) external nonReentrant {
         targetPool.finalize();
+    }
+
+    /// @dev Returns amount that user needs to swap to end up with almost the same amounts of Principals and Yields
+    /// @param tempusAMM TempusAMM instance to be used to query swap
+    /// @param principals User's Principals balance
+    /// @param yields User's Yields balance
+    /// @param threshold Maximum difference between final balances of Principals and Yields
+    /// @return amountIn Amount of Principals or Yields that user needs to swap to end with almost equal amounts
+    function getSwapAmountToEndWithEqualShares(
+        ITempusAMM tempusAMM,
+        uint256 principals,
+        uint256 yields,
+        uint256 threshold
+    ) public view returns (uint256 amountIn) {
+        (uint256 difference, bool yieldsIn) = (principals > yields)
+            ? (principals - yields, false)
+            : (yields - principals, true);
+        if (difference > threshold) {
+            uint256 principalsRate = tempusAMM.tempusPool().principalShare().getPricePerFullShareStored();
+            uint256 yieldsRate = tempusAMM.tempusPool().yieldShare().getPricePerFullShareStored();
+
+            uint256 rate = yieldsIn ? principalsRate.divf18(yieldsRate) : yieldsRate.divf18(principalsRate);
+            for (uint8 i = 0; i < 32; i++) {
+                // if we have accurate rate this should hold
+                amountIn = difference.divf18(rate + Fixed256x18.ONE);
+                uint256 amountOut = tempusAMM.getExpectedReturnGivenIn(amountIn, yieldsIn);
+                uint256 newPrincipals = yieldsIn ? (principals + amountOut) : (principals - amountIn);
+                uint256 newYields = yieldsIn ? (yields - amountIn) : (yields + amountOut);
+                uint256 newDifference = (newPrincipals > newYields)
+                    ? (newPrincipals - newYields)
+                    : (newYields - newPrincipals);
+                if (newDifference < threshold) {
+                    return amountIn;
+                } else {
+                    rate = amountOut.divf18(amountIn);
+                }
+            }
+            revert("getSwapAmountToEndWithEqualShares did not converge.");
+        }
+    }
+
+    /// @dev Performs Swap from tokenIn to tokenOut
+    /// @notice sender needs to approve tempusAMM.getVault() for swapAmount of tokenIn
+    /// @param tempusAMM TempusAMM instance to be used for Swap
+    /// @param sender Address of user whose tokenIn tokens will be used for swap
+    /// @param recipient Address of user that will recieve tokensOut
+    /// @param swapAmount Amount of tokenIn to be swapped
+    /// @param tokenIn Token that will be sent from user to the tempusAMM
+    /// @param tokenOut Token that will be returned from the tempusAMM to the user
+    /// @param minReturn Minimum amount of tokenOut that user will recieve
+    function swap(
+        ITempusAMM tempusAMM,
+        address sender,
+        address recipient,
+        uint256 swapAmount,
+        IERC20 tokenIn,
+        IERC20 tokenOut,
+        uint256 minReturn
+    ) public {
+        require(swapAmount > 0, "Invalid swap amount.");
+
+        (IVault vault, bytes32 poolId, , ) = _getAMMDetailsAndEnsureInitialized(tempusAMM);
+
+        IVault.SingleSwap memory singleSwap = IVault.SingleSwap({
+            poolId: poolId,
+            kind: IVault.SwapKind.GIVEN_IN,
+            assetIn: tokenIn,
+            assetOut: tokenOut,
+            amount: swapAmount,
+            userData: ""
+        });
+
+        IVault.FundManagement memory fundManagement = IVault.FundManagement({
+            sender: sender,
+            fromInternalBalance: false,
+            recipient: payable(recipient),
+            toInternalBalance: false
+        });
+        vault.swap(singleSwap, fundManagement, minReturn, block.timestamp);
     }
 
     function _depositAndProvideLiquidity(
@@ -261,42 +347,23 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
         bool isBackingToken,
         uint256 minTYSRate
     ) private {
-        (IVault vault, bytes32 poolId, , ) = _getAMMDetailsAndEnsureInitialized(tempusAMM);
-
         ITempusPool targetPool = tempusAMM.tempusPool();
-        _deposit(targetPool, tokenAmount, isBackingToken);
-
         IERC20 principalShares = IERC20(address(targetPool.principalShare()));
         IERC20 yieldShares = IERC20(address(targetPool.yieldShare()));
+
+        _deposit(targetPool, tokenAmount, isBackingToken);
+
         uint256 swapAmount = yieldShares.balanceOf(address(this));
-        yieldShares.safeIncreaseAllowance(address(vault), swapAmount);
-
-        // Provide TPS/TYS liquidity to TempusAMM
-        IVault.SingleSwap memory singleSwap = IVault.SingleSwap({
-            poolId: poolId,
-            kind: IVault.SwapKind.GIVEN_IN,
-            assetIn: yieldShares,
-            assetOut: principalShares,
-            amount: swapAmount,
-            userData: ""
-        });
-
-        IVault.FundManagement memory fundManagement = IVault.FundManagement({
-            sender: address(this),
-            fromInternalBalance: false,
-            recipient: payable(address(this)),
-            toInternalBalance: false
-        });
-
+        yieldShares.safeIncreaseAllowance(address(tempusAMM.getVault()), swapAmount);
         uint256 minReturn = swapAmount.mulf18(minTYSRate);
-        vault.swap(singleSwap, fundManagement, minReturn, block.timestamp);
+        swap(tempusAMM, address(this), address(this), swapAmount, yieldShares, principalShares, minReturn);
 
         // At this point all TYS must be swapped for TPS
-        uint256 TPSBalance = principalShares.balanceOf(address(this));
-        assert(TPSBalance > 0);
+        uint256 principalsBalance = principalShares.balanceOf(address(this));
+        assert(principalsBalance > 0);
         assert(yieldShares.balanceOf(address(this)) == 0);
 
-        principalShares.safeTransfer(msg.sender, TPSBalance);
+        principalShares.safeTransfer(msg.sender, principalsBalance);
     }
 
     function _deposit(
@@ -381,12 +448,7 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
     ) private {
         require((principals > 0) || (yields > 0), "principalAmount and yieldAmount cannot both be 0");
 
-        (uint redeemedYBT, uint fee, uint interestRate) = targetPool.redeem(
-            sender,
-            principals,
-            yields,
-            recipient
-        );
+        (uint redeemedYBT, uint fee, uint interestRate) = targetPool.redeem(sender, principals, yields, recipient);
 
         uint redeemedBT = targetPool.numAssetsPerYieldToken(redeemedYBT, targetPool.currentInterestRate());
         bool earlyRedeem = !targetPool.matured();
@@ -526,17 +588,18 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
         }
     }
 
-    function _completeExitAndRedeem(ITempusAMM tempusAMM, bool toBackingToken) private {
+    function _completeExitAndRedeem(
+        ITempusAMM tempusAMM,
+        uint256 maxLeftoverShares,
+        bool toBackingToken
+    ) private {
         ITempusPool tempusPool = tempusAMM.tempusPool();
-        require(tempusPool.matured(), "Not supported before maturity");
 
         IERC20 principalShare = IERC20(address(tempusPool.principalShare()));
         IERC20 yieldShare = IERC20(address(tempusPool.yieldShare()));
         // send all shares to controller
-        uint256 userPrincipalBalance = principalShare.balanceOf(msg.sender);
-        uint256 userYieldBalance = yieldShare.balanceOf(msg.sender);
-        principalShare.safeTransferFrom(msg.sender, address(this), userPrincipalBalance);
-        yieldShare.safeTransferFrom(msg.sender, address(this), userYieldBalance);
+        principalShare.safeTransferFrom(msg.sender, address(this), principalShare.balanceOf(msg.sender));
+        yieldShare.safeTransferFrom(msg.sender, address(this), yieldShare.balanceOf(msg.sender));
 
         uint256 userBalanceLP = tempusAMM.balanceOf(msg.sender);
 
@@ -552,6 +615,27 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
 
         uint256 principals = principalShare.balanceOf(address(this));
         uint256 yields = yieldShare.balanceOf(address(this));
+
+        if (!tempusPool.matured()) {
+            bool yieldsIn = yields > principals;
+            uint256 difference = yieldsIn ? (yields - principals) : (principals - yields);
+
+            if (difference >= maxLeftoverShares) {
+                uint amountIn = getSwapAmountToEndWithEqualShares(tempusAMM, principals, yields, maxLeftoverShares);
+                (IERC20 tokenIn, IERC20 tokenOut) = yieldsIn
+                    ? (yieldShare, principalShare)
+                    : (principalShare, yieldShare);
+                tokenIn.safeIncreaseAllowance(address(tempusAMM.getVault()), amountIn);
+
+                swap(tempusAMM, address(this), address(this), amountIn, tokenIn, tokenOut, 0);
+
+                principals = principalShare.balanceOf(address(this));
+                yields = yieldShare.balanceOf(address(this));
+
+                (yields, principals) = (principals <= yields) ? (principals, principals) : (yields, yields);
+            }
+        }
+
         if (toBackingToken) {
             _redeemToBacking(tempusPool, address(this), principals, yields, msg.sender);
         } else {
