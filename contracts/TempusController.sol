@@ -629,9 +629,8 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
 
                 principals = principalShare.balanceOf(address(this));
                 yields = yieldShare.balanceOf(address(this));
-
-                (yields, principals) = (principals <= yields) ? (principals, principals) : (yields, yields);
             }
+            (yields, principals) = (principals <= yields) ? (principals, principals) : (yields, yields);
         }
 
         if (toBackingToken) {
