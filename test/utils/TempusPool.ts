@@ -349,11 +349,4 @@ export class TempusPool extends ContractBase {
       matureRedeemPercent: toWei(feesConfig.matureRedeemPercent)
     });
   }
-
-  /**
-   * Transfers fees from contract to recipient
-   */
-  async transferFees(owner:SignerOrAddress, recipient:SignerOrAddress) {
-    await this.contract.connect(owner).transferFees(addressOf(recipient));
-  }
 }

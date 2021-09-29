@@ -33,9 +33,9 @@ interface ITempusFees {
 
     /// Transfers accumulated Yield Bearing Token (YBT) fees
     /// from this pool contract to `recipient`.
-    ///
+    /// @param authorizer Authorizer of the transfer
     /// @param recipient Address which will receive the specified amount of YBT
-    function transferFees(address recipient) external;
+    function transferFees(address authorizer, address recipient) external;
 }
 
 interface ITempusPool is ITempusFees {

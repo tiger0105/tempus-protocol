@@ -182,4 +182,11 @@ export class TempusController extends ContractBase {
   async finalize(pool:ITestPool): Promise<void> {
     await this.contract.finalize(pool.tempus.address);
   }
+
+  /**
+   * Transfers fees from contract to recipient
+   */
+  async transferFees(pool:ITestPool, owner:SignerOrAddress, recipient:SignerOrAddress) {
+    await this.connect(owner).transferFees(pool.tempus.address, addressOf(recipient));
+  }
 }
