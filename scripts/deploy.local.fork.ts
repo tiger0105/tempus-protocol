@@ -20,6 +20,7 @@ export interface DeployedPoolInfo {
   protocol: PoolType;
   estimatedYield: number;
   spotPrice: string;
+  maxLeftoverShares: string;
 }
 
 interface DepositConfigData {
@@ -38,6 +39,8 @@ interface CookiePoolInfo {
   address: string;
   ammAddress: string;
   backingToken: string;
+  spotPrice: string;
+  maxLeftoverShares: string;
 }
 
 interface CookieConfigData {
@@ -59,6 +62,7 @@ interface DeployPoolParams {
   lpName: string;
   lpSymbol: string;
   spotPrice: string;
+  maxLeftoverShares: string;
   deploy: typeof TempusPool.deployAave | typeof TempusPool.deployCompound | typeof TempusPool.deployCompound;
 }
 
@@ -105,6 +109,7 @@ class DeployLocalForked {
       lpName: 'Tempus Aave LP Token',
       lpSymbol: 'LPaDAI',
       spotPrice: '10000',
+      maxLeftoverShares: '1',
       deploy: TempusPool.deployAave
     });
 
@@ -120,6 +125,7 @@ class DeployLocalForked {
       lpName: 'Tempus Aave LP Token - 1',
       lpSymbol: 'LPaDAI - 1',
       spotPrice: '10000',
+      maxLeftoverShares: '1',
       deploy: TempusPool.deployAave
     });
 
@@ -163,6 +169,7 @@ class DeployLocalForked {
       lpName: 'Tempus Lido LP Token',
       lpSymbol: 'LPstETH',
       spotPrice: '2',
+      maxLeftoverShares: '0.00001',
       deploy: TempusPool.deployLido
     });
 
@@ -178,6 +185,7 @@ class DeployLocalForked {
       lpName: 'Tempus Lido LP Token - 1',
       lpSymbol: 'LPstETH - 1',
       spotPrice: '2',
+      maxLeftoverShares: '0.00001',
       deploy: TempusPool.deployLido
     });
 
@@ -221,7 +229,8 @@ class DeployLocalForked {
       protocol: params.poolType,
       yieldBearingToken: params.ybtSymbol,
       estimatedYield: params.yieldEstimate,
-      spotPrice: params.spotPrice
+      spotPrice: params.spotPrice,
+      maxLeftoverShares: params.maxLeftoverShares
     });
   }
 
@@ -241,7 +250,8 @@ class DeployLocalForked {
             protocol: poolInfo.protocol,
             yieldBearingToken: poolInfo.yieldBearingToken,
             estimatedYield: poolInfo.estimatedYield,
-            spotPrice: poolInfo.spotPrice
+            spotPrice: poolInfo.spotPrice,
+            maxLeftoverShares: poolInfo.maxLeftoverShares
           }
         })
       },
@@ -271,6 +281,7 @@ class DeployLocalForked {
           ammAddress: deployedPoolInfo.amm,
           backingToken: deployedPoolInfo.backingToken,
           spotPrice: deployedPoolInfo.spotPrice,
+          maxLeftoverShares: deployedPoolInfo.maxLeftoverShares
         }
       }),
       networkUrl: local ? 'http://127.0.0.1:8545' : 'https://network.tempus.finance',
