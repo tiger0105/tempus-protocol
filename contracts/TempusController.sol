@@ -215,6 +215,14 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
         targetPool.finalize();
     }
 
+    /// Transfers accumulated Yield Bearing Token (YBT) fees
+    /// from @param targetPool contract to `recipient`.
+    /// @param targetPool The Tempus Pool from which to transfer fees
+    /// @param recipient Address which will receive the specified amount of YBT
+    function transferFees(ITempusPool targetPool, address recipient) external nonReentrant {
+        targetPool.transferFees(msg.sender, recipient);
+    }
+
     /// @dev Returns amount that user needs to swap to end up with almost the same amounts of Principals and Yields
     /// @param tempusAMM TempusAMM instance to be used to query swap
     /// @param principals User's Principals balance

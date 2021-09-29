@@ -122,7 +122,8 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         feesConfig = newFeesConfig;
     }
 
-    function transferFees(address recipient) external override onlyOwner {
+    function transferFees(address authorizer, address recipient) external override onlyController {
+        require(authorizer == owner(), "Only owner can transfer fees.");
         uint256 amount = totalFees;
         totalFees = 0;
         uint256 contractYBTAmount = fixed18ToYieldTokenAmount(amount);
