@@ -2,6 +2,7 @@
 pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./ITempusPool.sol";
@@ -84,8 +85,9 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         maxEarlyRedeemFee = maxFeeSetup.earlyRedeemPercent;
         maxMatureRedeemFee = maxFeeSetup.matureRedeemPercent;
 
-        principalShare = new PrincipalShare(this, principalName, principalSymbol);
-        yieldShare = new YieldShare(this, yieldName, yieldSymbol);
+        uint8 backingDecimals = bToken != address(0) ? IERC20Metadata(bToken).decimals() : 18;
+        principalShare = new PrincipalShare(this, principalName, principalSymbol, backingDecimals);
+        yieldShare = new YieldShare(this, yieldName, yieldSymbol, backingDecimals);
     }
 
     modifier onlyController() {
