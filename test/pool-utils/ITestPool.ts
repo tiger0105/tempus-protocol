@@ -333,7 +333,7 @@ export abstract class ITestPool {
         const [owner,user,user2] = await ethers.getSigners();
         const pool = await newPool();
         const ybt = (pool as any).yieldToken;
-        const tempus = await TempusPool.deploy(this.type, controller, ybt, maturityTime, p.yieldEst, names);
+        const tempus = await TempusPool.deploy(this.type, controller, ybt, maturityTime, p.yieldEst, names, this.type == PoolType.Compound ? 28 : 18);
         const amm = await TempusAMM.create(owner, p.ammAmplification, p.ammSwapFee, tempus);
 
         // always report the instantiation of new fixtures,

@@ -24,11 +24,11 @@ const setup = deployments.createFixture(async () => {
   const daiHolderSigner = await ethers.getSigner(daiHolder);
   const usdcHolderSigner = await ethers.getSigner(usdcHolder);
 
-  const daiBackingToken = new ERC20("ERC20FixedSupply", (await ethers.getContract('Dai')));
-  const cDaiYieldToken = new ERC20("ICErc20", (await ethers.getContract('cToken_Dai')));
+  const daiBackingToken = new ERC20("ERC20FixedSupply", 18, (await ethers.getContract('Dai')));
+  const cDaiYieldToken = new ERC20("ICErc20", 8, (await ethers.getContract('cToken_Dai')));
 
-  const usdcBackingToken = new ERC20("ERC20FixedSupply", (await ethers.getContract('Usdc')));
-  const cUsdcYieldToken = new ERC20("ICErc20", await ethers.getContract("cToken_Usdc"));
+  const usdcBackingToken = new ERC20("ERC20FixedSupply", 6, (await ethers.getContract('Usdc')));
+  const cUsdcYieldToken = new ERC20("ICErc20", 8, await ethers.getContract("cToken_Usdc"));
   
   const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
   const names = generateTempusSharesNames("cDai compound token", "cDai", maturityTime);

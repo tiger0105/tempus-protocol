@@ -37,14 +37,15 @@ describeForEachPool("Stats", (testPool:ITestPool) =>
     expect(await stats.estimatedMintedShares(testPool, 10, /*BT*/false)).to.equal(10, "1x shares minting YBT with rate 1.0");
     expect(await stats.estimatedMintedShares(testPool, 10, /*BT*/true )).to.equal(10, "1x shares minting BT with rate 1.0");
 
-    await testPool.setInterestRate(2.0);
     if (testPool.yieldPeggedToAsset)
     {
+      await testPool.setInterestRate(2.0);
       expect(await stats.estimatedMintedShares(testPool, 10, /*BT*/false)).to.equal(5, "0.5x shares minting YBT with rate 2.0");
       expect(await stats.estimatedMintedShares(testPool, 10, /*BT*/true )).to.equal(5, "0.5x shares minting BT with rate 2.0");
     }
     else
     {
+      await testPool.setInterestRate(2.0);
       expect(await stats.estimatedMintedShares(testPool, 10, /*BT*/false)).to.equal(10, "1x shares minting YBT with rate 2.0");
       expect(await stats.estimatedMintedShares(testPool, 10, /*BT*/true )).to.equal(5, "0.5x shares minting BT with rate 2.0");
     }

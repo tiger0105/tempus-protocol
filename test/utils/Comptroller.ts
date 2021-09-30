@@ -23,8 +23,8 @@ export class Comptroller extends ContractBase {
    */
   static async create(totalErc20Supply:number = 0, initialRate:number = 1.0): Promise<Comptroller> {
     const pool = await ContractBase.deployContract("ComptrollerMock");
-    let asset = await ERC20.deploy("ERC20FixedSupply", "DAI Stablecoin", "DAI", toWei(totalErc20Supply));
-    const cDAI = await ERC20.deploy("CErc20", pool.address, asset.address, "Compound DAI Yield Token", "cDAI");
+    let asset = await ERC20.deploy("ERC20FixedSupply", 18, "DAI Stablecoin", "DAI", toWei(totalErc20Supply));
+    const cDAI = await ERC20.deploy("CErc20", 8, pool.address, asset.address, "Compound DAI Yield Token", "cDAI");
     const comptroller = new Comptroller(pool, asset, cDAI);
     if (initialRate != 0.02) {
       await comptroller.setExchangeRate(initialRate);
