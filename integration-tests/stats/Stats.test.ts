@@ -28,7 +28,7 @@ const setup = deployments.createFixture(async () => {
   
   const aWethHolderSigner = await ethers.getSigner(aWethHolder);
   
-  const aWethYieldToken = new ERC20("ERC20", (await ethers.getContract('aToken_Weth')));
+  const aWethYieldToken = new ERC20("ERC20", 18, (await ethers.getContract('aToken_Weth')));
   
   const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
 

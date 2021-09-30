@@ -17,12 +17,18 @@ const setup = deployments.createFixture(async () => {
     keepExistingDeployments: true, // global option to test network like that
   });
   
-  const { daiHolder } = await getNamedAccounts();
+  const accounts = await getNamedAccounts();
+  const daiHolder = accounts["daiHolder"];
+  const usdcHolder = accounts["usdcHolder"];
   const [ account1, account2 ] = await getUnnamedAccounts();
   const daiHolderSigner = await ethers.getSigner(daiHolder);
+  const usdcHolderSigner = await ethers.getSigner(usdcHolder);
 
   const daiBackingToken = new ERC20("ERC20FixedSupply", (await ethers.getContract('Dai')));
   const cDaiYieldToken = new ERC20("ICErc20", (await ethers.getContract('cToken_Dai')));
+
+  const usdcBackingToken = new ERC20("ERC20FixedSupply", (await ethers.getContract('Usdc')));
+  const cUsdcYieldToken = new ERC20("ICErc20", await ethers.getContract("cToken_Usdc"));
   
   const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
   const names = generateTempusSharesNames("cDai compound token", "cDai", maturityTime);
@@ -33,11 +39,20 @@ const setup = deployments.createFixture(async () => {
   await daiBackingToken.transfer(daiHolderSigner, account1, 100000);
   await daiBackingToken.transfer(daiHolderSigner, account2, 100000);
 
+  const namesUsdc = generateTempusSharesNames("cUsdc compound token", "cUsdc", maturityTime);
+  const tempusPoolUsdc = await TempusPool.deployCompound(cUsdcYieldToken, controller, maturityTime, yieldEst, namesUsdc);
+  
+  await usdcBackingToken.connect(usdcHolderSigner).transfer((await ethers.getSigner(account1)).address, 10000000000);
+  await usdcBackingToken.connect(usdcHolderSigner).transfer((await ethers.getSigner(account2)).address, 10000000000);
+
   return {
     contracts: {
       tempusPool,
       dai: daiBackingToken,
-      cDai: cDaiYieldToken
+      cDai: cDaiYieldToken,
+      tempusPoolUsdc,
+      usdc: usdcBackingToken,
+      cUsdc: cUsdcYieldToken
     },
     signers: {
       daiHolder: daiHolderSigner,
@@ -47,7 +62,31 @@ const setup = deployments.createFixture(async () => {
   };
 });
 
-describe('TempusPool <> Compound', function () {
+describe('TempusPool <> Compound <> USDC', function() {
+  it('Verify minted shares', async () => {
+    const { signers: { signer1 }, contracts: { usdc, cUsdc, tempusPoolUsdc }} = await setup();
+    await usdc.approve(signer1, tempusPoolUsdc.controller.address, 100000000);
+    await tempusPoolUsdc.controller.contract.connect(signer1).depositBacking(tempusPoolUsdc.address, 100000000, signer1.address);
+    expect(await tempusPoolUsdc.principalShare.contract.balanceOf(signer1.address)).to.be.within(100000000 * 0.9999, 100000000 * 1.0001);
+  });
+
+  it('Verify withdrawn backing tokens', async () => {
+    const { signers: { signer1 }, contracts: { usdc, cUsdc, tempusPoolUsdc }} = await setup();
+    await usdc.approve(signer1, tempusPoolUsdc.controller.address, 100000000);
+    const oldBalance = +await usdc.contract.balanceOf(signer1.address)
+    await tempusPoolUsdc.controller.contract.connect(signer1).depositBacking(tempusPoolUsdc.address, 100000000, signer1.address);
+    await tempusPoolUsdc.controller.contract.connect(signer1).redeemToBacking(
+      tempusPoolUsdc.address,
+      signer1.address,
+      await tempusPoolUsdc.principalShare.contract.balanceOf(signer1.address),
+      await tempusPoolUsdc.yieldShare.contract.balanceOf(signer1.address),
+      signer1.address
+    );
+    expect(await usdc.contract.balanceOf(signer1.address)).to.be.within(oldBalance * 0.9999, oldBalance * 1.0001);
+  });
+});
+
+describe('TempusPool <> Compound <> DAI', function () {
   it('Verifies that depositing directly to Compound accrues equal interest compared to depositing via TempusPool', async () => {
     // The maximum discrepancy to allow between accrued interest from depositing directly to Compound
     //    vs depositing to Compound via TempusPool
