@@ -46,7 +46,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
     // rapidly: for example, by doubling the value every day it can increase by a factor of 8 over three days (2^3).
     uint256 private constant _MIN_UPDATE_TIME = 1 days;
     uint256 private constant _MAX_AMP_UPDATE_DAILY_RATE = 2;
-    uint256 private constant _TEMPUS_SHARE_PRECISION = 1e18;
+    uint256 private immutable _TEMPUS_SHARE_PRECISION;
     uint256 private constant _TOTAL_TOKENS = 2;
 
     struct AmplificationData {
@@ -124,15 +124,11 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         IPoolShare yieldShare = pool.yieldShare();
         IPoolShare principalShare = pool.principalShare();
 
-        // TODO: stop using typecasting
         require(
-            _TEMPUS_SHARE_PRECISION == (10**ERC20(address(principalShare)).decimals()),
-            "Unsupported principal share precision."
+            principalShare.decimals() == yieldShare.decimals(),
+            "Principals and Yields need same precision."
         );
-        require(
-            _TEMPUS_SHARE_PRECISION == (10**ERC20(address(yieldShare)).decimals()),
-            "Unsupported yield share precision."
-        );
+        _TEMPUS_SHARE_PRECISION = 10 ** principalShare.decimals();
 
         // Immutable variables cannot be initialized inside an if statement, so we must do conditional assignments
         (_token0, _token1) = yieldShare < principalShare ? (yieldShare, principalShare) : (principalShare, yieldShare);
