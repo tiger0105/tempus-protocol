@@ -198,14 +198,17 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         amountsIn.mul(tokenRates);
 
         (uint256 currentAmp, ) = _getAmplificationParameter();
+
         return
-            StableMath._calcBptOutGivenExactTokensIn(
-                currentAmp,
-                balances,
-                amountsIn,
-                totalSupply(),
-                getSwapFeePercentage()
-            );
+            (balances[0] == 0)
+                ? StableMath._calculateInvariant(currentAmp, amountsIn, true)
+                : StableMath._calcBptOutGivenExactTokensIn(
+                    currentAmp,
+                    balances,
+                    amountsIn,
+                    totalSupply(),
+                    getSwapFeePercentage()
+                );
     }
 
     // Base Pool handlers
