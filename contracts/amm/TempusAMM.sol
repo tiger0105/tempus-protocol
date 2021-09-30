@@ -128,7 +128,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
             ERC20(address(principalShare)).decimals() == ERC20(address(yieldShare)).decimals(),
             "Principals and Yields need same precision."
         );
-        _TEMPUS_SHARE_PRECISION = 10 ** ERC20(address(principalShare)).decimals();
+        _TEMPUS_SHARE_PRECISION = 10**ERC20(address(principalShare)).decimals();
 
         // Immutable variables cannot be initialized inside an if statement, so we must do conditional assignments
         (_token0, _token1) = yieldShare < principalShare ? (yieldShare, principalShare) : (principalShare, yieldShare);

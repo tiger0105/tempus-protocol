@@ -68,7 +68,6 @@ contract CompoundTempusPool is TempusPool {
         require(cToken.mint(backingAmount) == 0, "CErc20 mint failed");
 
         return IERC20(yieldBearingToken).balanceOf(address(this)) - preDepositBalance;
-        
     }
 
     function withdrawFromUnderlyingProtocol(uint256 yieldBearingTokensAmount, address recipient)
