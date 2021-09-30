@@ -18,8 +18,6 @@ contract CompoundTempusPool is TempusPool {
     ICErc20 internal immutable cToken;
     bytes32 public immutable override protocolName = "Compound";
 
-    uint256 internal immutable exchangeRateScale;
-
     constructor(
         ICErc20 token,
         address controller,
@@ -36,7 +34,7 @@ contract CompoundTempusPool is TempusPool {
             token.underlying(),
             controller,
             maturity,
-            token.exchangeRateCurrent() / 1e10,
+            token.exchangeRateCurrent(),
             estYield,
             principalName,
             principalSymbol,
@@ -49,16 +47,6 @@ contract CompoundTempusPool is TempusPool {
         require(token.decimals() == 8, "CErc20 token must have 8 decimals precision");
         uint8 underlyingDecimals = ICErc20(token.underlying()).decimals();
         require(underlyingDecimals <= 36, "Underlying ERC20 token decimals must be <= 36");
-
-        // We use uncheked because of boundaries we check for underlying decimals
-        unchecked {
-            // If we have 8 decimals for underlying, exchange rate in Compound is 18 decimal precision
-            // So, more than 8 decimals, we need to divide by 1e(underlyingDecimals - 8)
-            // And for less than 8 we need to scale by 1e-(8 - underlyingdecimals)
-            exchangeRateScale = (underlyingDecimals >= 8)
-                ? Fixed256x18.ONE * (10**(underlyingDecimals - 8))
-                : Fixed256x18.ONE / (10**(10 - underlyingDecimals));
-        }
 
         address[] memory markets = new address[](1);
         markets[0] = address(token);
@@ -79,8 +67,8 @@ contract CompoundTempusPool is TempusPool {
         IERC20(backingToken).safeIncreaseAllowance(address(cToken), backingAmount);
         require(cToken.mint(backingAmount) == 0, "CErc20 mint failed");
 
-        uint mintedTokens = IERC20(yieldBearingToken).balanceOf(address(this)) - preDepositBalance;
-        return yieldTokenAmountToFixed18(mintedTokens);
+        return IERC20(yieldBearingToken).balanceOf(address(this)) - preDepositBalance;
+        
     }
 
     function withdrawFromUnderlyingProtocol(uint256 yieldBearingTokensAmount, address recipient)
@@ -89,15 +77,12 @@ contract CompoundTempusPool is TempusPool {
         returns (uint256 backingTokenAmount)
     {
         // tempus pool owns YBT
-        uint contractYBTAmount = fixed18ToYieldTokenAmount(yieldBearingTokensAmount);
-        assert(cToken.balanceOf(address(this)) >= contractYBTAmount);
-        require(cToken.redeem(contractYBTAmount) == 0, "CErc20 redeem failed");
+        assert(cToken.balanceOf(address(this)) >= yieldBearingTokensAmount);
+        require(cToken.redeem(yieldBearingTokensAmount) == 0, "CErc20 redeem failed");
 
         // need to rescale the truncated amount which was used during cToken.redeem()
-        uint redeemedYBT = yieldTokenAmountToFixed18(contractYBTAmount);
-        uint backing = numAssetsPerYieldToken(redeemedYBT, updateInterestRate());
-        backing = IERC20(backingToken).untrustedTransfer(recipient, backing);
-        return backing;
+        uint256 backing = numAssetsPerYieldToken(yieldBearingTokensAmount, updateInterestRate());
+        return IERC20(backingToken).untrustedTransfer(recipient, backing);
     }
 
     /// @return Updated current Interest Rate as an 1e18 decimal
@@ -106,12 +91,12 @@ contract CompoundTempusPool is TempusPool {
         //       We do this to avoid arbitrage
         //       The default exchange rate for Compound is 0.02 and grows
         //       cTokens are minted as (backingAmount / rate), so 1 DAI = 50 cDAI with 0.02 rate
-        return cToken.exchangeRateCurrent().divf18(exchangeRateScale);
+        return cToken.exchangeRateCurrent();
     }
 
     /// @return Current Interest Rate as an 1e18 decimal
     function currentInterestRate() public view override returns (uint256) {
-        return cToken.exchangeRateStored().divf18(exchangeRateScale);
+        return cToken.exchangeRateStored();
     }
 
     // NOTE: yieldTokens must be fixed18 regardless of cToken YBT decimals
@@ -122,13 +107,5 @@ contract CompoundTempusPool is TempusPool {
     // NOTE: Return value is in Fixed18, additional conversion to fixed8 is needed depending on usage
     function numYieldTokensPerAsset(uint backingTokens, uint rate) public pure override returns (uint) {
         return backingTokens.divf18(rate);
-    }
-
-    function yieldTokenAmountToFixed18(uint yieldTokens) public pure override returns (uint) {
-        return yieldTokens * 1e10; // from fixed8 to fixed18
-    }
-
-    function fixed18ToYieldTokenAmount(uint fixed18amount) public pure override returns (uint) {
-        return fixed18amount / 1e10; // from fixed18 to fixed8
     }
 }

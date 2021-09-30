@@ -398,8 +398,7 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
         yieldBearingToken.safeIncreaseAllowance(address(targetPool), transferredYBT);
 
         // internal TempusPool takes Fixed18 amount
-        uint transferredYBTf18 = targetPool.yieldTokenAmountToFixed18(transferredYBT);
-        (uint mintedShares, uint depositedBT, uint fee, uint rate) = targetPool.deposit(transferredYBTf18, recipient);
+        (uint mintedShares, uint depositedBT, uint fee, uint rate) = targetPool.deposit(transferredYBT, recipient);
 
         emit Deposited(
             address(targetPool),

@@ -227,10 +227,4 @@ interface ITempusPool is ITempusFees {
     /// @param interestRate The current interest rate
     /// @return Amount of YBT for specified @param backingTokens
     function numYieldTokensPerAsset(uint backingTokens, uint interestRate) external view returns (uint);
-
-    /// @return Converts YieldBearingToken contract amount into Fixed18 decimal
-    function yieldTokenAmountToFixed18(uint yieldTokens) external pure returns (uint);
-
-    /// @return Converts Fixed18 decimal to YieldBearingToken contract amount
-    function fixed18ToYieldTokenAmount(uint fixed18amount) external pure returns (uint);
 }
