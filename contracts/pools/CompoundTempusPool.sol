@@ -18,6 +18,8 @@ contract CompoundTempusPool is TempusPool {
     ICErc20 internal immutable cToken;
     bytes32 public immutable override protocolName = "Compound";
 
+    uint256 internal immutable exchangeRateScale;
+
     constructor(
         ICErc20 token,
         address controller,
@@ -45,7 +47,18 @@ contract CompoundTempusPool is TempusPool {
     {
         require(token.isCToken(), "token is not a CToken");
         require(token.decimals() == 8, "CErc20 token must have 8 decimals precision");
-        require(ICErc20(token.underlying()).decimals() == 18, "Underlying ERC20 token must have 18 decimals precision");
+        uint8 underlyingDecimals = ICErc20(token.underlying()).decimals();
+        require(underlyingDecimals <= 36, "Underlying ERC20 token decimals must be <= 36");
+
+        // We use uncheked because of boundaries we check for underlying decimals
+        unchecked {
+            // If we have 8 decimals for underlying, exchange rate in Compound is 18 decimal precision
+            // So, more than 8 decimals, we need to divide by 1e(underlyingDecimals - 8)
+            // And for less than 8 we need to scale by 1e-(8 - underlyingdecimals)
+            exchangeRateScale = (underlyingDecimals >= 8)
+                ? Fixed256x18.ONE * (10**(underlyingDecimals - 8))
+                : Fixed256x18.ONE / (10**(10 - underlyingDecimals));
+        }
 
         address[] memory markets = new address[](1);
         markets[0] = address(token);
@@ -93,12 +106,12 @@ contract CompoundTempusPool is TempusPool {
         //       We do this to avoid arbitrage
         //       The default exchange rate for Compound is 0.02 and grows
         //       cTokens are minted as (backingAmount / rate), so 1 DAI = 50 cDAI with 0.02 rate
-        return cToken.exchangeRateCurrent() / 1e10;
+        return cToken.exchangeRateCurrent().divf18(exchangeRateScale);
     }
 
     /// @return Current Interest Rate as an 1e18 decimal
     function currentInterestRate() public view override returns (uint256) {
-        return cToken.exchangeRateStored() / 1e10;
+        return cToken.exchangeRateStored().divf18(exchangeRateScale);
     }
 
     // NOTE: yieldTokens must be fixed18 regardless of cToken YBT decimals
