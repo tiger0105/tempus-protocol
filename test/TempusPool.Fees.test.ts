@@ -120,8 +120,8 @@ describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
 
     await pool.redeemToYBT(user, 100, 100);
     
-    const ybtFeeAmount = await pool.tempus.numYieldTokensPerAsset(2, 1.02);
-    expect(await pool.tempus.totalFees()).to.equal(ybtFeeAmount);  
+    const ybtFeeAmount = +await pool.tempus.numYieldTokensPerAsset(2, 1.02);
+    expect(+await pool.tempus.totalFees()).to.be.within(ybtFeeAmount * 0.99999, ybtFeeAmount * 1.00001);  
     (await pool.userState(user)).expectMulti(0, 0, /*peggedYBT*/508, /*variableYBT*/498.03921568);
   });
 
@@ -141,9 +141,9 @@ describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
 
     await pool.redeemToYBT(user, 100, 100);
 
-    const ybtFeeAmount = await pool.tempus.numYieldTokensPerAsset(3, 1.02);
-    expect(await pool.tempus.totalFees()).to.equal(ybtFeeAmount);
-    (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/pool.yieldPeggedToAsset ? 507 : 497.05882352);
+    const ybtFeeAmount = +await pool.tempus.numYieldTokensPerAsset(3, 1.02);
+    expect(+await pool.tempus.totalFees()).to.be.within(ybtFeeAmount * 0.99999, ybtFeeAmount * 1.00001);
+    (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/pool.yieldPeggedToAsset ? 507 : 497.05882353);
   });
 
   it("Should transfer fees to specified account", async () =>

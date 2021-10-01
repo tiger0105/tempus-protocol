@@ -33,9 +33,9 @@ abstract contract CTokenMock is ERC20, CTokenInterface {
     /**
      * @notice Sender supplies assets into the market and receives cTokens in exchange
      * @dev Accrues interest whether or not the operation succeeds, unless reverted
-     * @param mintAmount The amount of the underlying asset to supply (in 1e18 decimals)
+     * @param mintAmount The amount of the underlying asset to supply in BackingToken decimals
      * @return (uint, uint) An error code (0=success, otherwise a failure,
-               see ErrorReporter.sol), and the actual mint amount (in 1e18 decimals)
+               see ErrorReporter.sol), and the actual mint amount in BackingToken decimals
      */
     function mintInternal(uint mintAmount) internal returns (uint, uint) {
         // mintFresh emits the actual Mint event if successful and logs on errors, so we don't need to
@@ -58,6 +58,7 @@ abstract contract CTokenMock is ERC20, CTokenInterface {
          */
         actualMintAmount = doTransferIn(minter, mintAmount); // 18 decimal precision
 
+        // exchange rate precision: 18 - 8 + Underlying Token Decimals
         uint mintTokens = (actualMintAmount * 1e18) / exchangeRate; // (18 + 18) - 28 = 8 decimal precision
         _mint(minter, mintTokens);
         errorCode = 0;

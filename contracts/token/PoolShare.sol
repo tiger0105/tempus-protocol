@@ -12,13 +12,21 @@ abstract contract PoolShare is IPoolShare, ERC20OwnerMintableToken {
     /// The pool this share is part of.
     ITempusPool public immutable override pool;
 
+    uint8 internal immutable tokenDecimals;
+
     constructor(
         ShareKind _kind,
         ITempusPool _pool,
         string memory name,
-        string memory symbol
+        string memory symbol,
+        uint8 _decimals
     ) ERC20OwnerMintableToken(name, symbol) {
         kind = _kind;
         pool = _pool;
+        tokenDecimals = _decimals;
+    }
+
+    function decimals() public view virtual override returns (uint8) {
+        return tokenDecimals;
     }
 }

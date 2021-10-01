@@ -58,7 +58,7 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
     /// @param pool Which tempus pool
     /// @param amount Amount of BackingTokens or YieldBearingTokens that would be deposited
     /// @param isBackingToken If true, @param amount is in BackingTokens, otherwise YieldBearingTokens
-    /// @return Amount of Principals (TPS) and Yields (TYS), scaled as 1e18 decimals.
+    /// @return Amount of Principals (TPS) and Yields (TYS) in Principal/YieldShare decimal precision.
     ///         TPS and TYS are minted in 1:1 ratio, hence a single return value.
     function estimatedMintedShares(
         ITempusPool pool,
@@ -73,7 +73,7 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
     /// @param principals Amount of Principals (TPS)
     /// @param yields Amount of Yields (TYS)
     /// @param toBackingToken If true, redeem amount is estimated in BackingTokens instead of YieldBearingTokens
-    /// @return Amount of YieldBearingTokens or BackingTokens scaled as an 1e18 decimal
+    /// @return Amount of YieldBearingTokens or BackingTokens in YBT/BT decimal precision
     function estimatedRedeem(
         ITempusPool pool,
         uint256 principals,

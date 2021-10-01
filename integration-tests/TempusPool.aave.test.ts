@@ -21,8 +21,8 @@ const setup = deployments.createFixture(async () => {
   const [ account1, account2 ] = await getUnnamedAccounts();
   const daiHolderSigner = await ethers.getSigner(daiHolder);
 
-  const daiBackingToken = new ERC20("ERC20FixedSupply", (await ethers.getContract('Dai')));
-  const aDaiYieldToken = new ERC20("IAToken", (await ethers.getContract('aToken_Dai')));
+  const daiBackingToken = new ERC20("ERC20FixedSupply", 18, (await ethers.getContract('Dai')));
+  const aDaiYieldToken = new ERC20("IAToken", 18, (await ethers.getContract('aToken_Dai')));
   
   const aaveLendingPool = await ethers.getContract('LendingPool'); 
   

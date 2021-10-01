@@ -21,7 +21,7 @@ const setup = deployments.createFixture(async () => {
   const { lidoOracleMember1, lidoOracleMember2, lidoOracleMember3 } = await getNamedAccounts();
   const [ account1, account2 ] = await getUnnamedAccounts();
 
-  const lido = new ERC20("ILido", (await ethers.getContract('Lido')));
+  const lido = new ERC20("ILido", 18, (await ethers.getContract('Lido')));
   const lidoOracle = await ethers.getContract('LidoOracle');
 
   const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr

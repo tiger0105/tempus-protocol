@@ -13,7 +13,7 @@ export class Lido extends ERC20 {
   yieldToken:ERC20; // StETH
 
   constructor(pool:Contract, mockAsset:ERC20) {
-    super("LidoMock", pool);
+    super("LidoMock", 18, pool);
     this.asset = mockAsset;
     this.yieldToken = this; // for Lido, the pool itself is the Yield Token
   }
@@ -23,7 +23,7 @@ export class Lido extends ERC20 {
    * @param initialRate Initial interest rate
    */
   static async create(totalSupply:Number, initialRate:Number = 1.0): Promise<Lido> {
-    const asset = await ERC20.deploy("ERC20FixedSupply", "wETH Mock", "wETH", toWei(totalSupply));
+    const asset = await ERC20.deploy("ERC20FixedSupply", 18, "wETH Mock", "wETH", toWei(totalSupply));
     const pool = await ContractBase.deployContract("LidoMock");
     const lido = new Lido(pool, asset);
     if (initialRate != 1.0) {

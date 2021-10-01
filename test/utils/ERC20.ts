@@ -7,8 +7,8 @@ import { ContractBase, SignerOrAddress, Signer, addressOf } from "./ContractBase
  */
 export class ERC20 extends ContractBase {
 
-  constructor(contractName:string, contract?:Contract) {
-    super(contractName, 18/*default decimals*/, contract);
+  constructor(contractName:string, decimals:number, contract?:Contract) {
+    super(contractName, decimals/*default decimals*/, contract);
   }
   
   // initialize immutable fields
@@ -34,9 +34,9 @@ export class ERC20 extends ContractBase {
   /**
    * Deploys any ERC20 contract without a concrete backing TypeScript class
    */
-  static async deploy(contractName:string, ...args: any[]): Promise<ERC20> {
+  static async deploy(contractName:string, decimals:number, ...args: any[]): Promise<ERC20> {
     const contract = await this.deployContract(contractName, ...args);
-    return await new ERC20(contractName).initialize(contract);
+    return await new ERC20(contractName, decimals).initialize(contract);
   }
 
   /**
@@ -46,7 +46,7 @@ export class ERC20 extends ContractBase {
    */
   static async attach(contractName:string, contractAddress:string): Promise<ERC20> {
     const contract = await this.attachContract(contractName, contractAddress);
-    return await new ERC20(contractName).initialize(contract);
+    return await new ERC20(contractName, 18).initialize(contract);
   }
 
   /** @return ERC20 name of this contract */

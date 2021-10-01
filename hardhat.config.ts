@@ -109,7 +109,8 @@ module.exports = {
     cDaiHolder: '0x9b4772e59385ec732bccb06018e318b7b3477459',
     lidoOracleMember1: '0x140Bd8FbDc884f48dA7cb1c09bE8A2fAdfea776E',
     lidoOracleMember2: '0x1d0813bf088BE3047d827D98524fBf779Bc25F00',
-    lidoOracleMember3: '0x404335BcE530400a5814375E7Ec1FB55fAff3eA2'
+    lidoOracleMember3: '0x404335BcE530400a5814375E7Ec1FB55fAff3eA2',
+    usdcHolder: "0x700fb29Ec8AC5B7f4Ff981B700b47B57E8350ccE"
   },
   mocha: {
     timeout: 120000

@@ -8,7 +8,7 @@ import { ERC20 } from "./ERC20";
  */
 export class ERC20OwnerMintable extends ERC20 {
   constructor(contractName?:string, contract?:Contract) {
-    super(contractName ?? "ERC20OwnerMintableToken", contract);
+    super(contractName ?? "ERC20OwnerMintableToken", 18, contract);
   }
 
   /** @returns The manager who is allowed to mint and burn. */

@@ -7,7 +7,7 @@ import { ERC20 } from "./ERC20";
  */
 export class TempusToken extends ERC20 {
   constructor() {
-    super("TempusToken");
+    super("TempusToken", 18);
   }
 
   /**

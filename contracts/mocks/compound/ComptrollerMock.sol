@@ -8,15 +8,15 @@ import "./ComptrollerInterface.sol";
 import "./ComptrollerStorage.sol";
 
 contract ComptrollerMock is ComptrollerStorage, ComptrollerInterface {
-    uint public exchangeRate; // current exchange rate as an 1e28 decimal
+    uint public exchangeRate; // current exchange rate as 1**(18 - 8 + Underlying Token Decimals)
 
     // used for mocks, it will force-fail the next deposit or redeem
     bool public mockFailNextDepositOrRedeem;
 
-    constructor() {
-        // 0.02 - this is the official default exchangeRate on CTokens
-        // 1e28 comes from 1e(18 - 8 + underlyingTokenDecimals) = 18 - 8 + 18 = 28
-        exchangeRate = 1e28 / 50;
+    /// @param initialExchangeRate Initial mocked exchange rate, the official default is 0.02
+    ///                            with decimal precision calculated as 18 - 8 + Underlying Token Decimals
+    constructor(uint initialExchangeRate) {
+        exchangeRate = initialExchangeRate;
     }
 
     /// @notice MOCK ONLY
