@@ -171,7 +171,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         (mintedShares, depositedBT, fee, rate) = _deposit(yieldTokenAmount, recipient);
     }
 
-    /// @param yieldTokenAmount Must be a Fixed18 decimal
+    /// @param yieldTokenAmount YBT amount in YBT decimal precision
     function _deposit(uint256 yieldTokenAmount, address recipient)
         internal
         returns (
@@ -422,12 +422,12 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
 
     /// @dev This updates the underlying pool's interest rate
     ///      It should be done first thing before deposit/redeem to avoid arbitrage
-    /// @return Updated current Interest Rate as an 1e18 decimal
+    /// @return Updated current Interest Rate, decimal precision depends on specific TempusPool implementation
     function updateInterestRate() internal virtual returns (uint256);
 
     /// @dev This returns the stored Interest Rate of the YBT (Yield Bearing Token) pool
     ///      it is safe to call this after updateInterestRate() was called
-    /// @return Stored Interest Rate as an 1e18 decimal
+    /// @return Stored Interest Rate, decimal precision depends on specific TempusPool implementation
     function currentInterestRate() public view virtual override returns (uint256);
 
     function numYieldTokensPerAsset(uint backingTokens, uint interestRate) public pure virtual override returns (uint);

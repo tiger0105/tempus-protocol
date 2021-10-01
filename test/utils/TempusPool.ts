@@ -280,7 +280,7 @@ export class TempusPool extends ContractBase {
   /**
    * @param amount Amount of BackingTokens or YieldBearingTokens that would be deposited
    * @param backingToken If true, @param amount is in BackingTokens, otherwise YieldBearingTokens
-   * @return Amount of Principals (TPS) and Yields (TYS), scaled as 1e18 decimals.
+   * @return Amount of Principals (TPS) and Yields (TYS) in Principal/YieldShare decimal precision
    *         TPS and TYS are minted in 1:1 ratio, hence a single return value
    */
   async estimatedMintedShares(amount:NumberOrString, backingToken:boolean): Promise<NumberOrString> {
@@ -288,22 +288,18 @@ export class TempusPool extends ContractBase {
   }
 
   /**
-   * @param token An ERC20 token which belongs to a POOL
-   * @returns Updated current Interest Rate as an 1e18 decimal
+   * @returns Updated current Interest Rate, decimal precision depends on specific TempusPool implementation
    */
-   async updateInterestRate(token:ERC20|string): Promise<NumberOrString> {
-    const address:string = (typeof(token) == 'string') ? token : token.address;
-    await this.contract.updateInterestRate(address);
-    return this.storedInterestRate(token);
+  async updateInterestRate(): Promise<NumberOrString> {
+    await this.contract.updateInterestRate();
+    return this.storedInterestRate();
   }
   
   /**
-   * @param token An ERC20 token which belongs to a POOL
-   * @returns Current stored Interest Rate of that Token in the pool
+   * @returns Current stored Interest Rate, decimal precision depends on specific TempusPool implementation
    */
-  async storedInterestRate(token:ERC20|string): Promise<NumberOrString> {
-    const address:string = (typeof(token) == 'string') ? token : token.address;
-    return this.fromBigNum(await this.contract.storedInterestRate(address));
+  async storedInterestRate(): Promise<NumberOrString> {
+    return this.fromBigNum(await this.contract.storedInterestRate());
   }
 
   async numAssetsPerYieldToken(amount:NumberOrString, interestRate:NumberOrString): Promise<NumberOrString> {
@@ -325,7 +321,7 @@ export class TempusPool extends ContractBase {
   /**
    * @returns Total accumulated fees
    */
-   async totalFees(): Promise<NumberOrString> {
+  async totalFees(): Promise<NumberOrString> {
     return this.yieldBearing.fromBigNum(await this.contract.totalFees());
   }
 

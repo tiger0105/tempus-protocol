@@ -25,12 +25,13 @@ export const ONE_WEI:BigNumber = ethers.utils.parseUnits('1.0', 18);
 /**
  * Parses a decimal string into specified base precision
  * @example let wei = parseDecimal("0.000001", 18);
- * @param decimalString Decimal string such as "12.1234"
+ * @param decimal Decimal such as 1.25 or "12.1234777777"
  * @param decimalBase Base precision of the decimal, for wei=18, for ray=27 
  * @returns BigNumber for use in solidity contracts
  */
-export function parseDecimal(decimalString:string, decimalBase:number): BigNumber {
+export function parseDecimal(decimal:NumberOrString, decimalBase:number): BigNumber {
   // need this special case to support MAX_UINT256, ignoring decimalBase
+  const decimalString = decimal.toString();
   if (decimalString == MAX_UINT256) {
     return BigNumber.from(MAX_UINT256);
   }
