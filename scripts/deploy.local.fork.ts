@@ -84,9 +84,9 @@ class DeployLocalForked {
   public async deploy() {
     this.owner = (await ethers.getSigners())[0];
 
-    const aDaiToken = new ERC20("ERC20", (await ethers.getContract('aToken_Dai')));
-    const cDaiToken = new ERC20("ERC20", (await ethers.getContract('cToken_Dai')));
-    const stETHToken = new ERC20("ILido", (await ethers.getContract('Lido')));
+    const aDaiToken = new ERC20("ERC20", 18, (await ethers.getContract('aToken_Dai')));
+    const cDaiToken = new ERC20("ERC20", 8, (await ethers.getContract('cToken_Dai')));
+    const stETHToken = new ERC20("ILido", 18, (await ethers.getContract('Lido')));
   
     const latestBlock = await ethers.provider.getBlock('latest');
     console.log(`Latest block number: ${latestBlock.number}`);

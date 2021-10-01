@@ -18,10 +18,10 @@ class DepositLocalForked {
     this.owner = (await ethers.getSigners())[0];
 
     const tokenMap = new Map<string, ERC20>();
-    tokenMap.set('aDai', new ERC20("ERC20", (await ethers.getContract('aToken_Dai'))));
-    tokenMap.set('cDai', new ERC20("ERC20", (await ethers.getContract('cToken_Dai'))));
-    tokenMap.set('stETH', new ERC20("ERC20", (await ethers.getContract('Lido'))));
-    tokenMap.set('DAI', new ERC20("ERC20", (await ethers.getContract('Dai'))));
+    tokenMap.set('aDai', new ERC20("ERC20", 18, (await ethers.getContract('aToken_Dai'))));
+    tokenMap.set('cDai', new ERC20("ERC20", 8, (await ethers.getContract('cToken_Dai'))));
+    tokenMap.set('stETH', new ERC20("ERC20", 18, (await ethers.getContract('Lido'))));
+    tokenMap.set('DAI', new ERC20("ERC20", 18, (await ethers.getContract('Dai'))));
   
     this.vault = await ethers.getContractAt('Vault', depositConfig.addresses.vault);
     
