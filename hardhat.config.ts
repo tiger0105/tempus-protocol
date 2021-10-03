@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { task } from 'hardhat/config';
 
 import 'solidity-coverage';
@@ -7,7 +8,7 @@ import 'hardhat-abi-exporter';
 import "@typechain/hardhat";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-ethers";
-import 'dotenv/config';
+import "@nomiclabs/hardhat-etherscan";
 
 if (process.env.HARDHAT_FORK) {
   process.env['HARDHAT_DEPLOY_FORK'] = process.env.HARDHAT_FORK;
@@ -97,6 +98,9 @@ module.exports = {
           }
         : undefined,
       accounts: TEST_ACCOUNTS_KEYS.map(privateKey => ({ privateKey, balance: "10000000000000000000000000" }))
+    },
+    goerli: {
+      url: 'https://rpc.goerli.mudit.blog/'
     }
   },
   namedAccounts: {
@@ -114,5 +118,8 @@ module.exports = {
   },
   mocha: {
     timeout: 120000
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY
   }
 };
