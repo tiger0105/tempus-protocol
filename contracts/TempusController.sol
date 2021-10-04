@@ -223,45 +223,6 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
         targetPool.transferFees(msg.sender, recipient);
     }
 
-    /// @dev Returns amount that user needs to swap to end up with almost the same amounts of Principals and Yields
-    /// @param tempusAMM TempusAMM instance to be used to query swap
-    /// @param principals User's Principals balance
-    /// @param yields User's Yields balance
-    /// @param threshold Maximum difference between final balances of Principals and Yields
-    /// @return amountIn Amount of Principals or Yields that user needs to swap to end with almost equal amounts
-    function getSwapAmountToEndWithEqualShares(
-        ITempusAMM tempusAMM,
-        uint256 principals,
-        uint256 yields,
-        uint256 threshold
-    ) public view returns (uint256 amountIn) {
-        (uint256 difference, bool yieldsIn) = (principals > yields)
-            ? (principals - yields, false)
-            : (yields - principals, true);
-        if (difference > threshold) {
-            uint256 principalsRate = tempusAMM.tempusPool().principalShare().getPricePerFullShareStored();
-            uint256 yieldsRate = tempusAMM.tempusPool().yieldShare().getPricePerFullShareStored();
-
-            uint256 rate = yieldsIn ? principalsRate.divf18(yieldsRate) : yieldsRate.divf18(principalsRate);
-            for (uint8 i = 0; i < 32; i++) {
-                // if we have accurate rate this should hold
-                amountIn = difference.divf18(rate + Fixed256x18.ONE);
-                uint256 amountOut = tempusAMM.getExpectedReturnGivenIn(amountIn, yieldsIn);
-                uint256 newPrincipals = yieldsIn ? (principals + amountOut) : (principals - amountIn);
-                uint256 newYields = yieldsIn ? (yields - amountIn) : (yields + amountOut);
-                uint256 newDifference = (newPrincipals > newYields)
-                    ? (newPrincipals - newYields)
-                    : (newYields - newPrincipals);
-                if (newDifference < threshold) {
-                    return amountIn;
-                } else {
-                    rate = amountOut.divf18(amountIn);
-                }
-            }
-            revert("getSwapAmountToEndWithEqualShares did not converge.");
-        }
-    }
-
     /// @dev Performs Swap from tokenIn to tokenOut
     /// @notice sender needs to approve tempusAMM.getVault() for swapAmount of tokenIn
     /// @param tempusAMM TempusAMM instance to be used for Swap
@@ -625,7 +586,7 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
             uint256 difference = yieldsIn ? (yields - principals) : (principals - yields);
 
             if (difference >= maxLeftoverShares) {
-                uint amountIn = getSwapAmountToEndWithEqualShares(tempusAMM, principals, yields, maxLeftoverShares);
+                uint amountIn = tempusAMM.getSwapAmountToEndWithEqualShares(principals, yields, maxLeftoverShares);
                 (IERC20 tokenIn, IERC20 tokenOut) = yieldsIn
                     ? (yieldShare, principalShare)
                     : (principalShare, yieldShare);

@@ -137,20 +137,44 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
     /// @param lpTokens Amount of LP tokens to use to query exit
     /// @param principals Amount of principals to query redeem
     /// @param yields Amount of yields to query redeem
+    /// @param threshold Maximum amount of Principals or Yields to be left in case of early exit
+    /// @param toBackingToken If exit is to backing or yield bearing token
     function estimateExitAndRedeem(
         ITempusAMM tempusAMM,
         uint256 lpTokens,
         uint256 principals,
         uint256 yields,
+        uint256 threshold,
         bool toBackingToken
     ) public view returns (uint256) {
         (uint256 principalsFromLP, uint256 yieldsFromLp) = tempusAMM.getExpectedTokensOutGivenBPTIn(lpTokens);
-        return
-            estimatedRedeem(
-                tempusAMM.tempusPool(),
-                principalsFromLP + principals,
-                yieldsFromLp + yields,
-                toBackingToken
-            );
+        principals += principalsFromLP;
+        yields += yieldsFromLp;
+
+        // before maturity we need to have equal amount of shares to redeem
+        if (!tempusAMM.tempusPool().matured()) {
+            bool yieldsIn = yields > principals;
+            uint256 amountIn = tempusAMM.getSwapAmountToEndWithEqualShares(principals, yields, threshold);
+            uint256 amountOut = (amountIn != 0) ? tempusAMM.getExpectedReturnGivenIn(amountIn, yieldsIn) : 0;
+
+            if (yieldsIn) {
+                // we need to swap some yields as we have more yields
+                principals += amountOut;
+                yields -= amountIn;
+            } else {
+                // we need to swap some principals as we have more principals
+                principals -= amountIn;
+                yields += amountOut;
+            }
+
+            // we need to equal out amounts that are being redeemed as this is early redeem
+            if (principals > yields) {
+                principals = yields;
+            } else {
+                yields = principals;
+            }
+        }
+
+        return estimatedRedeem(tempusAMM.tempusPool(), principals, yields, toBackingToken);
     }
 }

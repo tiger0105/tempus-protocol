@@ -34,6 +34,17 @@ interface ITempusAMM {
     /// @return The expected returned amount of outToken
     function getExpectedReturnGivenIn(uint256 amount, bool yieldShareIn) external view returns (uint256);
 
+    /// @dev Returns amount that user needs to swap to end up with almost the same amounts of Principals and Yields
+    /// @param principals User's Principals balance
+    /// @param yields User's Yields balance
+    /// @param threshold Maximum difference between final balances of Principals and Yields
+    /// @return amountIn Amount of Principals or Yields that user needs to swap to end with almost equal amounts
+    function getSwapAmountToEndWithEqualShares(
+        uint256 principals,
+        uint256 yields,
+        uint256 threshold
+    ) external view returns (uint256 amountIn);
+
     /// @dev queries exiting TempusAMM with exact BPT tokens in
     /// @param bptAmountIn amount of LP tokens in
     /// @return principals Amount of principals that user would recieve back
