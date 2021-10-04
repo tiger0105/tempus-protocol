@@ -151,6 +151,14 @@ describeForEachPool("TempusController", (testPool:ITestPool) =>
     });
   });
 
+  describe("provideLiquidity", () =>
+  {
+    it("check lp provided", async () =>
+    {
+      await initAMM(user1, /*ybtDeposit*/2000, /*principals*/200, /*yields*/2000); // 10% rate
+    });
+  });
+
   describe("Exit AMM", () =>
   {
     it("ExitAMM after maturity", async () =>
