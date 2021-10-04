@@ -152,7 +152,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         lastInvariantAmp = _lastInvariantAmp;
     }
 
-    function getExpectedReturnGivenIn(uint256 amount, bool yieldShareIn) external view returns (uint256) {
+    function getExpectedReturnGivenIn(uint256 amount, bool yieldShareIn) public view returns (uint256) {
         (, uint256[] memory balances, ) = getVault().getPoolTokens(getPoolId());
         (uint256 currentAmp, ) = _getAmplificationParameter();
         (IPoolShare tokenIn, IPoolShare tokenOut) = yieldShareIn
@@ -168,6 +168,38 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         amountOut = (amountOut * _TEMPUS_SHARE_PRECISION) / tokenOut.getPricePerFullShareStored();
 
         return amountOut;
+    }
+
+    function getSwapAmountToEndWithEqualShares(
+        uint256 principals,
+        uint256 yields,
+        uint256 threshold
+    ) public view returns (uint256 amountIn) {
+        (uint256 difference, bool yieldsIn) = (principals > yields)
+            ? (principals - yields, false)
+            : (yields - principals, true);
+        if (difference > threshold) {
+            uint256 principalsRate = tempusPool.principalShare().getPricePerFullShareStored();
+            uint256 yieldsRate = tempusPool.yieldShare().getPricePerFullShareStored();
+
+            uint256 rate = yieldsIn ? principalsRate.divDown(yieldsRate) : yieldsRate.divDown(principalsRate);
+            for (uint8 i = 0; i < 32; i++) {
+                // if we have accurate rate this should hold
+                amountIn = difference.divDown(rate + 1e18);
+                uint256 amountOut = getExpectedReturnGivenIn(amountIn, yieldsIn);
+                uint256 newPrincipals = yieldsIn ? (principals + amountOut) : (principals - amountIn);
+                uint256 newYields = yieldsIn ? (yields - amountIn) : (yields + amountOut);
+                uint256 newDifference = (newPrincipals > newYields)
+                    ? (newPrincipals - newYields)
+                    : (newYields - newPrincipals);
+                if (newDifference < threshold) {
+                    return amountIn;
+                } else {
+                    rate = amountOut.divDown(amountIn);
+                }
+            }
+            revert("getSwapAmountToEndWithEqualShares did not converge.");
+        }
     }
 
     function getExpectedTokensOutGivenBPTIn(uint256 bptAmountIn)
