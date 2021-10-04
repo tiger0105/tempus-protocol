@@ -48,8 +48,8 @@ describeForEachPool("TempusController", (testPool:ITestPool) =>
     if (expectedAMMBalancesRatio) {
       expect(await getAMMBalancesRatio()).to.equal(expectedAMMBalancesRatio, "AMM balances must maintain the same ratio");
     }
-    expect(+await pool.principalShare.balanceOf(controller.address)).to.equal(0, "No funds should remain in controller");
-    expect(+await pool.yieldShare.balanceOf(controller.address)).to.equal(0, "No funds should remain in controller");
+    expect(+await pool.principalShare.balanceOf(controller.address)).to.be.lessThan(2e-18, "No funds should remain in controller");
+    expect(+await pool.yieldShare.balanceOf(controller.address)).to.be.lessThan(2e-18, "No funds should remain in controller");
   }
 
   describe("depositAndProvideLiquidity", () =>
@@ -155,7 +155,11 @@ describeForEachPool("TempusController", (testPool:ITestPool) =>
   {
     it("check lp provided", async () =>
     {
-      await initAMM(user1, /*ybtDeposit*/2000, /*principals*/200, /*yields*/2000); // 10% rate
+      await initAMM(user1, /*ybtDeposit*/2000, /*principals*/100, /*yields*/1000); // 10% rate
+      await controller.provideLiquidity(testPool, user1, 1000);
+      expect(+await pool.principalShare.balanceOf(user1)).to.be.greaterThan(0, "Some Principals should be returned to user");
+      expect(+await pool.yieldShare.balanceOf(user1)).to.be.equal(0, "ALL Yields should be deposited to AMM");
+      expect(+await testPool.amm.balanceOf(user1)).to.be.greaterThan(0, "Should have some LP tokens");
     });
   });
 
