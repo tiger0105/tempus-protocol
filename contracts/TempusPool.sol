@@ -338,7 +338,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     /// @param interestRate Current interest rate of the underlying protocol
     /// @return Current yield relative to 1, such as 1.05 (+5%) or 0.97 (-3%)
     function currentYield(uint256 interestRate) private view returns (uint256) {
-        return (effectiveRate(interestRate) * exchangeRateONE) / initialInterestRate;
+        return effectiveRate(interestRate).divfV(initialInterestRate, exchangeRateONE);
     }
 
     function currentYield() private returns (uint256) {
