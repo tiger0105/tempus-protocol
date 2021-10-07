@@ -59,7 +59,7 @@ contract CompoundTempusPool is TempusPool {
         uint8 ratePrec = (10 + underlyingDecimals);
         require(underlyingDecimals < ratePrec, "underlying decimals must be < rate decimals");
         uint8 convPrec = ratePrec - underlyingDecimals;
-        exchangeRateToBackingPrecision = 10 ** convPrec;
+        exchangeRateToBackingPrecision = 10**convPrec;
     }
 
     function depositToUnderlying(uint256 backingAmount) internal override returns (uint256) {

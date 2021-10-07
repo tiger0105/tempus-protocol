@@ -52,7 +52,7 @@ contract AaveTempusPool is TempusPool {
         uint8 underlyingDecimals = IERC20Metadata(token.UNDERLYING_ASSET_ADDRESS()).decimals();
         require(underlyingDecimals <= 18, "underlying decimals must be <= 18");
 
-        exchangeRateToBackingPrecision = 10 ** (18 - underlyingDecimals);
+        exchangeRateToBackingPrecision = 10**(18 - underlyingDecimals);
     }
 
     function depositToUnderlying(uint256 amount) internal override returns (uint256) {
