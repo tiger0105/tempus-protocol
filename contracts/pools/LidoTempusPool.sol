@@ -27,6 +27,7 @@ contract LidoTempusPool is TempusPool {
             controller,
             maturity,
             token.getPooledEthByShares(1e18),
+            1e18,
             estYield,
             principalName,
             principalSymbol,
@@ -83,5 +84,9 @@ contract LidoTempusPool is TempusPool {
     /// @return YBT amount
     function numYieldTokensPerAsset(uint backingTokens, uint) public pure override returns (uint) {
         return backingTokens;
+    }
+
+    function interestRateToSharePrice(uint interestRate) internal pure override returns (uint) {
+        return interestRate; // no conversion needed, praise ETH
     }
 }

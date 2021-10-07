@@ -17,11 +17,13 @@ contract CompoundTempusPool is TempusPool {
 
     ICErc20 internal immutable cToken;
     bytes32 public immutable override protocolName = "Compound";
+    uint private immutable exchangeRateToBackingPrecision;
 
     constructor(
         ICErc20 token,
         address controller,
         uint256 maturity,
+        uint256 exchangeRateOne,
         uint256 estYield,
         string memory principalName,
         string memory principalSymbol,
@@ -35,6 +37,7 @@ contract CompoundTempusPool is TempusPool {
             controller,
             maturity,
             token.exchangeRateCurrent(),
+            exchangeRateOne,
             estYield,
             principalName,
             principalSymbol,
@@ -53,6 +56,10 @@ contract CompoundTempusPool is TempusPool {
         require(token.comptroller().enterMarkets(markets)[0] == 0, "enterMarkets failed");
 
         cToken = token;
+        uint8 ratePrec = (10 + underlyingDecimals);
+        require(underlyingDecimals < ratePrec, "underlying decimals must be < rate decimals");
+        uint8 convPrec = ratePrec - underlyingDecimals;
+        exchangeRateToBackingPrecision = 10 ** convPrec;
     }
 
     function depositToUnderlying(uint256 backingAmount) internal override returns (uint256) {
@@ -109,5 +116,9 @@ contract CompoundTempusPool is TempusPool {
     //       This conversion happens automatically due to pre-scaled rate
     function numYieldTokensPerAsset(uint backingTokens, uint rate) public pure override returns (uint) {
         return backingTokens.divf18(rate);
+    }
+
+    function interestRateToSharePrice(uint interestRate) internal view override returns (uint) {
+        return interestRate / exchangeRateToBackingPrecision;
     }
 }

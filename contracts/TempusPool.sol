@@ -9,8 +9,11 @@ import "./ITempusPool.sol";
 import "./token/PrincipalShare.sol";
 import "./token/YieldShare.sol";
 import "./math/Fixed256x18.sol";
+import "./math/Fixed256xVar.sol";
 import "./utils/PermanentlyOwnable.sol";
 import "./utils/UntrustedERC20.sol";
+
+import "hardhat/console.sol";
 
 /// @author The tempus.finance team
 /// @title Implementation of Tempus Pool
@@ -18,6 +21,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     using SafeERC20 for IERC20;
     using UntrustedERC20 for IERC20;
     using Fixed256x18 for uint256;
+    using Fixed256xVar for uint256;
 
     uint public constant override version = 1;
 
@@ -28,6 +32,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     uint256 public immutable override maturityTime;
 
     uint256 public immutable override initialInterestRate;
+    uint256 public immutable exchangeRateONE;
     uint256 public override maturityInterestRate;
     IPoolShare public immutable override principalShare;
     IPoolShare public immutable override yieldShare;
@@ -52,6 +57,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     /// @param ctrl The authorized TempusController of the pool
     /// @param maturity maturity time of this pool
     /// @param initInterestRate initial interest rate of the pool
+    /// @param exchangeRateOne 1.0 expressed in exchange rate decimal precision
     /// @param estimatedFinalYield estimated yield for the whole lifetime of the pool
     /// @param principalName name of Tempus Principal Share
     /// @param principalSymbol symbol of Tempus Principal Share
@@ -64,6 +70,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         address ctrl,
         uint256 maturity,
         uint256 initInterestRate,
+        uint256 exchangeRateOne,
         uint256 estimatedFinalYield,
         string memory principalName,
         string memory principalSymbol,
@@ -79,6 +86,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         startTime = block.timestamp;
         maturityTime = maturity;
         initialInterestRate = initInterestRate;
+        exchangeRateONE = exchangeRateOne;
         initialEstimatedYield = estimatedFinalYield;
 
         maxDepositFee = maxFeeSetup.depositPercent;
@@ -332,7 +340,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     /// @param interestRate Current interest rate of the underlying protocol
     /// @return Current yield relative to 1, such as 1.05 (+5%) or 0.97 (-3%)
     function currentYield(uint256 interestRate) private view returns (uint256) {
-        return effectiveRate(interestRate).divf18(initialInterestRate);
+        return (effectiveRate(interestRate) * exchangeRateONE) / initialInterestRate;
     }
 
     function currentYield() private returns (uint256) {
@@ -363,25 +371,30 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         uint256 timeToMaturity = (maturityTime > currentTime) ? (maturityTime - currentTime) : 0;
         uint256 poolDuration = maturityTime - startTime;
 
-        return yieldCurrent + timeToMaturity.divf18(poolDuration).mulf18(initialEstimatedYield);
+        return yieldCurrent + timeToMaturity.divf18(poolDuration).mulfV(initialEstimatedYield, exchangeRateONE);
     }
 
     /// pricePerYield = currentYield * (estimatedYield - 1) / (estimatedYield)
-    function pricePerYieldShare(uint256 currYield, uint256 estYield) private pure returns (uint256) {
+    /// Return value decimal precision in backing token precision
+    function pricePerYieldShare(uint256 currYield, uint256 estYield) private view returns (uint256) {
+        uint one = exchangeRateONE;
         // in case we have estimate for negative yield
-        if (estYield < Fixed256x18.ONE) {
+        if (estYield < one) {
             return uint256(0);
         }
-        uint256 yieldSharePrice = (estYield - Fixed256x18.ONE).mulf18(currYield).divf18(estYield);
-        return uint256(yieldSharePrice);
+        uint256 yieldPrice = (estYield - one).mulfV(currYield, one).divfV(estYield, one);
+        return interestRateToSharePrice(yieldPrice);
     }
 
     /// pricePerPrincipal = currentYield / estimatedYield
-    function pricePerPrincipalShare(uint256 currYield, uint256 estYield) private pure returns (uint256) {
-        if (estYield < Fixed256x18.ONE) {
-            return currYield;
+    /// Return value decimal precision in backing token precision
+    function pricePerPrincipalShare(uint256 currYield, uint256 estYield) private view returns (uint256) {
+        // in case we have estimate for negative yield
+        if (estYield < exchangeRateONE) {
+            return interestRateToSharePrice(currYield);
         }
-        return currYield.divf18(estYield);
+        uint256 principalPrice = currYield.divfV(estYield, exchangeRateONE);
+        return interestRateToSharePrice(principalPrice);
     }
 
     function pricePerYieldShare() external override returns (uint256) {
@@ -433,4 +446,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     function numYieldTokensPerAsset(uint backingTokens, uint interestRate) public pure virtual override returns (uint);
 
     function numAssetsPerYieldToken(uint yieldTokens, uint interestRate) public pure virtual override returns (uint);
+
+    /// @return Converts an interest rate decimal into a Principal/Yield Share decimal
+    function interestRateToSharePrice(uint interestRate) internal view virtual returns (uint);
 }
