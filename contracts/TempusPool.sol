@@ -13,8 +13,6 @@ import "./math/Fixed256xVar.sol";
 import "./utils/PermanentlyOwnable.sol";
 import "./utils/UntrustedERC20.sol";
 
-import "hardhat/console.sol";
-
 /// @author The tempus.finance team
 /// @title Implementation of Tempus Pool
 abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
