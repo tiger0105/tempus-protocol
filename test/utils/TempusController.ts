@@ -145,6 +145,16 @@ export class TempusController extends ContractBase {
     );
   }
 
+  async provideLiquidity(
+    pool: ITestPool,
+    user: SignerOrAddress,
+    sharesAmount: NumberOrString
+  ): Promise<Transaction> {
+    await pool.tempus.yieldShare.approve(user, this.address, sharesAmount);
+    await pool.tempus.principalShare.approve(user, this.address, sharesAmount);
+    return this.connect(user).provideLiquidity(pool.amm.address, toWei(sharesAmount));
+  }
+
   async exitTempusAMMAndRedeem(
     pool: ITestPool,
     user: SignerOrAddress,

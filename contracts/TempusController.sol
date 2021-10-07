@@ -77,6 +77,23 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
         _depositAndProvideLiquidity(tempusAMM, tokenAmount, isBackingToken);
     }
 
+    /// @dev Adds liquidity to tempusAMM with ratio of shares that is equal to ratio in AMM
+    /// @param tempusAMM Tempus AMM to provide liquidity to
+    /// @param sharesAmount Amount of shares to be used to provide liquidity, one of the sahres will be partially used
+    /// @notice If sharesAmount is 100 and amm balances ratio is 1 principal : 10 yields 90 principal will be "unused"
+    ///         So, liquidity will be provided with 10 principals and 100 yields
+    /// @notice msg.sender needs to approve Controller for both Principals and Yields for @param sharesAmount
+    function provideLiquidity(ITempusAMM tempusAMM, uint256 sharesAmount) external nonReentrant {
+        (
+            IVault vault,
+            bytes32 poolId,
+            IERC20[] memory ammTokens,
+            uint256[] memory ammBalances
+        ) = _getAMMDetailsAndEnsureInitialized(tempusAMM);
+
+        _provideLiquidity(msg.sender, vault, poolId, ammTokens, ammBalances, sharesAmount, msg.sender);
+    }
+
     /// @dev Atomically deposits YBT/BT to TempusPool and swaps TYS for TPS to get fixed yield
     ///      See https://docs.balancer.fi/developers/guides/single-swaps#swap-overview
     /// @param tempusAMM Tempus AMM to use to swap TYS for TPS
@@ -275,16 +292,48 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
             uint256[] memory ammBalances
         ) = _getAMMDetailsAndEnsureInitialized(tempusAMM);
 
-        ITempusPool targetPool = tempusAMM.tempusPool();
-        _deposit(targetPool, tokenAmount, isBackingToken);
+        uint256 mintedShares = _deposit(tempusAMM.tempusPool(), tokenAmount, isBackingToken);
 
+        uint256[] memory sharesUsed = _provideLiquidity(
+            address(this),
+            vault,
+            poolId,
+            ammTokens,
+            ammBalances,
+            mintedShares,
+            msg.sender
+        );
+
+        // Send remaining Shares to user
+        if (sharesUsed[0] < mintedShares) {
+            ammTokens[0].safeTransfer(msg.sender, mintedShares - sharesUsed[0]);
+        }
+        if (sharesUsed[1] < mintedShares) {
+            ammTokens[1].safeTransfer(msg.sender, mintedShares - sharesUsed[1]);
+        }
+    }
+
+    function _provideLiquidity(
+        address sender,
+        IVault vault,
+        bytes32 poolId,
+        IERC20[] memory ammTokens,
+        uint256[] memory ammBalances,
+        uint256 sharesAmount,
+        address recipient
+    ) private returns (uint256[] memory) {
         uint256[2] memory ammDepositPercentages = ammBalances.getAMMBalancesRatio();
         uint256[] memory ammLiquidityProvisionAmounts = new uint256[](2);
 
         (ammLiquidityProvisionAmounts[0], ammLiquidityProvisionAmounts[1]) = (
-            ammTokens[0].balanceOf(address(this)).mulf18(ammDepositPercentages[0]),
-            ammTokens[1].balanceOf(address(this)).mulf18(ammDepositPercentages[1])
+            sharesAmount.mulf18(ammDepositPercentages[0]),
+            sharesAmount.mulf18(ammDepositPercentages[1])
         );
+
+        if (sender != address(this)) {
+            ammTokens[0].safeTransferFrom(sender, address(this), ammLiquidityProvisionAmounts[0]);
+            ammTokens[1].safeTransferFrom(sender, address(this), ammLiquidityProvisionAmounts[1]);
+        }
 
         ammTokens[0].safeIncreaseAllowance(address(vault), ammLiquidityProvisionAmounts[0]);
         ammTokens[1].safeIncreaseAllowance(address(vault), ammLiquidityProvisionAmounts[1]);
@@ -297,15 +346,9 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
         });
 
         // Provide TPS/TYS liquidity to TempusAMM
-        vault.joinPool(poolId, address(this), msg.sender, request);
+        vault.joinPool(poolId, address(this), recipient, request);
 
-        // Send remaining Shares to user
-        if (ammDepositPercentages[0] < Fixed256x18.ONE) {
-            ammTokens[0].safeTransfer(msg.sender, ammTokens[0].balanceOf(address(this)));
-        }
-        if (ammDepositPercentages[1] < Fixed256x18.ONE) {
-            ammTokens[1].safeTransfer(msg.sender, ammTokens[1].balanceOf(address(this)));
-        }
+        return ammLiquidityProvisionAmounts;
     }
 
     function _depositAndFix(
@@ -318,9 +361,8 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
         IERC20 principalShares = IERC20(address(targetPool.principalShare()));
         IERC20 yieldShares = IERC20(address(targetPool.yieldShare()));
 
-        _deposit(targetPool, tokenAmount, isBackingToken);
+        uint256 swapAmount = _deposit(targetPool, tokenAmount, isBackingToken);
 
-        uint256 swapAmount = yieldShares.balanceOf(address(this));
         yieldShares.safeIncreaseAllowance(address(tempusAMM.getVault()), swapAmount);
         uint256 minReturn = swapAmount.mulf18(minTYSRate);
         swap(tempusAMM, address(this), address(this), swapAmount, yieldShares, principalShares, minReturn);
@@ -337,19 +379,17 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
         ITempusPool targetPool,
         uint256 tokenAmount,
         bool isBackingToken
-    ) private {
-        if (isBackingToken) {
-            _depositBacking(targetPool, tokenAmount, address(this));
-        } else {
-            _depositYieldBearing(targetPool, tokenAmount, address(this));
-        }
+    ) private returns (uint256 mintedShares) {
+        mintedShares = isBackingToken
+            ? _depositBacking(targetPool, tokenAmount, address(this))
+            : _depositYieldBearing(targetPool, tokenAmount, address(this));
     }
 
     function _depositYieldBearing(
         ITempusPool targetPool,
         uint256 yieldTokenAmount,
         address recipient
-    ) private {
+    ) private returns (uint256) {
         require(yieldTokenAmount > 0, "yieldTokenAmount is 0");
 
         IERC20 yieldBearingToken = IERC20(targetPool.yieldBearingToken());
@@ -370,13 +410,15 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
             rate,
             fee
         );
+
+        return mintedShares;
     }
 
     function _depositBacking(
         ITempusPool targetPool,
         uint256 backingTokenAmount,
         address recipient
-    ) private {
+    ) private returns (uint256) {
         require(backingTokenAmount > 0, "backingTokenAmount is 0");
 
         IERC20 backingToken = IERC20(targetPool.backingToken());
@@ -402,6 +444,8 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
             interestRate,
             fee
         );
+
+        return mintedShares;
     }
 
     function _redeemToYieldBearing(
