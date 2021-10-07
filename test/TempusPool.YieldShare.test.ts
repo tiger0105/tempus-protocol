@@ -15,7 +15,7 @@ describeForEachPool("TempusPool YieldShare", (pool:ITestPool) =>
     let yieldsPrice:number = +await pool.tempus.yieldShare.getPricePerFullShareStored();
     expect(principalPrice).to.be.within(0.9099, 0.911);
     expect(yieldsPrice).to.be.within(0.0998, 0.1001);
-    expect(principalPrice + yieldsPrice).to.be.equal(interestRate);
+    expect(principalPrice + yieldsPrice).to.be.within(interestRate-0.001, interestRate+0.001);
   });
 
   it("Should have correct rates for Yields and Principals in the middle of the pool", async () => {
@@ -28,7 +28,7 @@ describeForEachPool("TempusPool YieldShare", (pool:ITestPool) =>
     let yieldsPrice:number = +await pool.tempus.yieldShare.getPricePerFullShareStored();
     expect(principalPrice).to.be.within(0.0954, 0.955);
     expect(yieldsPrice).to.be.within(0.00954, 0.0955);
-    expect(principalPrice + yieldsPrice).to.equal(midRate);
+    expect(principalPrice + yieldsPrice).to.within(midRate-0.001, midRate+0.001);
   });
 
   it("Should have correct rates for Yields and Principals after Maturity", async () =>

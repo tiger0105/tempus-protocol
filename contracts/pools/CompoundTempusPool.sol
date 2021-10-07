@@ -22,6 +22,7 @@ contract CompoundTempusPool is TempusPool {
         ICErc20 token,
         address controller,
         uint256 maturity,
+        uint256 exchangeRateOne,
         uint256 estYield,
         string memory principalName,
         string memory principalSymbol,
@@ -35,6 +36,7 @@ contract CompoundTempusPool is TempusPool {
             controller,
             maturity,
             token.exchangeRateCurrent(),
+            exchangeRateOne,
             estYield,
             principalName,
             principalSymbol,
@@ -109,5 +111,10 @@ contract CompoundTempusPool is TempusPool {
     //       This conversion happens automatically due to pre-scaled rate
     function numYieldTokensPerAsset(uint backingTokens, uint rate) public pure override returns (uint) {
         return backingTokens.divf18(rate);
+    }
+
+    function interestRateToSharePrice(uint interestRate) internal view override returns (uint) {
+        // rate is always (10 + backing.decimals), so converting back is always 1e10
+        return interestRate / 1e10;
     }
 }

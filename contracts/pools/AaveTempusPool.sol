@@ -2,6 +2,7 @@
 pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../TempusPool.sol";
@@ -16,6 +17,7 @@ contract AaveTempusPool is TempusPool {
     ILendingPool internal immutable aavePool;
     bytes32 public immutable override protocolName = "Aave";
     uint16 private immutable referrer;
+    uint private immutable exchangeRateToBackingPrecision;
 
     constructor(
         IAToken token,
@@ -35,6 +37,7 @@ contract AaveTempusPool is TempusPool {
             controller,
             maturity,
             getInitialInterestRate(token),
+            1e18,
             estYield,
             principalName,
             principalSymbol,
@@ -45,6 +48,11 @@ contract AaveTempusPool is TempusPool {
     {
         aavePool = token.POOL();
         referrer = referrerCode;
+
+        uint8 underlyingDecimals = IERC20Metadata(token.UNDERLYING_ASSET_ADDRESS()).decimals();
+        require(underlyingDecimals <= 18, "underlying decimals must be <= 18");
+
+        exchangeRateToBackingPrecision = 10**(18 - underlyingDecimals);
     }
 
     function depositToUnderlying(uint256 amount) internal override returns (uint256) {
@@ -91,5 +99,9 @@ contract AaveTempusPool is TempusPool {
     /// NOTE: Aave AToken is pegged 1:1 with backing token
     function numYieldTokensPerAsset(uint backingTokens, uint) public pure override returns (uint) {
         return backingTokens;
+    }
+
+    function interestRateToSharePrice(uint interestRate) internal view override returns (uint) {
+        return interestRate / exchangeRateToBackingPrecision;
     }
 }

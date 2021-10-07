@@ -143,7 +143,8 @@ export class TempusPool extends ContractBase {
         yieldToken.address,
         controller.address,
         maturityTime,
-        toWei(estimatedYield),
+        parseDecimal(1.0, exchangeRatePrecision),
+        parseDecimal(estimatedYield, exchangeRatePrecision),
         tempusShareNames.principalName,
         tempusShareNames.principalSymbol,
         tempusShareNames.yieldName,
@@ -156,9 +157,9 @@ export class TempusPool extends ContractBase {
       );
     }
 
-    const principalShare = await PoolShare.attach(ShareKind.Principal, await pool.principalShare());
-    const yieldShare = await PoolShare.attach(ShareKind.Yield, await pool.yieldShare());
-    return new TempusPool(type, pool, controller, yieldToken, principalShare, yieldShare, exchangeRatePrecision);
+    const tps = await PoolShare.attach(ShareKind.Principal, await pool.principalShare());
+    const tys = await PoolShare.attach(ShareKind.Yield, await pool.yieldShare());
+    return new TempusPool(type, pool, controller, yieldToken, tps, tys, exchangeRatePrecision);
   }
 
   /**
