@@ -1,7 +1,8 @@
 import { Contract } from "ethers";
-import { NumberOrString, toWei, toRay, fromRay } from "./Decimal";
+import { NumberOrString, toRay, fromRay, parseDecimal } from "./Decimal";
 import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
+import { TokenInfo } from "../pool-utils/TokenInfo";
 
 export class Aave extends ContractBase {
   asset:ERC20;
@@ -14,17 +15,21 @@ export class Aave extends ContractBase {
   }
 
   /**
-   * @param totalSupply Total DAI supply
+   * @param ASSET ASSET token info
+   * @param YIELD YIELD token info
    * @param initialRate Initial interest rate
    */
-  static async create(totalSupply:Number, initialRate:Number = 1.0): Promise<Aave> {
-    // using WEI, because DAI has 18 decimal places
-    const asset = await ERC20.deploy("ERC20FixedSupply", 18, "DAI Stablecoin", "DAI", toWei(totalSupply));
-    const pool = await ContractBase.deployContract("AavePoolMock", asset.address);
+  static async create(ASSET:TokenInfo, YIELD:TokenInfo, initialRate:Number): Promise<Aave> {
+    const asset = await ERC20.deploy(
+      "ERC20FixedSupply", ASSET.decimals, ASSET.name, ASSET.symbol, parseDecimal(ASSET.totalSupply, ASSET.decimals)
+    );
+    const pool = await ContractBase.deployContract(
+      "AavePoolMock", asset.address
+    );
     const yieldToken = await ERC20.attach("ATokenMock", await pool.yieldToken());
     const aave = new Aave(pool, asset, yieldToken);
     if (initialRate != 1.0) {
-      await aave.setLiquidityIndex(initialRate);
+      await aave.setLiquidityIndex(initialRate); // TODO: remove this AavePool constructor
     }
     return aave;
   }
