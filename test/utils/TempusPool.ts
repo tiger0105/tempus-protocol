@@ -64,7 +64,7 @@ export class TempusPool extends ContractBase {
     yieldShare:PoolShare,
     exchangeRatePrecision:number
   ) {
-    super(type+"TempusPool", 18, pool);
+    super(type+"TempusPool", asset.decimals, pool);
     this.controller = controller;
     this.type = type;
     this.asset = asset;
@@ -162,9 +162,9 @@ export class TempusPool extends ContractBase {
         shareNames.yieldName,
         shareNames.yieldSymbol,
         /*maxFeeSetup:*/{
-          depositPercent: toWei(0.5),
-          earlyRedeemPercent: toWei(1),
-          matureRedeemPercent: toWei(0.5)
+          depositPercent:      yieldToken.toBigNum(0.5), // fees are stored in YBT
+          earlyRedeemPercent:  yieldToken.toBigNum(1.0),
+          matureRedeemPercent: yieldToken.toBigNum(0.5)
         },
         "0x00000" /* hardcoded referral code */
       );
@@ -181,9 +181,9 @@ export class TempusPool extends ContractBase {
         shareNames.yieldName,
         shareNames.yieldSymbol,
         /*maxFeeSetup:*/{
-          depositPercent: toWei(0.5),
-          earlyRedeemPercent: toWei(1),
-          matureRedeemPercent: toWei(0.5)
+          depositPercent:      yieldToken.toBigNum(0.5), // fees are stored in YBT
+          earlyRedeemPercent:  yieldToken.toBigNum(1.0),
+          matureRedeemPercent: yieldToken.toBigNum(0.5)
         },
         "0x0000000000000000000000000000000000000000" /* hardcoded referrer */
       );
@@ -201,16 +201,19 @@ export class TempusPool extends ContractBase {
         shareNames.yieldName,
         shareNames.yieldSymbol,
         /*maxFeeSetup:*/{
-          depositPercent: toWei(0.5),
-          earlyRedeemPercent: toWei(1),
-          matureRedeemPercent: toWei(0.5)
+          depositPercent:      yieldToken.toBigNum(0.5), // fees are stored in YBT
+          earlyRedeemPercent:  yieldToken.toBigNum(1.0),
+          matureRedeemPercent: yieldToken.toBigNum(0.5)
         }
       );
+    } else {
+      throw new Error("Unsupported PoolType "+type+" TempusPool.deploy failed");
     }
 
+    // NOTE: Principals and Yields always have BackingToken precision
     const tps = await PoolShare.attach(ShareKind.Principal, await pool.principalShare());
     const tys = await PoolShare.attach(ShareKind.Yield, await pool.yieldShare());
-    return new TempusPool(type, pool, controller, asset, yieldToken, tps, tys, exchangeRatePrec);
+    return new TempusPool(type, pool!, controller, asset, yieldToken, tps, tys, exchangeRatePrec);
   }
 
   /**
@@ -229,7 +232,9 @@ export class TempusPool extends ContractBase {
   async deposit(user:SignerOrAddress, yieldBearingAmount:NumberOrString, recipient:SignerOrAddress): Promise<Transaction> {
     try {
       await this.yieldBearing.approve(user, this.contract.address, yieldBearingAmount);
-      return this.connect(user).deposit(this.yieldBearing.toBigNum(yieldBearingAmount), addressOf(recipient));
+      return this.connect(user).deposit(
+        this.yieldBearing.toBigNum(yieldBearingAmount), addressOf(recipient)
+      );
       // NOTE: we can't easily test the return value of a transaction, so it's omitted
     } catch(e) {
       throw new Error("TempusPool.deposit failed: " + e.message);
@@ -244,7 +249,7 @@ export class TempusPool extends ContractBase {
   */
   async depositBacking(user:SignerOrAddress, backingTokenAmount:NumberOrString, recipient:SignerOrAddress, ethValue: NumberOrString = 0): Promise<Transaction> {
     return this.connect(user).depositBacking(
-      this.toBigNum(backingTokenAmount), addressOf(recipient), { value: this.toBigNum(ethValue)}
+      this.asset.toBigNum(backingTokenAmount), addressOf(recipient), { value: toWei(ethValue)}
     );
   }
 
@@ -258,7 +263,7 @@ export class TempusPool extends ContractBase {
    */
   async redeemToBacking(user:SignerOrAddress, principalAmount:NumberOrString, yieldAmount:NumberOrString, from: SignerOrAddress = user, recipient: SignerOrAddress = user): Promise<Transaction> {
     return this.contract.connect(user).redeemToBacking(
-      addressOf(from), this.toBigNum(principalAmount), this.toBigNum(yieldAmount), addressOf(recipient)
+      addressOf(from), this.principalShare.toBigNum(principalAmount), this.yieldShare.toBigNum(yieldAmount), addressOf(recipient)
     );
   }
 
@@ -273,7 +278,7 @@ export class TempusPool extends ContractBase {
   async redeem(user:SignerOrAddress, principalAmount:NumberOrString, yieldAmount:NumberOrString, from: SignerOrAddress = user, recipient: SignerOrAddress = user): Promise<Transaction> {
     try {
       return this.contract.connect(user).redeem(
-        addressOf(from), this.toBigNum(principalAmount), this.toBigNum(yieldAmount), addressOf(recipient)
+        addressOf(from), this.principalShare.toBigNum(principalAmount), this.yieldShare.toBigNum(yieldAmount), addressOf(recipient)
       );
     } catch(e) {
       throw new Error("TempusPool.redeem failed: " + e.message);
@@ -329,10 +334,18 @@ export class TempusPool extends ContractBase {
   }
 
   /**
-   * @returns Current Interest rate of the pool
+   * @returns Current STORED Interest rate of the pool
    */
   async currentInterestRate(): Promise<NumberOrString> {
     return formatDecimal(await this.contract.currentInterestRate(), this.exchangeRatePrec);
+  }
+
+  /**
+   * @returns Updated current Interest Rate
+   */
+  async updateInterestRate(): Promise<NumberOrString> {
+    await this.contract.updateInterestRate();
+    return this.currentInterestRate();
   }
 
   /**
@@ -349,39 +362,29 @@ export class TempusPool extends ContractBase {
    *         TPS and TYS are minted in 1:1 ratio, hence a single return value
    */
   async estimatedMintedShares(amount:NumberOrString, backingToken:boolean): Promise<NumberOrString> {
-    return this.fromBigNum(await this.contract.estimatedMintedShares(amount, backingToken));
-  }
-
-  /**
-   * @returns Updated current Interest Rate, decimal precision depends on specific TempusPool implementation
-   */
-  async updateInterestRate(): Promise<NumberOrString> {
-    await this.contract.updateInterestRate();
-    return this.storedInterestRate();
-  }
-  
-  /**
-   * @returns Current stored Interest Rate, decimal precision depends on specific TempusPool implementation
-   */
-  async storedInterestRate(): Promise<NumberOrString> {
-    return this.fromBigNum(await this.contract.storedInterestRate());
+    return this.principalShare.fromBigNum(await this.contract.estimatedMintedShares(amount, backingToken));
   }
 
   async numAssetsPerYieldToken(amount:NumberOrString, interestRate:NumberOrString): Promise<NumberOrString> {
-    return this.fromBigNum(await this.contract.numAssetsPerYieldToken(this.toBigNum(amount), this.toBigNum(interestRate)));
+    return this.asset.fromBigNum(await this.contract.numAssetsPerYieldToken(
+      this.yieldBearing.toBigNum(amount), this.toContractExchangeRate(interestRate)
+    ));
   }
 
   async numYieldTokensPerAsset(amount:NumberOrString, interestRate:NumberOrString): Promise<NumberOrString> {
-    return this.fromBigNum(await this.contract.numYieldTokensPerAsset(this.toBigNum(amount), this.toBigNum(interestRate)));
-  }
-
-  async pricePerYieldShare(): Promise<NumberOrString> {
-    return this.fromBigNum(await this.contract.pricePerYieldShareStored());
+    return this.yieldBearing.fromBigNum(await this.contract.numYieldTokensPerAsset(
+      this.asset.toBigNum(amount), this.toContractExchangeRate(interestRate)
+    ));
   }
 
   async pricePerPrincipalShare(): Promise<NumberOrString> {
-    return this.fromBigNum(await this.contract.pricePerPrincipalShareStored());
+    return this.principalShare.fromBigNum(await this.contract.pricePerPrincipalShareStored());
   }
+
+  async pricePerYieldShare(): Promise<NumberOrString> {
+    return this.yieldShare.fromBigNum(await this.contract.pricePerYieldShareStored());
+  }
+
 
   /**
    * @returns Total accumulated fees
@@ -393,9 +396,9 @@ export class TempusPool extends ContractBase {
   async getFeesConfig(): Promise<TempusFeesConfig> {
     let feesConfig = await this.contract.getFeesConfig();
     return {
-      depositPercent: fromWei(feesConfig.depositPercent),
-      earlyRedeemPercent: fromWei(feesConfig.earlyRedeemPercent),
-      matureRedeemPercent: fromWei(feesConfig.matureRedeemPercent)
+      depositPercent:      this.yieldBearing.fromBigNum(feesConfig.depositPercent),
+      earlyRedeemPercent:  this.yieldBearing.fromBigNum(feesConfig.earlyRedeemPercent),
+      matureRedeemPercent: this.yieldBearing.fromBigNum(feesConfig.matureRedeemPercent)
     }
   }
 
@@ -407,9 +410,9 @@ export class TempusPool extends ContractBase {
     feesConfig: TempusFeesConfig
   ): Promise<void> {
     await this.contract.connect(owner).setFeesConfig({
-      depositPercent: toWei(feesConfig.depositPercent),
-      earlyRedeemPercent: toWei(feesConfig.earlyRedeemPercent),
-      matureRedeemPercent: toWei(feesConfig.matureRedeemPercent)
+      depositPercent:      this.yieldBearing.toBigNum(feesConfig.depositPercent),
+      earlyRedeemPercent:  this.yieldBearing.toBigNum(feesConfig.earlyRedeemPercent),
+      matureRedeemPercent: this.yieldBearing.toBigNum(feesConfig.matureRedeemPercent)
     });
   }
 }
