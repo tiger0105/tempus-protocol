@@ -54,6 +54,7 @@ interface CookieConfigData {
 interface DeployPoolParams {
   poolType: PoolType;
   backingToken: string;
+  bt: ERC20;
   ybt: ERC20;
   maturity: number;
   ybtName: string;
@@ -84,6 +85,9 @@ class DeployLocalForked {
   public async deploy() {
     this.owner = (await ethers.getSigners())[0];
 
+    const Dai = new ERC20("ERC20FixedSupply", 18, (await ethers.getContract('Dai')));
+    const Weth = new ERC20("ERC20", 18, (await ethers.getContract("Weth")));
+
     const aDaiToken = new ERC20("ERC20", 18, (await ethers.getContract('aToken_Dai')));
     const cDaiToken = new ERC20("ERC20", 8, (await ethers.getContract('cToken_Dai')));
     const stETHToken = new ERC20("ILido", 18, (await ethers.getContract('Lido')));
@@ -101,6 +105,7 @@ class DeployLocalForked {
     await this.deployPool({
       poolType: PoolType.Aave,
       backingToken: 'DAI',
+      bt: Dai,
       ybt: aDaiToken,
       maturity: maturityTimeOneYear,
       yieldEstimate: 0.1,
@@ -117,6 +122,7 @@ class DeployLocalForked {
     await this.deployPool({
       poolType: PoolType.Aave,
       backingToken: 'DAI',
+      bt: Dai,
       ybt: aDaiToken,
       maturity: maturityTimeOneMonth,
       yieldEstimate: 0.01,
@@ -133,6 +139,7 @@ class DeployLocalForked {
     await this.deployPool({
       poolType: PoolType.Compound,
       backingToken: 'DAI',
+      bt: Dai,
       ybt: cDaiToken,
       maturity: maturityTimeOneYear,
       yieldEstimate: 0.13,
@@ -147,6 +154,7 @@ class DeployLocalForked {
     await this.deployPool({
       poolType: PoolType.Compound,
       backingToken: 'DAI',
+      bt: Dai,
       ybt: cDaiToken,
       maturity: maturityTimeOneMonth,
       yieldEstimate: 0.011,
@@ -161,6 +169,7 @@ class DeployLocalForked {
     await this.deployPool({
       poolType: PoolType.Lido,
       backingToken: 'ETH',
+      bt: Weth,
       ybt: stETHToken,
       maturity: maturityTimeOneYear,
       yieldEstimate: 0.1,
@@ -177,6 +186,7 @@ class DeployLocalForked {
     await this.deployPool({
       poolType: PoolType.Lido,
       backingToken: 'ETH',
+      bt: Weth,
       ybt: stETHToken,
       maturity: maturityTimeOneMonth,
       yieldEstimate: 0.01,
@@ -201,7 +211,7 @@ class DeployLocalForked {
 
   private async deployPool(params: DeployPoolParams) {
     const pool = await params.deploy(
-      null, // TODO: need to implement backing token support
+      params.bt,
       params.ybt,
       this.controller,
       params.maturity,

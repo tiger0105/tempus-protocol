@@ -113,7 +113,7 @@ contract CompoundTempusPool is TempusPool {
         return backingTokens.divf18(rate);
     }
 
-    function interestRateToSharePrice(uint interestRate) internal view override returns (uint) {
+    function interestRateToSharePrice(uint interestRate) internal pure override returns (uint) {
         // rate is always (10 + backing.decimals), so converting back is always 1e10
         return interestRate / 1e10;
     }
