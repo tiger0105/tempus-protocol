@@ -28,6 +28,7 @@ const setup = deployments.createFixture(async () => {
   
   const aWethHolderSigner = await ethers.getSigner(aWethHolder);
   
+  const Weth = new ERC20("ERC20", 18, (await ethers.getContract("Weth")));
   const aWethYieldToken = new ERC20("ERC20", 18, (await ethers.getContract('aToken_Weth')));
   
   const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
@@ -36,7 +37,7 @@ const setup = deployments.createFixture(async () => {
   const yieldEst = 0.1;
   const tempusController: TempusController = await TempusController.deploy();
   const tempusPool = await TempusPool.deployAave(
-    null, aWethYieldToken, tempusController, maturityTime, yieldEst, names
+    Weth, aWethYieldToken, tempusController, maturityTime, yieldEst, names
   );
   
   const stats = await ContractBase.deployContract("Stats");

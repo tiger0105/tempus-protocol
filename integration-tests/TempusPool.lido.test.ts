@@ -21,6 +21,9 @@ const setup = deployments.createFixture(async () => {
   const { lidoOracleMember1, lidoOracleMember2, lidoOracleMember3 } = await getNamedAccounts();
   const [ account1, account2 ] = await getUnnamedAccounts();
 
+  // NOTE: using Weth here as a mock ETH ticker for the testing system
+  // Lido actually uses native ETH
+  const Weth = new ERC20("ERC20", 18, (await ethers.getContract("Weth")));
   const lido = new ERC20("ILido", 18, (await ethers.getContract('Lido')));
   const lidoOracle = await ethers.getContract('LidoOracle');
 
@@ -29,7 +32,7 @@ const setup = deployments.createFixture(async () => {
   const yieldEst = 0.1;
   const controller: TempusController = await TempusController.deploy();
   const tempusPool = await TempusPool.deployLido(
-    null, lido, controller, maturityTime, yieldEst, names
+    Weth, lido, controller, maturityTime, yieldEst, names
   );
   
   return {
