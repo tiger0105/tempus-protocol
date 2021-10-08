@@ -28,7 +28,9 @@ const setup = deployments.createFixture(async () => {
   const names = generateTempusSharesNames("Lido stETH", "stETH", maturityTime);
   const yieldEst = 0.1;
   const controller: TempusController = await TempusController.deploy();
-  const tempusPool = await TempusPool.deployLido(lido, controller, maturityTime, yieldEst, names);
+  const tempusPool = await TempusPool.deployLido(
+    null, lido, controller, maturityTime, yieldEst, names
+  );
   
   return {
     contracts: {
