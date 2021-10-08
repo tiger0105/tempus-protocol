@@ -211,8 +211,8 @@ export class TempusPool extends ContractBase {
     }
 
     // NOTE: Principals and Yields always have BackingToken precision
-    const tps = await PoolShare.attach(ShareKind.Principal, await pool.principalShare());
-    const tys = await PoolShare.attach(ShareKind.Yield, await pool.yieldShare());
+    const tps = await PoolShare.attach(ShareKind.Principal, await pool.principalShare(), asset.decimals);
+    const tys = await PoolShare.attach(ShareKind.Yield, await pool.yieldShare(), asset.decimals);
     return new TempusPool(type, pool!, controller, asset, yieldToken, tps, tys, exchangeRatePrec);
   }
 
