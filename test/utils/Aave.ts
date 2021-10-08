@@ -9,7 +9,7 @@ export class Aave extends ContractBase {
   yieldToken:ERC20;
   
   constructor(pool:Contract, asset:ERC20, yieldToken:ERC20) {
-    super("AavePoolMock", 18, pool);
+    super("AavePoolMock", asset.decimals, pool);
     this.asset = asset;
     this.yieldToken = yieldToken;
   }
@@ -24,14 +24,10 @@ export class Aave extends ContractBase {
       "ERC20FixedSupply", ASSET.decimals, ASSET.name, ASSET.symbol, parseDecimal(ASSET.totalSupply, ASSET.decimals)
     );
     const pool = await ContractBase.deployContract(
-      "AavePoolMock", asset.address
+      "AavePoolMock", asset.address, toRay(initialRate), YIELD.decimals, YIELD.name, YIELD.symbol
     );
     const yieldToken = await ERC20.attach("ATokenMock", await pool.yieldToken());
-    const aave = new Aave(pool, asset, yieldToken);
-    if (initialRate != 1.0) {
-      await aave.setLiquidityIndex(initialRate); // TODO: remove this AavePool constructor
-    }
-    return aave;
+    return new Aave(pool, asset, yieldToken);
   }
 
   /**
