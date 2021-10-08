@@ -23,7 +23,7 @@ export class Lido extends ERC20 {
    */
   static async create(ASSET:TokenInfo, YIELD:TokenInfo, initialRate:Number): Promise<Lido> {
     const asset = await ERC20.deploy(
-      "ERC20FixedSupply", ASSET.decimals, ASSET.name, ASSET.symbol, parseDecimal(ASSET.totalSupply, ASSET.decimals)
+      "ERC20FixedSupply", ASSET.decimals, ASSET.decimals, ASSET.name, ASSET.symbol, parseDecimal(ASSET.totalSupply, ASSET.decimals)
     );
     const pool = await ContractBase.deployContract(
       "LidoMock", YIELD.decimals, YIELD.name, YIELD.symbol

@@ -21,12 +21,12 @@ export class Aave extends ContractBase {
    */
   static async create(ASSET:TokenInfo, YIELD:TokenInfo, initialRate:Number): Promise<Aave> {
     const asset = await ERC20.deploy(
-      "ERC20FixedSupply", ASSET.decimals, ASSET.name, ASSET.symbol, parseDecimal(ASSET.totalSupply, ASSET.decimals)
+      "ERC20FixedSupply", ASSET.decimals, ASSET.decimals, ASSET.name, ASSET.symbol, parseDecimal(ASSET.totalSupply, ASSET.decimals)
     );
     const pool = await ContractBase.deployContract(
       "AavePoolMock", asset.address, toRay(initialRate), YIELD.decimals, YIELD.name, YIELD.symbol
     );
-    const yieldToken = await ERC20.attach("ATokenMock", await pool.yieldToken());
+    const yieldToken = await ERC20.attach("ATokenMock", await pool.yieldToken(), YIELD.decimals);
     return new Aave(pool, asset, yieldToken);
   }
 

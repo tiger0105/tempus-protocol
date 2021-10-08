@@ -28,7 +28,7 @@ export class Comptroller extends ContractBase {
     const ratePrec = (10 + ASSET.decimals); // exchange rate precision = 18 - 8 + Underlying Token Decimals
     const pool = await ContractBase.deployContract("ComptrollerMock", parseDecimal(initialRate, ratePrec));
     const asset = await ERC20.deploy(
-      "ERC20FixedSupply", ASSET.decimals, ASSET.name, ASSET.symbol, parseDecimal(ASSET.totalSupply, ASSET.decimals)
+      "ERC20FixedSupply", ASSET.decimals, ASSET.decimals, ASSET.name, ASSET.symbol, parseDecimal(ASSET.totalSupply, ASSET.decimals)
     );
     const cToken = await ERC20.deploy(
       "CErc20", YIELD.decimals, pool.address, asset.address, YIELD.name, YIELD.symbol
