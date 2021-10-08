@@ -31,6 +31,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
 
     uint256 public immutable override initialInterestRate;
     uint256 public immutable exchangeRateONE;
+    uint256 public immutable yieldBearingONE;
     uint256 public override maturityInterestRate;
     IPoolShare public immutable override principalShare;
     IPoolShare public immutable override yieldShare;
@@ -61,7 +62,8 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     /// @param principalSymbol symbol of Tempus Principal Share
     /// @param yieldName name of Tempus Yield Share
     /// @param yieldSymbol symbol of Tempus Yield Share
-    /// @param maxFeeSetup Maximum fee percentages that this pool can have
+    /// @param maxFeeSetup Maximum fee percentages that this pool can have,
+    ///                    values in Yield Bearing Token precision
     constructor(
         address _yieldBearingToken,
         address _backingToken,
@@ -85,6 +87,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         maturityTime = maturity;
         initialInterestRate = initInterestRate;
         exchangeRateONE = exchangeRateOne;
+        yieldBearingONE = 10**ERC20(_yieldBearingToken).decimals();
         initialEstimatedYield = estimatedFinalYield;
 
         maxDepositFee = maxFeeSetup.depositPercent;
@@ -196,7 +199,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         uint256 tokenAmount = yieldTokenAmount;
         uint256 depositFees = feesConfig.depositPercent;
         if (depositFees != 0) {
-            fee = tokenAmount.mulf18(depositFees);
+            fee = tokenAmount.mulfV(depositFees, yieldBearingONE);
             tokenAmount -= fee;
             totalFees += fee;
         }
@@ -317,7 +320,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
 
         uint256 redeemFeePercent = matured ? feesConfig.matureRedeemPercent : feesConfig.earlyRedeemPercent;
         if (redeemFeePercent != 0) {
-            uint256 regularRedeemFee = redeemableYieldTokens.mulf18(redeemFeePercent);
+            uint256 regularRedeemFee = redeemableYieldTokens.mulfV(redeemFeePercent, yieldBearingONE);
             redeemableYieldTokens -= regularRedeemFee;
             redeemFeeAmount += regularRedeemFee;
 
