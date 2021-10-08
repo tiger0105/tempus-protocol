@@ -14,7 +14,7 @@ library Debug {
         uint256 a,
         uint256 one
     ) internal view {
-        console.log("%s=%s", title, ftoa(a, one));
+        console.log("%s %s", title, ftoa(a, one));
     }
 
     /// Idiom from C stdlib, float to ascii, f-to-a
