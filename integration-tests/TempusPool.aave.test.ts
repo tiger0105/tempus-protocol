@@ -30,7 +30,9 @@ const setup = deployments.createFixture(async () => {
   const names = generateTempusSharesNames("aDai aave token", "aDai", maturityTime);
   const yieldEst = 0.1;
   const controller: TempusController = await TempusController.deploy();
-  const tempusPool = await TempusPool.deployAave(aDaiYieldToken, controller, maturityTime, yieldEst, names);
+  const tempusPool = await TempusPool.deployAave(
+    daiBackingToken, aDaiYieldToken, controller, maturityTime, yieldEst, names
+  );
   
   await daiBackingToken.transfer(daiHolderSigner, account1, 100000);
   await daiBackingToken.transfer(daiHolderSigner, account2, 100000);

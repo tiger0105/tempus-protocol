@@ -201,6 +201,7 @@ class DeployLocalForked {
 
   private async deployPool(params: DeployPoolParams) {
     const pool = await params.deploy(
+      null, // TODO: need to implement backing token support
       params.ybt,
       this.controller,
       params.maturity,

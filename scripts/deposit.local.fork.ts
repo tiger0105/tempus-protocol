@@ -59,7 +59,7 @@ class DepositLocalForked {
     const poolShareYield = new PoolShare('PoolShare', yieldShareToken);
 
     const tempusPoolContract = await ethers.getContractAt('TempusPool', poolDepositConfig.address);
-    const tempusPool = new TempusPool(poolType, tempusPoolContract, this.controller, ybt, poolSharePrincipal, poolShareYield);
+    const tempusPool = new TempusPool(poolType, tempusPoolContract, this.controller, bt, ybt, poolSharePrincipal, poolShareYield, 18);
 
     const tempusPoolAMMContract = await ethers.getContractAt('TempusAMM', poolDepositConfig.amm);
     const tempusPoolAMM = new TempusAMM(tempusPoolAMMContract, this.vault, tempusPool);
