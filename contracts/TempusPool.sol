@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./ITempusPool.sol";
 import "./token/PrincipalShare.sol";
 import "./token/YieldShare.sol";
-import "./math/Fixed256x18.sol";
 import "./math/Fixed256xVar.sol";
 import "./utils/PermanentlyOwnable.sol";
 import "./utils/UntrustedERC20.sol";
@@ -18,7 +17,6 @@ import "./utils/UntrustedERC20.sol";
 abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     using SafeERC20 for IERC20;
     using UntrustedERC20 for IERC20;
-    using Fixed256x18 for uint256;
     using Fixed256xVar for uint256;
 
     uint public constant override version = 1;
@@ -32,6 +30,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
     uint256 public immutable override initialInterestRate;
     uint256 public immutable exchangeRateONE;
     uint256 public immutable yieldBearingONE;
+    uint256 public immutable override backingTokenONE;
     uint256 public override maturityInterestRate;
     IPoolShare public immutable override principalShare;
     IPoolShare public immutable override yieldShare;
@@ -95,6 +94,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         maxMatureRedeemFee = maxFeeSetup.matureRedeemPercent;
 
         uint8 backingDecimals = _backingToken != address(0) ? IERC20Metadata(_backingToken).decimals() : 18;
+        backingTokenONE = 10**backingDecimals;
         principalShare = new PrincipalShare(this, principalName, principalSymbol, backingDecimals);
         yieldShare = new YieldShare(this, yieldName, yieldSymbol, backingDecimals);
     }
@@ -301,17 +301,20 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
             redeemableBackingTokens = (principalAmount * interestRate) / initialInterestRate;
         } else {
             uint256 rateDiff = interestRate - initialInterestRate;
-            // this is expressed in backing token
-            uint256 amountPerYieldShareToken = rateDiff.divf18(initialInterestRate);
-            uint256 redeemAmountFromYieldShares = yieldAmount.mulf18(amountPerYieldShareToken);
+            // this is expressed in percent with exchangeRate precision
+            uint256 yieldPercent = rateDiff.divfV(initialInterestRate, exchangeRateONE);
+            uint256 redeemAmountFromYieldShares = yieldAmount.mulfV(yieldPercent, exchangeRateONE);
 
             // TODO: Scale based on number of decimals for tokens
             redeemableBackingTokens = principalAmount + redeemAmountFromYieldShares;
 
             // after maturity, all additional yield is being collected as fee
             if (matured && currentRate > interestRate) {
-                uint256 additionalYield = currentRate - interestRate;
-                uint256 feeBackingAmount = yieldAmount.mulf18(additionalYield.divf18(initialInterestRate));
+                uint256 additionalYieldRate = currentRate - interestRate;
+                uint256 feeBackingAmount = yieldAmount.mulfV(
+                    additionalYieldRate.mulfV(initialInterestRate, exchangeRateONE),
+                    exchangeRateONE
+                );
                 redeemFeeAmount = numYieldTokensPerAsset(feeBackingAmount, currentRate);
             }
         }

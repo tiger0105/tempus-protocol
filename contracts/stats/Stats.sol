@@ -6,13 +6,13 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./ITokenPairPriceFeed.sol";
 import "./ChainlinkTokenPairPriceFeed/ChainlinkTokenPairPriceFeed.sol";
 import "../ITempusPool.sol";
-import "../math/Fixed256x18.sol";
+import "../math/Fixed256xVar.sol";
 import "../token/PoolShare.sol";
 import "../amm/interfaces/ITempusAMM.sol";
 import "../utils/AMMBalancesHelper.sol";
 
 contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
-    using Fixed256x18 for uint256;
+    using Fixed256xVar for uint256;
     using AMMBalancesHelper for uint256[];
 
     /// @param pool The TempusPool to fetch its TVL (total value locked)
@@ -21,7 +21,7 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
         PoolShare principalShare = PoolShare(address(pool.principalShare()));
         PoolShare yieldShare = PoolShare(address(pool.yieldShare()));
 
-        assert(principalShare.decimals() == 18 && yieldShare.decimals() == 18);
+        uint256 backingTokenOne = pool.backingTokenONE();
 
         uint256 pricePerPrincipalShare = pool.pricePerPrincipalShareStored();
         uint256 pricePerYieldShare = pool.pricePerYieldShareStored();
@@ -31,7 +31,8 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
                 IERC20(address(principalShare)).totalSupply(),
                 IERC20(address(yieldShare)).totalSupply(),
                 pricePerPrincipalShare,
-                pricePerYieldShare
+                pricePerYieldShare,
+                backingTokenOne
             );
     }
 
@@ -49,9 +50,12 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
         uint256 totalSupplyTPS,
         uint256 totalSupplyTYS,
         uint256 pricePerPrincipalShare,
-        uint256 pricePerYieldShare
+        uint256 pricePerYieldShare,
+        uint256 backingTokenOne
     ) internal pure returns (uint256) {
-        return totalSupplyTPS.mulf18(pricePerPrincipalShare) + totalSupplyTYS.mulf18(pricePerYieldShare);
+        return
+            totalSupplyTPS.mulfV(pricePerPrincipalShare, backingTokenOne) +
+            totalSupplyTYS.mulfV(pricePerYieldShare, backingTokenOne);
     }
 
     /// Gets the estimated amount of Principals and Yields after a successful deposit
