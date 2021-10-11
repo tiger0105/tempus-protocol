@@ -73,7 +73,7 @@ export class TempusController extends ContractBase {
    */
   async redeemToBacking(user:SignerOrAddress, pool: TempusPool, principalAmount:NumberOrString, yieldAmount:NumberOrString): Promise<Transaction> {
     return this.connect(user).redeemToBacking(
-      pool.address, addressOf(user), toWei(principalAmount), toWei(yieldAmount), addressOf(user)
+      pool.address, toWei(principalAmount), toWei(yieldAmount), addressOf(user)
     );
   }
 
@@ -86,7 +86,7 @@ export class TempusController extends ContractBase {
    */
   async redeemToYieldBearing(user:SignerOrAddress, pool: TempusPool, principalAmount:NumberOrString, yieldAmount:NumberOrString): Promise<Transaction> {
     return this.connect(user).redeemToYieldBearing(
-      pool.address, addressOf(user), toWei(principalAmount), toWei(yieldAmount), addressOf(user)
+      pool.address, toWei(principalAmount), toWei(yieldAmount), addressOf(user)
     );
   }
 

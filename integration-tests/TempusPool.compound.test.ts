@@ -81,7 +81,6 @@ describe('TempusPool <> Compound <> USDC', function() {
     await tempusPoolUsdc.controller.contract.connect(signer1).depositBacking(tempusPoolUsdc.address, 100000000, signer1.address);
     await tempusPoolUsdc.controller.contract.connect(signer1).redeemToBacking(
       tempusPoolUsdc.address,
-      signer1.address,
       await tempusPoolUsdc.principalShare.contract.balanceOf(signer1.address),
       await tempusPoolUsdc.yieldShare.contract.balanceOf(signer1.address),
       signer1.address
