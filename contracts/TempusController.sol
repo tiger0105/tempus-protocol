@@ -140,18 +140,16 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
     /// @notice `msg.sender` will receive yield bearing tokens
     /// @notice Before maturity, `principalAmount` must equal to `yieldAmount`
     /// @param targetPool The Tempus Pool from which to redeem Tempus Shares
-    /// @param sender Address of user whose Shares are going to be redeemed
     /// @param principalAmount Amount of Tempus Principals to redeem in PrincipalShare decimal precision
     /// @param yieldAmount Amount of Tempus Yields to redeem in YieldShare decimal precision
     /// @param recipient Address of user that will recieve yield bearing tokens
     function redeemToYieldBearing(
         ITempusPool targetPool,
-        address sender,
         uint256 principalAmount,
         uint256 yieldAmount,
         address recipient
     ) public nonReentrant {
-        _redeemToYieldBearing(targetPool, sender, principalAmount, yieldAmount, recipient);
+        _redeemToYieldBearing(targetPool, msg.sender, principalAmount, yieldAmount, recipient);
     }
 
     /// @dev Redeem TPS+TYS held by msg.sender into Backing Tokens
@@ -159,18 +157,16 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
     /// @notice `recipient` will receive the backing tokens
     /// @notice Before maturity, `principalAmount` must equal to `yieldAmount`
     /// @param targetPool The Tempus Pool from which to redeem Tempus Shares
-    /// @param sender Address of user whose Shares are going to be redeemed
     /// @param principalAmount Amount of Tempus Principals to redeem in PrincipalShare decimal precision
     /// @param yieldAmount Amount of Tempus Yields to redeem in YieldShare decimal precision
     /// @param recipient Address of user that will recieve yield bearing tokens
     function redeemToBacking(
         ITempusPool targetPool,
-        address sender,
         uint256 principalAmount,
         uint256 yieldAmount,
         address recipient
     ) public nonReentrant {
-        _redeemToBacking(targetPool, sender, principalAmount, yieldAmount, recipient);
+        _redeemToBacking(targetPool, msg.sender, principalAmount, yieldAmount, recipient);
     }
 
     /// @dev Withdraws liquidity from TempusAMM
@@ -240,24 +236,13 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
         targetPool.transferFees(msg.sender, recipient);
     }
 
-    /// @dev Performs Swap from tokenIn to tokenOut
-    /// @notice sender needs to approve tempusAMM.getVault() for swapAmount of tokenIn
-    /// @param tempusAMM TempusAMM instance to be used for Swap
-    /// @param sender Address of user whose tokenIn tokens will be used for swap
-    /// @param recipient Address of user that will recieve tokensOut
-    /// @param swapAmount Amount of tokenIn to be swapped
-    /// @param tokenIn Token that will be sent from user to the tempusAMM
-    /// @param tokenOut Token that will be returned from the tempusAMM to the user
-    /// @param minReturn Minimum amount of tokenOut that user will recieve
     function swap(
         ITempusAMM tempusAMM,
-        address sender,
-        address recipient,
         uint256 swapAmount,
         IERC20 tokenIn,
         IERC20 tokenOut,
         uint256 minReturn
-    ) public {
+    ) private {
         require(swapAmount > 0, "Invalid swap amount.");
 
         (IVault vault, bytes32 poolId, , ) = _getAMMDetailsAndEnsureInitialized(tempusAMM);
@@ -272,9 +257,9 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
         });
 
         IVault.FundManagement memory fundManagement = IVault.FundManagement({
-            sender: sender,
+            sender: address(this),
             fromInternalBalance: false,
-            recipient: payable(recipient),
+            recipient: payable(address(this)),
             toInternalBalance: false
         });
         vault.swap(singleSwap, fundManagement, minReturn, block.timestamp);
@@ -365,7 +350,7 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
 
         yieldShares.safeIncreaseAllowance(address(tempusAMM.getVault()), swapAmount);
         uint256 minReturn = swapAmount.mulf18(minTYSRate);
-        swap(tempusAMM, address(this), address(this), swapAmount, yieldShares, principalShares, minReturn);
+        swap(tempusAMM, swapAmount, yieldShares, principalShares, minReturn);
 
         // At this point all TYS must be swapped for TPS
         uint256 principalsBalance = principalShares.balanceOf(address(this));
@@ -636,7 +621,7 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
                     : (principalShare, yieldShare);
                 tokenIn.safeIncreaseAllowance(address(tempusAMM.getVault()), amountIn);
 
-                swap(tempusAMM, address(this), address(this), amountIn, tokenIn, tokenOut, 0);
+                swap(tempusAMM, amountIn, tokenIn, tokenOut, 0);
 
                 principals = principalShare.balanceOf(address(this));
                 yields = yieldShare.balanceOf(address(this));
