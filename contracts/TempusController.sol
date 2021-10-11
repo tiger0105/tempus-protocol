@@ -2,19 +2,20 @@
 pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./amm/interfaces/ITempusAMM.sol";
 import "./amm/interfaces/IVault.sol";
 import "./ITempusPool.sol";
-import "./math/Fixed256x18.sol";
+import "./math/Fixed256xVar.sol";
 import "./utils/PermanentlyOwnable.sol";
 import "./utils/AMMBalancesHelper.sol";
 import "./utils/UntrustedERC20.sol";
 
 contract TempusController is PermanentlyOwnable, ReentrancyGuard {
-    using Fixed256x18 for uint256;
+    using Fixed256xVar for uint256;
     using SafeERC20 for IERC20;
     using UntrustedERC20 for IERC20;
     using AMMBalancesHelper for uint256[];
@@ -307,13 +308,7 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
         uint256 sharesAmount,
         address recipient
     ) private returns (uint256[] memory) {
-        uint256[2] memory ammDepositPercentages = ammBalances.getAMMBalancesRatio();
-        uint256[] memory ammLiquidityProvisionAmounts = new uint256[](2);
-
-        (ammLiquidityProvisionAmounts[0], ammLiquidityProvisionAmounts[1]) = (
-            sharesAmount.mulf18(ammDepositPercentages[0]),
-            sharesAmount.mulf18(ammDepositPercentages[1])
-        );
+        uint256[] memory ammLiquidityProvisionAmounts = ammBalances.getLiquidityProvisionSharesAmounts(sharesAmount);
 
         if (sender != address(this)) {
             ammTokens[0].safeTransferFrom(sender, address(this), ammLiquidityProvisionAmounts[0]);
@@ -349,7 +344,7 @@ contract TempusController is PermanentlyOwnable, ReentrancyGuard {
         uint256 swapAmount = _deposit(targetPool, tokenAmount, isBackingToken);
 
         yieldShares.safeIncreaseAllowance(address(tempusAMM.getVault()), swapAmount);
-        uint256 minReturn = swapAmount.mulf18(minTYSRate);
+        uint256 minReturn = swapAmount.mulfV(minTYSRate, targetPool.backingTokenONE());
         swap(tempusAMM, swapAmount, yieldShares, principalShares, minReturn);
 
         // At this point all TYS must be swapped for TPS

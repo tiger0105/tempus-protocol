@@ -55,6 +55,9 @@ interface ITempusPool is ITempusFees {
     /// @return Address of the Backing Token
     function backingToken() external view returns (address);
 
+    /// @return uint256 value of one backing token, in case of 18 decimals 1e18
+    function backingTokenONE() external view returns (uint256);
+
     /// @return This TempusPool's Tempus Principal Share (TPS)
     function principalShare() external view returns (IPoolShare);
 

@@ -6,14 +6,14 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../TempusPool.sol";
 import "../protocols/compound/ICErc20.sol";
-import "../math/Fixed256x18.sol";
+import "../math/Fixed256xVar.sol";
 import "../utils/UntrustedERC20.sol";
 
 /// Allows depositing ERC20 into Compound's CErc20 contracts
 contract CompoundTempusPool is TempusPool {
     using SafeERC20 for IERC20;
     using UntrustedERC20 for IERC20;
-    using Fixed256x18 for uint256;
+    using Fixed256xVar for uint256;
 
     ICErc20 internal immutable cToken;
     bytes32 public immutable override protocolName = "Compound";
@@ -104,13 +104,13 @@ contract CompoundTempusPool is TempusPool {
     // NOTE: yieldTokens are in YieldToken precision, return value is in BackingToken precision
     //       This conversion happens automatically due to pre-scaled rate
     function numAssetsPerYieldToken(uint yieldTokens, uint rate) public pure override returns (uint) {
-        return yieldTokens.mulf18(rate);
+        return yieldTokens.mulfV(rate, 1e18);
     }
 
     // NOTE: backingTokens are in BackingToken precision, return value is in YieldToken precision
     //       This conversion happens automatically due to pre-scaled rate
     function numYieldTokensPerAsset(uint backingTokens, uint rate) public pure override returns (uint) {
-        return backingTokens.divf18(rate);
+        return backingTokens.divfV(rate, 1e18);
     }
 
     function interestRateToSharePrice(uint interestRate) internal pure override returns (uint) {
