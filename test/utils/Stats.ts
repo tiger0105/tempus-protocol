@@ -78,14 +78,14 @@ export class Stats extends ContractBase {
     const t = pool.tempus;
     const p = toBackingToken ? t : t.yieldBearing;
     return p.fromBigNum(
-      await this.contract.estimateExitAndRedeem(
+      (await this.contract.estimateExitAndRedeem(
         pool.amm.address,
         pool.amm.toBigNum(lpTokens),
         t.principalShare.toBigNum(principals),
         t.yieldShare.toBigNum(yields),
         t.principalShare.decimals == 18 ? t.principalShare.toBigNum("0.00001") : t.principalShare.toBigNum("0.01"),
         toBackingToken
-      )
+      )).tokenAmount
     );
   }
 }

@@ -205,6 +205,30 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         }
     }
 
+    function getExpectedBPTInGivenTokensOut(uint256 principalsStaked, uint256 yieldsStaked)
+        external
+        view
+        returns (uint256 lpTokens)
+    {
+        (IERC20[] memory ammTokens, uint256[] memory balances, ) = getVault().getPoolTokens(getPoolId());
+        (uint256 currentAmp, ) = _getAmplificationParameter();
+        uint256[] memory amountsOut = new uint256[](2);
+        (amountsOut[0], amountsOut[1]) = (address(ammTokens[0]) == address(tempusPool.principalShare()))
+            ? (principalsStaked, yieldsStaked)
+            : (yieldsStaked, principalsStaked);
+
+        _upscaleArray(amountsOut, _scalingFactors());
+        amountsOut.mul(_getTokenRatesStored(), _TEMPUS_SHARE_PRECISION);
+
+        lpTokens = StableMath._calcBptInGivenExactTokensOut(
+            currentAmp,
+            balances,
+            amountsOut,
+            totalSupply(),
+            getSwapFeePercentage()
+        );
+    }
+
     function getExpectedTokensOutGivenBPTIn(uint256 bptAmountIn)
         external
         view
