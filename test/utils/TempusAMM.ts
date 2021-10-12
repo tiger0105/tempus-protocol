@@ -80,38 +80,38 @@ export class TempusAMM extends ContractBase {
     let inv:BigNumber;
     let amp: number;
     [inv, amp] = await this.contract.getLastInvariant();
-    return {invariant: +fromWei(inv), amplification: amp};
+    return {invariant: +this.fromBigNum(inv), amplification: amp};
   }
 
   async balanceOf(user:SignerWithAddress): Promise<NumberOrString> {
-    return fromWei(await this.contract.balanceOf(user.address));
+    return this.fromBigNum(await this.contract.balanceOf(user.address));
   }
 
   async totalSupply(): Promise<NumberOrString> {
-    return fromWei(await this.contract.totalSupply());
+    return this.fromBigNum(await this.contract.totalSupply());
   }
 
   async getRate(): Promise<NumberOrString> {
-    return fromWei(await this.contract.getRate());
+    return this.fromBigNum(await this.contract.getRate());
   }
 
   async getExpectedReturnGivenIn(inAmount: NumberOrString, yieldShareIn: boolean) : Promise<NumberOrString> {
-    return fromWei(await this.contract.getExpectedReturnGivenIn(toWei(inAmount), yieldShareIn));
+    return this.principalShare.fromBigNum(await this.contract.getExpectedReturnGivenIn(this.principalShare.toBigNum(inAmount), yieldShareIn));
   }
 
   async getExpectedTokensOutGivenBPTIn(inAmount: NumberOrString): Promise<{principals:number, yields:number}> {
-    const p = await this.contract.getExpectedTokensOutGivenBPTIn(toWei(inAmount));
-    return {principals: +fromWei(p.principals), yields: +fromWei(p.yields)};
+    const p = await this.contract.getExpectedTokensOutGivenBPTIn(this.toBigNum(inAmount));
+    return {principals: +this.principalShare.fromBigNum(p.principals), yields: +this.yieldShare.fromBigNum(p.yields)};
   }
 
   async getExpectedLPTokensForTokensIn(principalsIn:NumberOrString, yieldsIn:NumberOrString): Promise<number> {
     const assets = [
-      { address: this.principalShare.address, amount: toWei(principalsIn) },
-      { address: this.yieldShare.address, amount: toWei(yieldsIn) }
+      { address: this.principalShare.address, amount: this.principalShare.toBigNum(principalsIn) },
+      { address: this.yieldShare.address, amount: this.yieldShare.toBigNum(yieldsIn) }
     ].sort(( asset1, asset2 ) => parseInt(asset1.address) - parseInt(asset2.address));
     const amountsIn = assets.map(({ amount }) => amount);
 
-    return +fromWei(await this.contract.getExpectedLPTokensForTokensIn(amountsIn));
+    return +this.fromBigNum(await this.contract.getExpectedLPTokensForTokensIn(amountsIn));
   }
 
   async provideLiquidity(from: SignerWithAddress, principalShareBalance: Number, yieldShareBalance: Number, joinKind: TempusAMMJoinKind) {
@@ -120,8 +120,8 @@ export class TempusAMM extends ContractBase {
     
     const poolId = await this.contract.getPoolId();
     const assets = [
-      { address: this.principalShare.address, amount: toWei(principalShareBalance) },
-      { address: this.yieldShare.address, amount: toWei(yieldShareBalance) }
+      { address: this.principalShare.address, amount: this.principalShare.toBigNum(principalShareBalance) },
+      { address: this.yieldShare.address, amount: this.yieldShare.toBigNum(yieldShareBalance) }
     ].sort(( asset1, asset2 ) => parseInt(asset1.address) - parseInt(asset2.address));
     
     const initialBalances = assets.map(({ amount }) => amount);
@@ -148,7 +148,7 @@ export class TempusAMM extends ContractBase {
 
     const exitUserData = ethers.utils.defaultAbiCoder.encode(
       ['uint256', 'uint256'], 
-      [TempusAMMExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT, toWei(lpTokensAmount)]
+      [TempusAMMExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT, this.toBigNum(lpTokensAmount)]
     );
     
     const exitPoolRequest = {
@@ -165,13 +165,13 @@ export class TempusAMM extends ContractBase {
     const poolId = await this.contract.getPoolId();
     
     const assets = [
-      { address: this.principalShare.address, amountOut: toWei(amountsOut[0]) },
-      { address: this.yieldShare.address, amountOut: toWei(amountsOut[1]) }
+      { address: this.principalShare.address, amountOut: this.principalShare.toBigNum(amountsOut[0]) },
+      { address: this.yieldShare.address, amountOut: this.principalShare.toBigNum(amountsOut[1]) }
     ].sort(( asset1, asset2 ) => parseInt(asset1.address) - parseInt(asset2.address));
 
     const exitUserData = ethers.utils.defaultAbiCoder.encode(
       ['uint256', 'uint256[]', 'uint256'], 
-      [TempusAMMExitKind.BPT_IN_FOR_EXACT_TOKENS_OUT, assets.map(({ amountOut }) => amountOut), toWei(maxAmountLpIn)],
+      [TempusAMMExitKind.BPT_IN_FOR_EXACT_TOKENS_OUT, assets.map(({ amountOut }) => amountOut), this.toBigNum(maxAmountLpIn)],
     );
     
     const exitPoolRequest = {
@@ -185,8 +185,8 @@ export class TempusAMM extends ContractBase {
   }
 
   async swapGivenIn(from: SignerWithAddress, assetIn: string, assetOut: string, amount: NumberOrString) {    
-    await this.yieldShare.connect(from).approve(this.vault.address, toWei(amount));
-    await this.principalShare.connect(from).approve(this.vault.address, toWei(amount));
+    await this.yieldShare.connect(from).approve(this.vault.address, this.yieldShare.toBigNum(amount));
+    await this.principalShare.connect(from).approve(this.vault.address, this.principalShare.toBigNum(amount));
     const SWAP_KIND_GIVEN_IN = 0;
     const poolId = await this.contract.getPoolId();    
 
@@ -195,7 +195,7 @@ export class TempusAMM extends ContractBase {
       kind: SWAP_KIND_GIVEN_IN,
       assetIn: assetIn,
       assetOut: assetOut,
-      amount: toWei(amount),
+      amount: this.principalShare.toBigNum(amount),
       userData: 0x0
     };
   

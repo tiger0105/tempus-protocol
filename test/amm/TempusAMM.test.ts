@@ -86,13 +86,12 @@ describeForEachPool("TempusAMM", (testFixture:ITestPool) =>
     const postSwapTokenInBalance:BigNumber = await tokenIn.contract.balanceOf(owner.address);
     const postSwapTokenOutBalance:BigNumber = await tokenOut.contract.balanceOf(owner.address);
     
-    expect(+fromWei(preSwapTokenInBalance.sub(postSwapTokenInBalance))).to.be.within(+swapTest.swapAmountIn * 0.9999, +swapTest.swapAmountIn * 1.0001);
-    expect(+fromWei(postSwapTokenOutBalance.sub(preSwapTokenOutBalance))).to.be.within(+swapTest.swapAmountOut * 0.9999, +swapTest.swapAmountOut * 1.0001);
+    expect(+tokenIn.fromBigNum(preSwapTokenInBalance.sub(postSwapTokenInBalance))).to.be.within(+swapTest.swapAmountIn * 0.97, +swapTest.swapAmountIn * 1.02);
+    expect(+tokenIn.fromBigNum(postSwapTokenOutBalance.sub(preSwapTokenOutBalance))).to.be.within(+swapTest.swapAmountOut * 0.97, +swapTest.swapAmountOut * 1.02);
   }
 
   it("[getExpectedReturnGivenIn] verifies the expected amount is equivilant to actual amount returned from swapping (TYS to TPS)", async () => {
-    const inputAmount = "0.0000000000001";
-    
+    const inputAmount = 1;
     await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
     await testFixture.setTimeRelativeToPoolStart(0.5);
     const expectedReturn = await tempusAMM.getExpectedReturnGivenIn(inputAmount, true); // TYS --> TPS
@@ -111,18 +110,16 @@ describeForEachPool("TempusAMM", (testFixture:ITestPool) =>
   });
 
   it("[getExpectedReturnGivenIn] verifies the expected amount is equivilant to actual amount returned from swapping (TPS to TYS)", async () => {
-    const inputAmount = "0.0000000000001";
-    
+    const inputAmount = 1;
     await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
     await testFixture.setTimeRelativeToPoolStart(0.5);
-    const expectedReturn = await tempusAMM.getExpectedReturnGivenIn(inputAmount, false); // TPS --> TYS
+    const expectedReturn = await tempusAMM.getExpectedReturnGivenIn(inputAmount, true); // TYS --> TPS
     
     await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
     await testFixture.setNextBlockTimestampRelativeToPoolStart(0.5);
     await evmSetAutomine(false);
-    
     try {
-      await checkSwap(owner, {amplification: 5, swapAmountIn: inputAmount, swapAmountOut: expectedReturn, principalIn: true});
+      await checkSwap(owner, {amplification: 5, swapAmountIn: inputAmount, swapAmountOut: expectedReturn, principalIn: false});
     }
     finally {
       // in case checkSwap fails, we must enable automining so that other tests are not affected

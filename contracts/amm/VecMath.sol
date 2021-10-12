@@ -34,10 +34,14 @@ library VecMath {
     /// @notice Vectors must be of same length
     /// @param vec1 First vector, also result will be stored here
     /// @param vec2 Second vector
-    function mul(uint256[] memory vec1, uint256[] memory vec2) internal pure {
+    function mul(
+        uint256[] memory vec1,
+        uint256[] memory vec2,
+        uint256 one
+    ) internal pure {
         assert(vec1.length == vec2.length);
         for (uint256 i = 0; i < vec1.length; ++i) {
-            vec1[i] = vec1[i].mulDown(vec2[i]);
+            vec1[i] = (vec1[i] * vec2[i]) / one;
         }
     }
 
@@ -46,10 +50,14 @@ library VecMath {
     /// @notice Vectors must be of same length
     /// @param vec1 First vector, also result will be stored here
     /// @param vec2 Second vector
-    function div(uint256[] memory vec1, uint256[] memory vec2) internal pure {
+    function div(
+        uint256[] memory vec1,
+        uint256[] memory vec2,
+        uint256 one
+    ) internal pure {
         assert(vec1.length == vec2.length);
         for (uint256 i = 0; i < vec1.length; ++i) {
-            vec1[i] = vec1[i].divDown(vec2[i]);
+            vec1[i] = (vec1[i] * one) / vec2[i];
         }
     }
 }

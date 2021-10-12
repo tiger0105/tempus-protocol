@@ -161,7 +161,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         (uint256 indexIn, uint256 indexOut) = address(tokenIn) == address(_token0) ? (0, 1) : (1, 0);
 
         amount = _subtractSwapFeeAmount(amount);
-        balances.mul(_getTokenRatesStored());
+        balances.mul(_getTokenRatesStored(), _TEMPUS_SHARE_PRECISION);
         uint256 rateAdjustedSwapAmount = (amount * tokenIn.getPricePerFullShareStored()) / _TEMPUS_SHARE_PRECISION;
 
         uint256 amountOut = StableMath._calcOutGivenIn(currentAmp, balances, indexIn, indexOut, rateAdjustedSwapAmount);
@@ -178,14 +178,17 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         (uint256 difference, bool yieldsIn) = (principals > yields)
             ? (principals - yields, false)
             : (yields - principals, true);
+
         if (difference > threshold) {
             uint256 principalsRate = tempusPool.principalShare().getPricePerFullShareStored();
             uint256 yieldsRate = tempusPool.yieldShare().getPricePerFullShareStored();
 
-            uint256 rate = yieldsIn ? principalsRate.divDown(yieldsRate) : yieldsRate.divDown(principalsRate);
+            uint256 rate = yieldsIn
+                ? (principalsRate * _TEMPUS_SHARE_PRECISION) / yieldsRate
+                : (yieldsRate * _TEMPUS_SHARE_PRECISION) / principalsRate;
             for (uint8 i = 0; i < 32; i++) {
                 // if we have accurate rate this should hold
-                amountIn = difference.divDown(rate + 1e18);
+                amountIn = (difference * _TEMPUS_SHARE_PRECISION) / (rate + _TEMPUS_SHARE_PRECISION);
                 uint256 amountOut = getExpectedReturnGivenIn(amountIn, yieldsIn);
                 uint256 newPrincipals = yieldsIn ? (principals + amountOut) : (principals - amountIn);
                 uint256 newYields = yieldsIn ? (yields - amountIn) : (yields + amountOut);
@@ -195,7 +198,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
                 if (newDifference < threshold) {
                     return amountIn;
                 } else {
-                    rate = amountOut.divDown(amountIn);
+                    rate = (amountOut * _TEMPUS_SHARE_PRECISION) / amountIn;
                 }
             }
             revert("getSwapAmountToEndWithEqualShares did not converge.");
@@ -219,11 +222,10 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
     function getExpectedLPTokensForTokensIn(uint256[] memory amountsIn) external view returns (uint256) {
         (, uint256[] memory balances, ) = getVault().getPoolTokens(getPoolId());
-        _upscaleArray(amountsIn, _scalingFactors());
 
         uint256[] memory tokenRates = _getTokenRatesStored();
-        balances.mul(tokenRates);
-        amountsIn.mul(tokenRates);
+        balances.mul(tokenRates, _TEMPUS_SHARE_PRECISION);
+        amountsIn.mul(tokenRates, _TEMPUS_SHARE_PRECISION);
 
         (uint256 currentAmp, ) = _getAmplificationParameter();
 
@@ -252,7 +254,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         (uint256 currentAmp, ) = _getAmplificationParameter();
         (IPoolShare tokenIn, IPoolShare tokenOut) = indexIn == 0 ? (_token0, _token1) : (_token1, _token0);
 
-        balances.mul(_getTokenRates());
+        balances.mul(_getTokenRates(), _TEMPUS_SHARE_PRECISION);
         uint256 rateAdjustedSwapAmount = (swapRequest.amount * tokenIn.getPricePerFullShare()) /
             _TEMPUS_SHARE_PRECISION;
 
@@ -344,7 +346,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         _upscaleArray(amountsIn, scalingFactors);
 
         uint256[] memory tokenRates = _getTokenRates();
-        amountsIn.mul(tokenRates);
+        amountsIn.mul(tokenRates, _TEMPUS_SHARE_PRECISION);
         (uint256 currentAmp, ) = _getAmplificationParameter();
         uint256 invariantAfterJoin = StableMath._calculateInvariant(currentAmp, amountsIn, true);
 
@@ -353,7 +355,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
         _updateLastInvariant(invariantAfterJoin, currentAmp);
 
-        amountsIn.div(tokenRates);
+        amountsIn.div(tokenRates, _TEMPUS_SHARE_PRECISION);
 
         return (bptAmountOut, amountsIn);
     }
@@ -382,7 +384,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         )
     {
         uint256[] memory tokenRates = _getTokenRates();
-        balances.mul(tokenRates);
+        balances.mul(tokenRates, _TEMPUS_SHARE_PRECISION);
 
         // Due protocol swap fee amounts are computed by measuring the growth of the invariant between the previous join
         // or exit event and now - the invariant's growth is due exclusively to swap fees. This avoids spending gas to
@@ -397,8 +399,8 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         // protocol swap fee amounts due in future joins and exits.
         _updateInvariantAfterJoin(balances, amountsIn);
 
-        amountsIn.div(tokenRates);
-        dueProtocolFeeAmounts.div(tokenRates);
+        amountsIn.div(tokenRates, _TEMPUS_SHARE_PRECISION);
+        dueProtocolFeeAmounts.div(tokenRates, _TEMPUS_SHARE_PRECISION);
 
         return (bptAmountOut, amountsIn, dueProtocolFeeAmounts);
     }
@@ -426,7 +428,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         InputHelpers.ensureInputLengthMatch(_TOTAL_TOKENS, amountsIn.length);
 
         _upscaleArray(amountsIn, scalingFactors);
-        amountsIn.mul(_getTokenRates());
+        amountsIn.mul(_getTokenRates(), _TEMPUS_SHARE_PRECISION);
 
         (uint256 currentAmp, ) = _getAmplificationParameter();
 
@@ -465,7 +467,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         )
     {
         uint256[] memory tokenRates = _getTokenRates();
-        balances.mul(tokenRates);
+        balances.mul(tokenRates, _TEMPUS_SHARE_PRECISION);
 
         // Exits are not completely disabled while the contract is paused: proportional exits (exact BPT in for tokens
         // out) remain functional.
@@ -490,8 +492,8 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         // protocol swap fee amounts due in future joins and exits.
         _updateInvariantAfterExit(balances, amountsOut);
 
-        amountsOut.div(tokenRates);
-        dueProtocolFeeAmounts.div(tokenRates);
+        amountsOut.div(tokenRates, _TEMPUS_SHARE_PRECISION);
+        dueProtocolFeeAmounts.div(tokenRates, _TEMPUS_SHARE_PRECISION);
 
         return (bptAmountIn, amountsOut, dueProtocolFeeAmounts);
     }
@@ -540,7 +542,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         InputHelpers.ensureInputLengthMatch(amountsOut.length, _TOTAL_TOKENS);
         _upscaleArray(amountsOut, scalingFactors);
 
-        amountsOut.mul(_getTokenRates());
+        amountsOut.mul(_getTokenRates(), _TEMPUS_SHARE_PRECISION);
 
         (uint256 currentAmp, ) = _getAmplificationParameter();
         uint256 bptAmountIn = StableMath._calcBptInGivenExactTokensOut(
@@ -662,7 +664,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
         _upscaleArray(balances, _scalingFactors());
 
-        balances.mul(_getTokenRatesStored());
+        balances.mul(_getTokenRatesStored(), _TEMPUS_SHARE_PRECISION);
         uint256 invariant = StableMath._calculateInvariant(currentAmp, balances, false);
         return invariant.divDown(totalSupply());
     }

@@ -44,9 +44,9 @@ export class TempusController extends ContractBase {
    */
   async depositYieldBearing(user:SignerOrAddress, pool: TempusPool, yieldBearingAmount:NumberOrString, recipient:SignerOrAddress = user, ethValue: NumberOrString = 0): Promise<Transaction> {
     await pool.yieldBearing.approve(user, this.contract.address, yieldBearingAmount);
-    const amount = pool.yieldBearing.toBigNum(yieldBearingAmount);
     return this.connect(user).depositYieldBearing(
-      pool.address, amount, addressOf(recipient), { value: toWei(ethValue) }
+      pool.address, pool.yieldBearing.toBigNum(yieldBearingAmount),
+      addressOf(recipient), { value: toWei(ethValue) }
     );
   }
 
@@ -60,7 +60,8 @@ export class TempusController extends ContractBase {
   */
   async depositBacking(user:SignerOrAddress, pool: TempusPool, backingAmount:NumberOrString, recipient:SignerOrAddress = user, ethValue: NumberOrString = 0): Promise<Transaction> {
     return this.connect(user).depositBacking(
-      pool.address, toWei(backingAmount), addressOf(recipient), { value: toWei(ethValue) }
+      pool.address, pool.asset.toBigNum(backingAmount),
+      addressOf(recipient), { value: toWei(ethValue) }
     );
   }
 
@@ -73,7 +74,7 @@ export class TempusController extends ContractBase {
    */
   async redeemToBacking(user:SignerOrAddress, pool: TempusPool, principalAmount:NumberOrString, yieldAmount:NumberOrString): Promise<Transaction> {
     return this.connect(user).redeemToBacking(
-      pool.address, toWei(principalAmount), toWei(yieldAmount), addressOf(user)
+      pool.address, pool.principalShare.toBigNum(principalAmount), pool.yieldShare.toBigNum(yieldAmount), addressOf(user)
     );
   }
 
@@ -86,7 +87,7 @@ export class TempusController extends ContractBase {
    */
   async redeemToYieldBearing(user:SignerOrAddress, pool: TempusPool, principalAmount:NumberOrString, yieldAmount:NumberOrString): Promise<Transaction> {
     return this.connect(user).redeemToYieldBearing(
-      pool.address, toWei(principalAmount), toWei(yieldAmount), addressOf(user)
+      pool.address, pool.principalShare.toBigNum(principalAmount), pool.yieldShare.toBigNum(yieldAmount), addressOf(user)
     );
   }
 
@@ -115,7 +116,7 @@ export class TempusController extends ContractBase {
     ethValue: NumberOrString = 0
   ): Promise<Transaction> {
     await this.approve(pool, user, tokenAmount, isBackingToken);
-    const amount = isBackingToken ? toWei(tokenAmount) : pool.tempus.yieldBearing.toBigNum(tokenAmount);
+    const amount = isBackingToken ? pool.tempus.asset.toBigNum(tokenAmount) : pool.tempus.yieldBearing.toBigNum(tokenAmount);
     return this.connect(user).depositAndProvideLiquidity(
       pool.amm.address, amount, isBackingToken, { value: toWei(ethValue) }
     );
@@ -139,9 +140,9 @@ export class TempusController extends ContractBase {
     ethValue: NumberOrString = 0
   ): Promise<Transaction> {
     await this.approve(pool, user, tokenAmount, isBackingToken);
-    const amount = isBackingToken ? toWei(tokenAmount) : pool.tempus.yieldBearing.toBigNum(tokenAmount);
+    const amount = isBackingToken ? pool.tempus.asset.toBigNum(tokenAmount) : pool.tempus.yieldBearing.toBigNum(tokenAmount);
     return this.connect(user).depositAndFix(
-      pool.amm.address, amount, isBackingToken, toWei(minTYSRate), { value: toWei(ethValue) }
+      pool.amm.address, amount, isBackingToken, pool.tempus.asset.toBigNum(minTYSRate), { value: toWei(ethValue) }
     );
   }
 
@@ -152,7 +153,7 @@ export class TempusController extends ContractBase {
   ): Promise<Transaction> {
     await pool.tempus.yieldShare.approve(user, this.address, sharesAmount);
     await pool.tempus.principalShare.approve(user, this.address, sharesAmount);
-    return this.connect(user).provideLiquidity(pool.amm.address, toWei(sharesAmount));
+    return this.connect(user).provideLiquidity(pool.amm.address, pool.tempus.principalShare.toBigNum(sharesAmount));
   }
 
   async exitTempusAMMAndRedeem(
@@ -165,7 +166,7 @@ export class TempusController extends ContractBase {
     await amm.contract.connect(user).approve(this.address, amm.contract.balanceOf(addressOf(user)));
     await t.principalShare.approve(user, t.address, sharesAmount);
     await t.yieldShare.approve(user, t.address, sharesAmount);
-    return this.connect(user).exitTempusAMMAndRedeem(amm.address, toWei(sharesAmount), toBackingToken);
+    return this.connect(user).exitTempusAMMAndRedeem(amm.address, t.principalShare.toBigNum(sharesAmount), toBackingToken);
   }
 
   async exitTempusAmm(
@@ -175,7 +176,7 @@ export class TempusController extends ContractBase {
   ): Promise<Transaction> {
     const amm = pool.amm;
     await amm.contract.connect(user).approve(this.address, amm.contract.balanceOf(addressOf(user)));
-    return this.connect(user).exitTempusAMM(amm.address, toWei(lpTokensAmount), 1, 1, false);
+    return this.connect(user).exitTempusAMM(amm.address, pool.amm.toBigNum(lpTokensAmount), 1, 1, false);
   }
 
   async completeExitAndRedeem(pool:ITestPool, user: SignerOrAddress, toBacking: boolean): Promise<Transaction> {
@@ -183,7 +184,18 @@ export class TempusController extends ContractBase {
     await amm.connect(user).approve(this.address, amm.contract.balanceOf(addr));
     await t.principalShare.connect(user).approve(this.address, t.principalShare.contract.balanceOf(addr));
     await t.yieldShare.connect(user).approve(this.address, t.yieldShare.contract.balanceOf(addr));
-    return this.connect(user).completeExitAndRedeem(amm.address, 10e13, toBacking);
+
+    let maxLeftoverShares;
+    if (t.principalShare.decimals == 18) { // ETH, DAI
+      maxLeftoverShares = t.principalShare.toBigNum("0.000001");
+    } else if (t.principalShare.decimals == 6) { // this convers USDC
+      maxLeftoverShares = t.principalShare.toBigNum("0.01");
+    } else {
+      // if you get this error, add a new case with suitable maxLeftoverShares precision
+      throw new Error("Cannot determine maxLeftoverShares for principal decimals="+t.principalShare.decimals);
+    }
+
+    return this.connect(user).completeExitAndRedeem(amm.address, maxLeftoverShares, toBacking);
   }
 
   /**

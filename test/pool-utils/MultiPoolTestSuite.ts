@@ -7,7 +7,7 @@ import { PoolType } from "../utils/TempusPool";
 import { Suite } from "mocha";
 
 // Set this to `PoolType.XXX` if you want to only run one specific pool's tests
-const ONLY_RUN_POOL:PoolType = null;
+const ONLY_RUN_POOL:PoolType = undefined;
 const ALL_POOLS = [PoolType.Aave, PoolType.Lido, PoolType.Compound];
 const TOTAL_SUPPLY = 10000000000;
 
@@ -18,20 +18,20 @@ const TOKENS: { [type:string]: TokenInfo[][]; } = {
       { decimals:18, name:"Dai Stablecoin",            symbol:"DAI", totalSupply:TOTAL_SUPPLY },
       { decimals:18, name:"Aave interest bearing DAI", symbol:"aDAI" }
     ],
-    // [
-    //   { decimals:6, name:"USD Coin",                   symbol:"USDC", totalSupply:TOTAL_SUPPLY },
-    //   { decimals:6, name:"Aave interest bearing USDC", symbol:"aUSDC" } // similar to USDT
-    // ]
+    [
+      { decimals:6, name:"USD Coin",                   symbol:"USDC", totalSupply:TOTAL_SUPPLY },
+      { decimals:6, name:"Aave interest bearing USDC", symbol:"aUSDC" } // similar to USDT
+    ]
   ],
   "Compound": [
     [
       { decimals:18, name:"Dai Stablecoin", symbol:"DAI", totalSupply:TOTAL_SUPPLY },
       { decimals:8,  name:"Compound Dai",   symbol:"cDAI" }
     ],
-    // [
-    //   { decimals:6, name:"USD Coin",          symbol:"USDC", totalSupply:TOTAL_SUPPLY },
-    //   { decimals:8, name:"Compound USD Coin", symbol:"cUSDC" }
-    // ]
+    [
+      { decimals:6, name:"USD Coin",          symbol:"USDC", totalSupply:TOTAL_SUPPLY },
+      { decimals:8, name:"Compound USD Coin", symbol:"cUSDC" }
+    ]
   ],
   "Lido": [
     [
