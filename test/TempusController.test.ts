@@ -109,7 +109,7 @@ describeForEachPool("TempusController", (testPool:ITestPool) =>
 
     it("verifies depositing 0 YBT and providing liquidity reverts", async () =>
     {
-      await initAMM(user1, /*ybtDeposit*/2000, /*principals*/12.34567, /*yields*/1234.5678912);
+      await initAMM(user1, /*ybtDeposit*/2000, /*principals*/12.34567, /*yields*/1234.567891);
       const invalidAction = controller.depositAndProvideLiquidity(testPool, user2, 0, false);
       (await expectRevert(invalidAction)).to.equal("yieldTokenAmount is 0");
     });
@@ -120,7 +120,7 @@ describeForEachPool("TempusController", (testPool:ITestPool) =>
     it("verifies tx reverts if provided minimum TYS rate requirement is not met", async () =>
     {
       await initAMM(user1, /*ybtDeposit*/2000, /*principals*/200, /*yields*/2000); // 10% rate
-      const minTYSRate = "0.11000001"; // 10.000001%
+      const minTYSRate = "0.11";
       const invalidAction = controller.depositAndFix(testPool, user2, 5.456789, false, minTYSRate); 
 
       (await expectRevert(invalidAction)).to.equal(SWAP_LIMIT_ERROR_MESSAGE);
@@ -245,7 +245,7 @@ describeForEachPool("TempusController", (testPool:ITestPool) =>
       const postBalanceOwner = +await testPool.yieldTokenBalance(owner);
 
       expect(postBalanceOwner).to.be.within(preBalanceOwner - 1, preBalanceOwner + 1);
-      expect(postBalanceUser2).to.be.within(postBalanceUser2 - 1, postBalanceUser2 + 1);
+      expect(postBalanceUser2).to.be.within(preBalanceUser2 - 1, preBalanceUser2 + 1);
     });
 
     it("Complete exit to yield bearing", async () => 

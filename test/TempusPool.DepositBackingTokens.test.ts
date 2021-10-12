@@ -3,7 +3,7 @@ import { ITestPool } from "./pool-utils/ITestPool";
 import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
 import { expectRevert } from "./utils/Utils";
 
-describeForEachPool("TempusPool Deposit", (pool:ITestPool) =>
+describeForEachPool("TempusPool DepositBackingTokens", (pool:ITestPool) =>
 {
   it("Should issue appropriate shares after depositing Backing Tokens", async () =>
   {

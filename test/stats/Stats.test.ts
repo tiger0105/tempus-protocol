@@ -82,13 +82,13 @@ describeForEachPool("Stats", (testPool:ITestPool) =>
   {
     await initAMM(user1, /*ybtDeposit*/1200, /*principals*/120, /*yields*/1200);
     await testPool.setNextBlockTimestampRelativeToPoolStart(0.5);
-    expect(+await stats.estimatedDepositAndFix(testPool, 1, /*BT*/false)).to.be.within(1.097, 1.098);
+    expect(+await stats.estimatedDepositAndFix(testPool, 1, /*BT*/false)).to.be.within(1.096, 1.098);
   });
 
   it("Estimated exit and redeem returns expected values", async () =>
   {
     await initAMM(user1, /*ybtDeposit*/1200, /*principals*/120, /*yields*/1200);
-    expect(+await stats.estimateExitAndRedeem(testPool, 2, 2, 2, true)).to.be.within(3.98, 3.99);
+    expect(+await stats.estimateExitAndRedeem(testPool, 2, 2, 2, true)).to.be.within(3.97, 3.99);
     await testPool.fastForwardToMaturity();
     expect(+await stats.estimateExitAndRedeem(testPool, 2, 2, 2, true)).to.be.within(3.10, 3.11);
     expect(+await stats.estimateExitAndRedeem(testPool, 2, 0, 2, true)).to.be.within(1.10, 1.11);
