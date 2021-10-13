@@ -21,7 +21,7 @@ This repo will be made public before the start of the contest. (C4 delete this l
 | Tempus Controller| Entry point to protocol. Used for all user-facing actions related to Tempus Pool. Only TempusController singleton is allowed to operate on a TempusPool. |
 
 # Contest Scope
-Thuis contest is open for one week. Submissions are open from the beginning until the end. Representatives from Tempus will be available in the Code Arena Discord to answer any questions during the contest period. The focus for the contest is to try and find any logic errors or ways to drain funds from the protocol in a way that is advantageous for an attacker at the expense of users with funds invested in the protocol. Also, gas optimization suggestions are welcome.
+This contest is open for one week. Submissions are open from the beginning until the end. Representatives from Tempus will be available in the Code Arena Discord to answer any questions during the contest period. The focus of the contest is to try and find any logic errors or ways to drain funds from the protocol in a way that is advantageous for an attacker at the expense of users with funds invested in the protocol. Gas optimization suggestions are also welcome.
 
 ## Protocol overview
 Tempus is a future yield tokenization and fixed rate protocol.
