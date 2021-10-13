@@ -205,6 +205,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         }
     }
 
+    // NOTE: Return value in AMM decimals precision (1e18)
     function getExpectedBPTInGivenTokensOut(uint256 principalsStaked, uint256 yieldsStaked)
         external
         view
@@ -228,7 +229,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
             // Update current balances by subtracting the protocol fee amounts
             balances.sub(_getDueProtocolFeeAmounts(balances, protocolSwapFeePercentage));
         }
-        
+
         (uint256 currentAmp, ) = _getAmplificationParameter();
         lpTokens = StableMath._calcBptInGivenExactTokensOut(
             currentAmp,

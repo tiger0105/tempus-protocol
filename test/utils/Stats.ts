@@ -74,18 +74,47 @@ export class Stats extends ContractBase {
     );
   }
 
-  async estimateExitAndRedeem(pool:ITestPool, lpTokens:NumberOrString, principals:NumberOrString, yields:NumberOrString, toBackingToken:boolean): Promise<NumberOrString> {
+  async estimateExitAndRedeem(
+    pool:ITestPool,
+    lpTokens:NumberOrString,
+    principals:NumberOrString,
+    yields:NumberOrString,
+    toBackingToken:boolean
+  ): Promise<NumberOrString> {
     const t = pool.tempus;
     const p = toBackingToken ? t : t.yieldBearing;
-    return p.fromBigNum(
-      (await this.contract.estimateExitAndRedeem(
-        pool.amm.address,
-        pool.amm.toBigNum(lpTokens),
-        t.principalShare.toBigNum(principals),
-        t.yieldShare.toBigNum(yields),
-        toBackingToken,
-        t.principalShare.decimals == 18 ? t.principalShare.toBigNum("0.00001") : t.principalShare.toBigNum("0.01")
-      )).tokenAmount
+    const r = await this.contract.estimateExitAndRedeem(
+      pool.amm.address,
+      pool.amm.toBigNum(lpTokens),
+      t.principalShare.toBigNum(principals),
+      t.yieldShare.toBigNum(yields),
+      toBackingToken,
+      t.principalShare.decimals == 18 ? t.principalShare.toBigNum("0.00001") : t.principalShare.toBigNum("0.01")
     );
+    return p.fromBigNum(r.tokenAmount);
+  }
+
+  async estimateExitAndRedeemStaked(
+    pool:ITestPool,
+    principals:NumberOrString,
+    yields:NumberOrString,
+    principalStaked:NumberOrString,
+    yieldsStaked:NumberOrString,
+    toBackingToken:boolean
+  ): Promise<{ tokenAmount:NumberOrString, lpTokensRedeemed:NumberOrString }> {
+    const t = pool.tempus;
+    const p = toBackingToken ? t : t.yieldBearing;
+    const r = await this.contract.estimateExitAndRedeemStaked(
+      pool.amm.address,
+      t.principalShare.toBigNum(principals),
+      t.yieldShare.toBigNum(yields),
+      t.principalShare.toBigNum(principalStaked), // lpPrincipals
+      t.yieldShare.toBigNum(yieldsStaked), // lpYields
+      toBackingToken
+    );
+    return { 
+      tokenAmount: p.fromBigNum(r.tokenAmount),
+      lpTokensRedeemed: pool.amm.fromBigNum(r.lpTokensRedeemed)
+    };
   }
 }

@@ -202,7 +202,8 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
         tokenAmount = estimatedRedeem(tempusAMM.tempusPool(), principals, yields, toBackingToken);
     }
 
-    /// @dev Get estimated amount of Backing or Yield bearing tokens for exiting pool and redeeming shares
+    /// @dev Get estimated amount of Backing or Yield bearing tokens for exiting pool and redeeming shares,
+    ///      including previously staked Principals and Yields
     /// @notice This queries at certain block, actual results can differ as underlying pool state can change
     /// @param tempusAMM Tempus AMM to exit LP tokens from
     /// @param principals Amount of principals to query redeem
@@ -210,9 +211,11 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
     /// @param principalsStaked Amount of staked principals to query redeem
     /// @param yieldsStaked Amount of staked yields to query redeem
     /// @param toBackingToken If exit is to backing or yield bearing token
-    /// @return tokenAmount Amount of yield bearing or backing token user can get
-    /// @return lpTokensRedeemed Amount of LP tokens that are redeemed to get `principalsStaked` and `yieldsStaked`
-    function estimateExitAndRedeem(
+    /// @return tokenAmount Amount of yield bearing or backing token user can get,
+    ///                     in Yield Bearing or Backing Token precision, depending on `toBackingToken`
+    /// @return lpTokensRedeemed Amount of LP tokens that are redeemed to get `principalsStaked` and `yieldsStaked`,
+    ///                          in AMM decimal precision (1e18)
+    function estimateExitAndRedeemStaked(
         ITempusAMM tempusAMM,
         uint256 principals,
         uint256 yields,
