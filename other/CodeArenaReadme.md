@@ -30,7 +30,7 @@ Currently, there is no easy way to obtain a fixed yield or otherwise speculate o
 - Buy and sell interest rate protection using any supported Yield Bearing Token (such as stETH, cDai and others).
 - Earn swap fees as a liquidity provider by depositing any supported Yield Bearing Token (thus earning additional yield on top of yield earned through other yield farming protocols).
 
-Users can deposit backing or yield bearing token to mint equal amounts of Principals and Yields. More information can be found in [deposit docs](https://docs.tempus.finance/docs/tempuspool/deposit).
+Users can deposit Backing Tokens or Yield Bearing Tokens to mint equal amounts of Principals and Yields. More information can be found in [deposit docs](https://docs.tempus.finance/docs/tempuspool/deposit).
 
 Redemption has two different flows:
 - Early redemption (this is possible only with equal amount of Principals and Yields)
