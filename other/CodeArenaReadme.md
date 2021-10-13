@@ -77,7 +77,7 @@ Tempus AMM is implemented as modification of Balancer Stable Pool. We use Balanc
 Contracts in `protocols` directory are only interfaces from underlying protocols.
 
 ## Performed Audits
-We did a security Audit with Coinspect, and full report is available [here](https://github.com/tempus-finance/tempus-protocol/blob/master/Coinspect%20-%20Smart%20Contract%20Audit%20-%20Tempus%20v211013.pdf).
+We did a security Audit with Coinspect, and full report is available [here](https://www.coinspect.com/doc/Coinspect%20-%20Smart%20Contract%20Audit%20-%20Tempus%20v211013.pdf).
 
 ## Setting up and running unit tests
 Installing dependancies `yarn install`
