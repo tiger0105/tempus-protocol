@@ -211,21 +211,31 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         returns (uint256 lpTokens)
     {
         (IERC20[] memory ammTokens, uint256[] memory balances, ) = getVault().getPoolTokens(getPoolId());
-        (uint256 currentAmp, ) = _getAmplificationParameter();
         uint256[] memory amountsOut = new uint256[](2);
         (amountsOut[0], amountsOut[1]) = (address(ammTokens[0]) == address(tempusPool.principalShare()))
             ? (principalsStaked, yieldsStaked)
             : (yieldsStaked, principalsStaked);
 
-        _upscaleArray(amountsOut, _scalingFactors());
-        amountsOut.mul(_getTokenRatesStored(), _TEMPUS_SHARE_PRECISION);
+        uint256[] memory scalingFactors = _scalingFactors();
+        _upscaleArray(amountsOut, scalingFactors);
+        _upscaleArray(balances, scalingFactors);
+        uint256[] memory tokenRates = _getTokenRatesStored();
+        amountsOut.mul(tokenRates, _TEMPUS_SHARE_PRECISION);
+        balances.mul(tokenRates, _TEMPUS_SHARE_PRECISION);
 
+        uint256 protocolSwapFeePercentage = getSwapFeePercentage();
+        if (_isNotPaused()) {
+            // Update current balances by subtracting the protocol fee amounts
+            balances.sub(_getDueProtocolFeeAmounts(balances, protocolSwapFeePercentage));
+        }
+        
+        (uint256 currentAmp, ) = _getAmplificationParameter();
         lpTokens = StableMath._calcBptInGivenExactTokensOut(
             currentAmp,
             balances,
             amountsOut,
             totalSupply(),
-            getSwapFeePercentage()
+            protocolSwapFeePercentage
         );
     }
 
