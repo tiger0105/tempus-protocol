@@ -12,7 +12,7 @@ This repo will be made public before the start of the contest. (C4 delete this l
 | Glossary| |
 |-------------------------------|------------------------------------------------------|
 | Backing token| Any token that can be deposited to earn some interest via landing or staking. Currently we support ETH, DAI, and USDC |
-| YBT Yield bearing token| Landing or staking token, currently we support stETH, aTokens, and cTokens |
+| YBT Yield bearing token| Landing or staking token, currently we support stETH, aTokens (aDAI, aUSDC), and cTokens (cDAI, cUSDC) |
 | TempusPool| Holds all locked YieldBearingToken, and is used to mint Principals and Yields on deposits, and to burn them on redemption in exchange for YieldBearingToken |
 | Principals| Zero coupon bond redeemable for 1 Backing token after maturity |
 | Yields| Zero coupon bond redeemable after maturity for amount of Yield 1 Principal accrued for the lifetime of the pool |
