@@ -18,7 +18,7 @@ This repo will be made public before the start of the contest. (C4 delete this l
 | Yields| Zero-coupon bond redeemable to BackingTokens after maturity for amount of yield accrued during the lifetime of the pool. Example: 10% yield would exchange 0.1 BackingToken for each Yield share |
 | Tempus AMM| Tempus AMM implementation based on Stable Pools from Balancer v2. It is used for trading Principals against Yields |
 | LP token| Token that represent share in Liquidity Pool |
-| Tempus Controller| Entry point to protocol. Used for all user facing actions related to Tempus Pool |
+| Tempus Controller| Entry point to protocol. Used for all user-facing actions related to Tempus Pool. Only TempusController singleton is allowed to operate on a TempusPool. |
 
 # Contest Scope
 Thuis contest is open for one week. Submissions are open from the beginning until the end. Representatives from Tempus will be available in the Code Arena Discord to answer any questions during the contest period. The focus for the contest is to try and find any logic errors or ways to drain funds from the protocol in a way that is advantageous for an attacker at the expense of users with funds invested in the protocol. Also, gas optimization suggestions are welcome.
