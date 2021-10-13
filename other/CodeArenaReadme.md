@@ -17,7 +17,7 @@ This repo will be made public before the start of the contest. (C4 delete this l
 | Principals| Zero coupon bond redeemable for 1 Backing token after maturity |
 | Yields| Zero-coupon bond redeemable to BackingTokens after maturity for amount of yield accrued during the lifetime of the pool. Example: 10% yield would exchange 0.1 BackingToken for each Yield share |
 | Tempus AMM| Tempus AMM implementation based on Stable Pools from Balancer v2. It is used for trading Principals against Yields |
-| LP token| Token that represent share in Liquidity Pool |
+| LP token| Token that represent share in Tempus AMM. Users get this token when they provide liquidity with Principals and Yields |
 | Tempus Controller| Entry point to protocol. Used for all user-facing actions related to Tempus Pool. Only TempusController singleton is allowed to operate on a TempusPool. |
 
 # Contest Scope
