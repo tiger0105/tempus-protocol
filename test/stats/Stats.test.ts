@@ -95,4 +95,26 @@ describeForEachPool("Stats", (testPool:ITestPool) =>
     expect(+await stats.estimateExitAndRedeem(testPool, 0, 0, 2, true)).to.be.equal(0);
     expect(+await stats.estimateExitAndRedeem(testPool, 0, 2, 0, true)).to.be.equal(2);
   });
+
+  it("Estimated exit and redeem staked returns expected values", async () =>
+  {
+    await initAMM(user1, /*ybtDeposit*/1200, /*principals*/120, /*yields*/1200);
+    await testPool.setInterestRate(1.5); // so that Yields have 0.5x value in backing tokens
+
+    const r1 = await stats.estimateExitAndRedeemGivenStakedOut(testPool, 4,4, 0,0, /*backingToken:*/true);
+    expect(+r1.tokenAmount).to.equal(6, "With 1.5 rate, 4Pr and 4Yi gives (4 + 4*0.5) = 6 BT");
+    expect(+r1.lpTokensRedeemed).to.equal(0, "We did not request any staked principals/yields, so it should be 0");
+
+    const r2 = await stats.estimateExitAndRedeemGivenStakedOut(testPool, 4,2, 3,2, /*backingToken:*/true);
+    expect(+r2.tokenAmount).to.equal(9, "With 1.5 rate, 4Pr,2Yi + staked 3Pr,2Yi gives (4+3) + (2*0.5+2*0.5) = 7+2 = 9");
+    expect(+r2.lpTokensRedeemed).to.be.within(1.572, 1.578);
+
+    const r3 = await stats.estimateExitAndRedeemGivenStakedOut(testPool, 0,0, 2,2, /*backingToken:*/true);
+    expect(+r3.tokenAmount).to.equal(3, "With 1.5 rate, 0Pr,0Yi + staked 2Pr,2Yi gives 0 + (2 + 2*0.5) = 3 BT");
+    expect(+r3.lpTokensRedeemed).to.be.within(1.135, 1.145);
+
+    const r4 = await stats.estimateExitAndRedeemGivenStakedOut(testPool, 0,10, 0,0, /*backingToken:*/true);
+    expect(+r4.tokenAmount).to.equal(5, "With 1.5 rate, 10Yi gives 5 BT");
+    expect(+r4.lpTokensRedeemed).to.equal(0, "We did not request any staked principals/yields, so it should be 0");
+  });
 });

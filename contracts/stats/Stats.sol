@@ -143,6 +143,11 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
     /// @param yields Amount of yields to query redeem
     /// @param threshold Maximum amount of Principals or Yields to be left in case of early exit
     /// @param toBackingToken If exit is to backing or yield bearing token
+    /// @return tokenAmount Amount of yield bearing or backing token user can get
+    /// @return principalsStaked Amount of Principals that can be redeemed for `lpTokens`
+    /// @return yieldsStaked Amount of Yields that can be redeemed for `lpTokens`
+    /// @return principalsRate Rate on which Principals were swapped to end with equal shares
+    /// @return yieldsRate Rate on which Yields were swapped to end with equal shares
     function estimateExitAndRedeem(
         ITempusAMM tempusAMM,
         uint256 lpTokens,
@@ -150,25 +155,40 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
         uint256 yields,
         uint256 threshold,
         bool toBackingToken
-    ) public view returns (uint256) {
-        (uint256 principalsFromLP, uint256 yieldsFromLp) = tempusAMM.getExpectedTokensOutGivenBPTIn(lpTokens);
-        principals += principalsFromLP;
-        yields += yieldsFromLp;
+    )
+        public
+        view
+        returns (
+            uint256 tokenAmount,
+            uint256 principalsStaked,
+            uint256 yieldsStaked,
+            uint256 principalsRate,
+            uint256 yieldsRate
+        )
+    {
+        if (lpTokens > 0) {
+            (principalsStaked, yieldsStaked) = tempusAMM.getExpectedTokensOutGivenBPTIn(lpTokens);
+            principals += principalsStaked;
+            yields += yieldsStaked;
+        }
 
         // before maturity we need to have equal amount of shares to redeem
         if (!tempusAMM.tempusPool().matured()) {
             bool yieldsIn = yields > principals;
             uint256 amountIn = tempusAMM.getSwapAmountToEndWithEqualShares(principals, yields, threshold);
             uint256 amountOut = (amountIn != 0) ? tempusAMM.getExpectedReturnGivenIn(amountIn, yieldsIn) : 0;
-
-            if (yieldsIn) {
-                // we need to swap some yields as we have more yields
-                principals += amountOut;
-                yields -= amountIn;
-            } else {
-                // we need to swap some principals as we have more principals
-                principals -= amountIn;
-                yields += amountOut;
+            if (amountIn > 0) {
+                if (yieldsIn) {
+                    // we need to swap some yields as we have more yields
+                    principals += amountOut;
+                    yields -= amountIn;
+                    yieldsRate = amountOut.divfV(amountIn, tempusAMM.tempusPool().backingTokenONE());
+                } else {
+                    // we need to swap some principals as we have more principals
+                    principals -= amountIn;
+                    yields += amountOut;
+                    principalsRate = amountOut.divfV(amountIn, tempusAMM.tempusPool().backingTokenONE());
+                }
             }
 
             // we need to equal out amounts that are being redeemed as this is early redeem
@@ -179,6 +199,38 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
             }
         }
 
-        return estimatedRedeem(tempusAMM.tempusPool(), principals, yields, toBackingToken);
+        tokenAmount = estimatedRedeem(tempusAMM.tempusPool(), principals, yields, toBackingToken);
+    }
+
+    /// @dev Get estimated amount of Backing or Yield bearing tokens for exiting pool and redeeming shares,
+    ///      including previously staked Principals and Yields
+    /// @notice This queries at certain block, actual results can differ as underlying pool state can change
+    /// @param tempusAMM Tempus AMM to exit LP tokens from
+    /// @param principals Amount of principals to query redeem
+    /// @param yields Amount of yields to query redeem
+    /// @param principalsStaked Amount of staked principals to query redeem
+    /// @param yieldsStaked Amount of staked yields to query redeem
+    /// @param toBackingToken If exit is to backing or yield bearing token
+    /// @return tokenAmount Amount of yield bearing or backing token user can get,
+    ///                     in Yield Bearing or Backing Token precision, depending on `toBackingToken`
+    /// @return lpTokensRedeemed Amount of LP tokens that are redeemed to get `principalsStaked` and `yieldsStaked`,
+    ///                          in AMM decimal precision (1e18)
+    function estimateExitAndRedeemGivenStakedOut(
+        ITempusAMM tempusAMM,
+        uint256 principals,
+        uint256 yields,
+        uint256 principalsStaked,
+        uint256 yieldsStaked,
+        bool toBackingToken
+    ) public view returns (uint256 tokenAmount, uint256 lpTokensRedeemed) {
+        require(!tempusAMM.tempusPool().matured(), "Pool already finalized!");
+
+        if (principalsStaked > 0 || yieldsStaked > 0) {
+            lpTokensRedeemed = tempusAMM.getExpectedBPTInGivenTokensOut(principalsStaked, yieldsStaked);
+            principals += principalsStaked;
+            yields += yieldsStaked;
+        }
+
+        tokenAmount = estimatedRedeem(tempusAMM.tempusPool(), principals, yields, toBackingToken);
     }
 }
