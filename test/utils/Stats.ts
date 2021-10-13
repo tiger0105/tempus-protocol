@@ -88,13 +88,13 @@ export class Stats extends ContractBase {
       pool.amm.toBigNum(lpTokens),
       t.principalShare.toBigNum(principals),
       t.yieldShare.toBigNum(yields),
-      toBackingToken,
-      t.principalShare.decimals == 18 ? t.principalShare.toBigNum("0.00001") : t.principalShare.toBigNum("0.01")
+      t.principalShare.decimals == 18 ? t.principalShare.toBigNum("0.00001") : t.principalShare.toBigNum("0.01"),
+      toBackingToken
     );
     return p.fromBigNum(r.tokenAmount);
   }
 
-  async estimateExitAndRedeemStaked(
+  async estimateExitAndRedeemGivenStakedOut(
     pool:ITestPool,
     principals:NumberOrString,
     yields:NumberOrString,
@@ -104,7 +104,7 @@ export class Stats extends ContractBase {
   ): Promise<{ tokenAmount:NumberOrString, lpTokensRedeemed:NumberOrString }> {
     const t = pool.tempus;
     const p = toBackingToken ? t : t.yieldBearing;
-    const r = await this.contract.estimateExitAndRedeemStaked(
+    const r = await this.contract.estimateExitAndRedeemGivenStakedOut(
       pool.amm.address,
       t.principalShare.toBigNum(principals),
       t.yieldShare.toBigNum(yields),

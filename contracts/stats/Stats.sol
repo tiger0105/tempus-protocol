@@ -153,8 +153,8 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
         uint256 lpTokens,
         uint256 principals,
         uint256 yields,
-        bool toBackingToken,
-        uint256 threshold
+        uint256 threshold,
+        bool toBackingToken
     )
         public
         view
@@ -215,7 +215,7 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
     ///                     in Yield Bearing or Backing Token precision, depending on `toBackingToken`
     /// @return lpTokensRedeemed Amount of LP tokens that are redeemed to get `principalsStaked` and `yieldsStaked`,
     ///                          in AMM decimal precision (1e18)
-    function estimateExitAndRedeemStaked(
+    function estimateExitAndRedeemGivenStakedOut(
         ITempusAMM tempusAMM,
         uint256 principals,
         uint256 yields,
