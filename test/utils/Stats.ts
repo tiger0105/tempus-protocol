@@ -83,8 +83,8 @@ export class Stats extends ContractBase {
         pool.amm.toBigNum(lpTokens),
         t.principalShare.toBigNum(principals),
         t.yieldShare.toBigNum(yields),
-        t.principalShare.decimals == 18 ? t.principalShare.toBigNum("0.00001") : t.principalShare.toBigNum("0.01"),
-        toBackingToken
+        toBackingToken,
+        t.principalShare.decimals == 18 ? t.principalShare.toBigNum("0.00001") : t.principalShare.toBigNum("0.01")
       )).tokenAmount
     );
   }
