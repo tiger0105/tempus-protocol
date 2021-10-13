@@ -15,7 +15,7 @@ This repo will be made public before the start of the contest. (C4 delete this l
 | YBT Yield bearing token| Landing or staking token, currently we support stETH, aTokens (aDAI, aUSDC), and cTokens (cDAI, cUSDC) |
 | TempusPool| Holds all locked YieldBearingToken, and is used to mint Principals and Yields on deposits, and to burn them on redemption in exchange for YieldBearingToken |
 | Principals| Zero coupon bond redeemable for 1 Backing token after maturity |
-| Yields| Zero coupon bond redeemable after maturity for amount of Yield 1 Principal accrued for the lifetime of the pool |
+| Yields| Zero-coupon bond redeemable to BackingTokens after maturity for amount of yield accrued during the lifetime of the pool. Example: 10% yield would exchange 0.1 BackingToken for each Yield share |
 | Tempus AMM| Tempus AMM implementation based on Stable Pools from Balancer v2. It is used for trading Principals against Yields |
 | LP token| Token that represent share in Liquidity Pool |
 | Tempus Controller| Entry point to protocol. Used for all user facing actions related to Tempus Pool |
