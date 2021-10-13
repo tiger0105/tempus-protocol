@@ -40,7 +40,7 @@ Users can redeem their funds into either Backing Tokens or Yield Bearing Tokens.
 All swaps between Principals and Yields are done via Tempus AMM. Information about our AMM can be found in [TempusAMM docs](https://docs.tempus.finance/docs/tempusamm) or in our [blog post](https://medium.com/tempusfinance/diving-into-tempus-amm-23a92cc6a2fc) about it.
 
 ## Smart contracts
-All smart contracts are located in `contracts` directory. However, we added mocked implementations of underlying landing/staking protocols (Lido, Aave, and Compound). These mocks are not in focus for this contest, as they are only used for unit testing protocol related stuff. You can find these mocks in `contracts/mocks`.
+All smart contracts are located in `contracts/` directory. However, we added mocked implementations of underlying landing/staking protocols (Lido, Aave, and Compound). These mocks are not in focus for this contest, as they are only used for unit testing of the underlying protocols. You can find these mocks in `contracts/mocks/`.
 Unit tests are located in `test` directory.
 
 ### TempusController
