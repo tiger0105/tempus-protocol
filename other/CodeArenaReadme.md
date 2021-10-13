@@ -35,7 +35,7 @@ Users can deposit Backing Tokens or Yield Bearing Tokens to mint equal amounts o
 Redemption has two different flows:
 - Early redemption (this is possible only with equal amount of Principals and Yields)
 - Mature redemption (user can deposit any combination of Principals and Yields after maturity)
-Redemption can be to backing or yield bearing token. You can find more in [redemption docs](https://docs.tempus.finance/docs/tempuspool/redemption).
+Users can redeem their funds into either Backing Tokens or Yield Bearing Tokens. You can find more in [redemption docs](https://docs.tempus.finance/docs/tempuspool/redemption).
 
 All swaps between Principals and Yields are done via Tempus AMM. Information about our AMM can be found in [TempusAMM docs](https://docs.tempus.finance/docs/tempusamm) or in our [blog post](https://medium.com/tempusfinance/diving-into-tempus-amm-23a92cc6a2fc) about it.
 
