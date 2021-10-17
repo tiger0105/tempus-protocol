@@ -78,6 +78,7 @@ abstract contract TempusPool is ITempusPool, PermanentlyOwnable {
         FeesConfig memory maxFeeSetup
     ) {
         require(maturity > block.timestamp, "maturityTime is after startTime");
+        require(ctrl != address(0), "controller can not be zero");
 
         yieldBearingToken = _yieldBearingToken;
         backingToken = _backingToken;
