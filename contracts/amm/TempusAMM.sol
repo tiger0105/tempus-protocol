@@ -131,12 +131,15 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         _TEMPUS_SHARE_PRECISION = 10**ERC20(address(principalShare)).decimals();
 
         // Immutable variables cannot be initialized inside an if statement, so we must do conditional assignments
-        (_token0, _token1) = yieldShare < principalShare ? (yieldShare, principalShare) : (principalShare, yieldShare);
+        (IPoolShare token0, IPoolShare token1) = yieldShare < principalShare
+            ? (yieldShare, principalShare)
+            : (principalShare, yieldShare);
+        (_token0, _token1) = (token0, token1);
 
         tempusPool = pool;
 
-        _scalingFactor0 = _computeScalingFactor(IERC20(address(yieldShare)));
-        _scalingFactor1 = _computeScalingFactor(IERC20(address(principalShare)));
+        _scalingFactor0 = _computeScalingFactor(IERC20(address(token0)));
+        _scalingFactor1 = _computeScalingFactor(IERC20(address(token1)));
 
         uint256 initialAmp = Math.mul(amplificationParameter, _AMP_PRECISION);
         _setAmplificationData(initialAmp);
