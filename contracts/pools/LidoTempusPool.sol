@@ -52,12 +52,7 @@ contract LidoTempusPool is TempusPool {
         return mintedTokens;
     }
 
-    function withdrawFromUnderlyingProtocol(uint256, address)
-        internal
-        pure
-        override
-        returns (uint256 backingTokenAmount)
-    {
+    function withdrawFromUnderlyingProtocol(uint256, address) internal pure override returns (uint256) {
         require(false, "LidoTempusPool.withdrawFromUnderlyingProtocol not supported");
         return 0;
     }

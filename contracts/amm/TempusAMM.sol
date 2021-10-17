@@ -529,8 +529,6 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
         amountsOut.div(tokenRates, _TEMPUS_SHARE_PRECISION);
         dueProtocolFeeAmounts.div(tokenRates, _TEMPUS_SHARE_PRECISION);
-
-        return (bptAmountIn, amountsOut, dueProtocolFeeAmounts);
     }
 
     function _doExit(

@@ -71,7 +71,7 @@ contract AaveTempusPool is TempusPool {
     function withdrawFromUnderlyingProtocol(uint256 yieldBearingTokensAmount, address recipient)
         internal
         override
-        returns (uint256 backingTokenAmount)
+        returns (uint256)
     {
         return aavePool.withdraw(backingToken, yieldBearingTokensAmount, recipient);
     }
