@@ -82,6 +82,8 @@ abstract contract TempusPool is ITempusPool {
     ) {
         require(maturity > block.timestamp, "maturityTime is after startTime");
         require(ctrl != address(0), "controller can not be zero");
+        require(initInterestRate > 0, "initInterestRate can not be zero");
+        require(estimatedFinalYield > 0, "estimatedFinalYield can not be zero");
 
         yieldBearingToken = _yieldBearingToken;
         backingToken = _backingToken;

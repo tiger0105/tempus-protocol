@@ -92,4 +92,16 @@ describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
     (await expectRevert(testPool.create({ initialRate:1.0, poolDuration:-60, yieldEst:0.1 })))
       .to.equal("maturityTime is after startTime");
   });
+
+  it("Should revert if initial rate is zero", async () =>
+  {
+    (await expectRevert(testPool.create({ initialRate:0, poolDuration:60, yieldEst:0.1 })))
+      .to.equal("initInterestRate can not be zero");
+  });
+
+  it("Should revert if yield estimate is zero", async () =>
+  {
+    (await expectRevert(testPool.create({ initialRate:1.0, poolDuration:60, yieldEst:0 })))
+      .to.equal("estimatedFinalYield can not be zero");
+  });
 });
