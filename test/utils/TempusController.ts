@@ -35,6 +35,15 @@ export class TempusController extends ContractBase {
   }
 
   /**
+   * Registers a POOL or an AMM as valid to use with this Controller
+   * @param user Owner of TempusController
+   * @param authorizedContract Address of the contract to authorize
+   */
+  async register(user:SignerOrAddress, authorizedContract:string): Promise<void> {
+    await this.connect(user).register(authorizedContract);
+  }
+
+  /**
    * Deposits Yield Bearing Tokens into Tempus Pool on behalf of user
    * @param user User who is depositing
    * @param pool The Tempus Pool to which funds will be deposited
