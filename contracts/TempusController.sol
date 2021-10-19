@@ -12,12 +12,18 @@ import "./ITempusPool.sol";
 import "./math/Fixed256xVar.sol";
 import "./utils/AMMBalancesHelper.sol";
 import "./utils/UntrustedERC20.sol";
+import "./utils/Ownable.sol";
 
-contract TempusController is ReentrancyGuard {
+/// @dev TempusController singleton with a transferrable ownership and re-entrancy guards
+///      Owner is automatically set to the deployer of this contract
+contract TempusController is ReentrancyGuard, Ownable {
     using Fixed256xVar for uint256;
     using SafeERC20 for IERC20;
     using UntrustedERC20 for IERC20;
     using AMMBalancesHelper for uint256[];
+
+    /// Registry for valid pools and AMM's to avoid fake address injection
+    mapping(address => bool) private registry;
 
     /// @dev Event emitted on a successful BT/YBT deposit.
     /// @param pool The Tempus Pool to which assets were deposited
@@ -64,6 +70,16 @@ contract TempusController is ReentrancyGuard {
         bool isEarlyRedeem
     );
 
+    /// @dev Registers a POOL or an AMM as valid to use with this Controller
+    function register(address authorizedContract) public onlyOwner {
+        registry[authorizedContract] = true;
+    }
+
+    /// @dev Validates that the provided contract is registered to be used with this Controller
+    function requireRegistered(address authorizedContract) private view {
+        require(registry[authorizedContract] == true, "Unauthorized contract address");
+    }
+
     /// @dev Atomically deposits YBT/BT to TempusPool and provides liquidity
     ///      to the corresponding Tempus AMM with the issued TYS & TPS
     /// @param tempusAMM Tempus AMM to use to swap TYS for TPS
@@ -74,6 +90,7 @@ contract TempusController is ReentrancyGuard {
         uint256 tokenAmount,
         bool isBackingToken
     ) external payable nonReentrant {
+        requireRegistered(address(tempusAMM));
         _depositAndProvideLiquidity(tempusAMM, tokenAmount, isBackingToken);
     }
 
@@ -84,6 +101,7 @@ contract TempusController is ReentrancyGuard {
     ///         So, liquidity will be provided with 10 principals and 100 yields
     /// @notice msg.sender needs to approve Controller for both Principals and Yields for @param sharesAmount
     function provideLiquidity(ITempusAMM tempusAMM, uint256 sharesAmount) external nonReentrant {
+        requireRegistered(address(tempusAMM));
         (
             IVault vault,
             bytes32 poolId,
@@ -106,6 +124,7 @@ contract TempusController is ReentrancyGuard {
         bool isBackingToken,
         uint256 minTYSRate
     ) external payable nonReentrant {
+        requireRegistered(address(tempusAMM));
         _depositAndFix(tempusAMM, tokenAmount, isBackingToken, minTYSRate);
     }
 
@@ -119,6 +138,7 @@ contract TempusController is ReentrancyGuard {
         uint256 yieldTokenAmount,
         address recipient
     ) public nonReentrant {
+        requireRegistered(address(targetPool));
         _depositYieldBearing(targetPool, yieldTokenAmount, recipient);
     }
 
@@ -132,6 +152,7 @@ contract TempusController is ReentrancyGuard {
         uint256 backingTokenAmount,
         address recipient
     ) public payable nonReentrant {
+        requireRegistered(address(targetPool));
         _depositBacking(targetPool, backingTokenAmount, recipient);
     }
 
@@ -149,6 +170,7 @@ contract TempusController is ReentrancyGuard {
         uint256 yieldAmount,
         address recipient
     ) public nonReentrant {
+        requireRegistered(address(targetPool));
         _redeemToYieldBearing(targetPool, msg.sender, principalAmount, yieldAmount, recipient);
     }
 
@@ -166,6 +188,7 @@ contract TempusController is ReentrancyGuard {
         uint256 yieldAmount,
         address recipient
     ) public nonReentrant {
+        requireRegistered(address(targetPool));
         _redeemToBacking(targetPool, msg.sender, principalAmount, yieldAmount, recipient);
     }
 
@@ -184,6 +207,7 @@ contract TempusController is ReentrancyGuard {
         uint256 yieldAmountOutMin,
         bool toInternalBalances
     ) external nonReentrant {
+        requireRegistered(address(tempusAMM));
         _exitTempusAMM(tempusAMM, lpTokensAmount, principalAmountOutMin, yieldAmountOutMin, toInternalBalances);
     }
 
@@ -213,6 +237,7 @@ contract TempusController is ReentrancyGuard {
         uint256 maxLpTokensToRedeem,
         bool toBackingToken
     ) external nonReentrant {
+        requireRegistered(address(tempusAMM));
         _exitTempusAMMAndRedeem(
             tempusAMM,
             principals,
@@ -246,6 +271,7 @@ contract TempusController is ReentrancyGuard {
         uint256 maxLeftoverShares,
         bool toBackingToken
     ) external nonReentrant {
+        requireRegistered(address(tempusAMM));
         _exitTempusAmmAndRedeem(
             tempusAMM,
             lpTokens,
@@ -259,6 +285,7 @@ contract TempusController is ReentrancyGuard {
 
     /// Finalize the pool after maturity.
     function finalize(ITempusPool targetPool) external nonReentrant {
+        requireRegistered(address(targetPool));
         targetPool.finalize();
     }
 
@@ -267,6 +294,7 @@ contract TempusController is ReentrancyGuard {
     /// @param targetPool The Tempus Pool from which to transfer fees
     /// @param recipient Address which will receive the specified amount of YBT
     function transferFees(ITempusPool targetPool, address recipient) external nonReentrant {
+        requireRegistered(address(targetPool));
         targetPool.transferFees(msg.sender, recipient);
     }
 
