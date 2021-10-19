@@ -67,6 +67,9 @@ interface ITempusPool is ITempusFees {
     /// @return The TempusController address that is authorized to perform restricted actions
     function controller() external view returns (address);
 
+    /// @return Owner that is authorized to perform restricted actions
+    function owner() external view returns (address);
+
     /// @return Start time of the pool.
     function startTime() external view returns (uint256);
 
