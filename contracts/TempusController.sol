@@ -10,11 +10,10 @@ import "./amm/interfaces/ITempusAMM.sol";
 import "./amm/interfaces/IVault.sol";
 import "./ITempusPool.sol";
 import "./math/Fixed256xVar.sol";
-import "./utils/PermanentlyOwnable.sol";
 import "./utils/AMMBalancesHelper.sol";
 import "./utils/UntrustedERC20.sol";
 
-contract TempusController is PermanentlyOwnable, ReentrancyGuard {
+contract TempusController is ReentrancyGuard {
     using Fixed256xVar for uint256;
     using SafeERC20 for IERC20;
     using UntrustedERC20 for IERC20;
