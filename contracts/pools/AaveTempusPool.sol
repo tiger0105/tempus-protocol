@@ -15,7 +15,7 @@ contract AaveTempusPool is TempusPool {
     using UntrustedERC20 for IERC20;
 
     ILendingPool internal immutable aavePool;
-    bytes32 public immutable override protocolName = "Aave";
+    bytes32 public constant override protocolName = "Aave";
     uint16 private immutable referrer;
     uint private immutable exchangeRateToBackingPrecision;
 

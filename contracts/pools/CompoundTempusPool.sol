@@ -16,7 +16,7 @@ contract CompoundTempusPool is TempusPool {
     using Fixed256xVar for uint256;
 
     ICErc20 internal immutable cToken;
-    bytes32 public immutable override protocolName = "Compound";
+    bytes32 public constant override protocolName = "Compound";
 
     constructor(
         ICErc20 token,

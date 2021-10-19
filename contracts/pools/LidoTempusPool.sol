@@ -6,7 +6,7 @@ import "../protocols/lido/ILido.sol";
 
 contract LidoTempusPool is TempusPool {
     ILido internal immutable lido;
-    bytes32 public immutable override protocolName = "Lido";
+    bytes32 public constant override protocolName = "Lido";
     address private immutable referrer;
 
     constructor(
