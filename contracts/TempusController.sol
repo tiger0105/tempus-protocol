@@ -532,8 +532,6 @@ contract TempusController is ReentrancyGuard {
         ITempusPool tempusPool = tempusAMM.tempusPool();
         uint256[] memory amounts = getAMMOrderedAmounts(tempusPool, principalAmountOutMin, yieldAmountOutMin);
         _exitTempusAMMGivenLP(tempusAMM, address(this), msg.sender, lpTokensAmount, amounts, toInternalBalances);
-
-        assert(tempusAMM.balanceOf(address(this)) == 0);
     }
 
     function _exitTempusAMMGivenLP(
