@@ -111,17 +111,20 @@ describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
     await pool.setupAccounts(owner, [[user, 500]]);
 
     await pool.depositYBT(user, 100);
-    expect(await pool.tempus.contractBalance()).to.equal(100); // all 100 in the pool
+    await pool.depositYBT(owner, 1);
+    expect(await pool.tempus.contractBalance()).to.equal(101); // all 101 in the pool
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/400);
 
     await pool.fastForwardToMaturity();
+    // just to update maturity interest rate
+    await pool.redeemToYBT(owner, 1, 1);
     await pool.setInterestRate(1.02);
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/pool.yieldPeggedToAsset ? 408 : 400);
 
     await pool.redeemToYBT(user, 100, 100);
     
     const ybtFeeAmount = +await pool.tempus.numYieldTokensPerAsset(2, 1.02);
-    expect(+await pool.tempus.totalFees()).to.be.within(ybtFeeAmount * 0.99999, ybtFeeAmount * 1.00001);  
+    expect(+await pool.tempus.totalFees()).to.be.within(ybtFeeAmount * 0.99, ybtFeeAmount * 1.01);  
     (await pool.userState(user)).expectMulti(0, 0, /*peggedYBT*/508, /*variableYBT*/498.03921568);
   });
 
@@ -132,17 +135,19 @@ describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
 
     await pool.tempus.setFeesConfig(owner, { depositPercent: 0.0, earlyRedeemPercent: 0.0, matureRedeemPercent: 0.01 });
     await pool.depositYBT(user, 100);
-    expect(await pool.tempus.contractBalance()).to.equal(100); // all 100 in the pool
+    await pool.depositYBT(owner, 1);
+    expect(await pool.tempus.contractBalance()).to.equal(101); // all 101 in the pool
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/400);
 
     await pool.fastForwardToMaturity();
+    await pool.redeemToYBT(owner, 1, 1);
     await pool.setInterestRate(1.02);
     (await pool.userState(user)).expectMulti(100, 100, /*peggedYBT*/408, /*variableYBT*/400);
 
     await pool.redeemToYBT(user, 100, 100);
 
-    const ybtFeeAmount = +await pool.tempus.numYieldTokensPerAsset(3, 1.02);
-    expect(+await pool.tempus.totalFees()).to.be.within(ybtFeeAmount * 0.99999, ybtFeeAmount * 1.00001);
+    const ybtFeeAmount = +await pool.tempus.numYieldTokensPerAsset(3.01, 1.02);
+    expect(+await pool.tempus.totalFees()).to.be.within(ybtFeeAmount * 0.99, ybtFeeAmount * 1.01);
     (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/pool.yieldPeggedToAsset ? 507 : 497.05882353);
   });
 
