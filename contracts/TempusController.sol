@@ -415,7 +415,6 @@ contract TempusController is ReentrancyGuard, Ownable {
         // At this point all TYS must be swapped for TPS
         uint256 principalsBalance = principalShares.balanceOf(address(this));
         assert(principalsBalance > 0);
-        assert(yieldShares.balanceOf(address(this)) == 0);
 
         principalShares.safeTransfer(msg.sender, principalsBalance);
     }
