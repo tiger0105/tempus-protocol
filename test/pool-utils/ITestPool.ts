@@ -337,7 +337,7 @@ export abstract class ITestPool {
 
         // initialize new tempus pool with the controller
         const tempus = await TempusPool.deploy(
-          this.type, controller, asset, ybt, maturityTime, p.yieldEst, names
+          this.type, owner, controller, asset, ybt, maturityTime, p.yieldEst, names
         );
 
         // new AMM instance

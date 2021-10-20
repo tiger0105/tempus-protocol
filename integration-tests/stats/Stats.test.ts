@@ -24,6 +24,7 @@ const setup = deployments.createFixture(async () => {
     keepExistingDeployments: true, // global option to test network like that
   });
 
+  const owner = (await ethers.getSigners())[0];
   const { aWethHolder } = await getNamedAccounts();
   
   const aWethHolderSigner = await ethers.getSigner(aWethHolder);
@@ -35,9 +36,9 @@ const setup = deployments.createFixture(async () => {
 
   const names = generateTempusSharesNames("Aave wrapped ether", "aWETH", maturityTime);
   const yieldEst = 0.1;
-  const tempusController: TempusController = await TempusController.deploy();
+  const controller = await TempusController.deploy(owner);
   const tempusPool = await TempusPool.deployAave(
-    Weth, aWethYieldToken, tempusController, maturityTime, yieldEst, names
+    owner, Weth, aWethYieldToken, controller, maturityTime, yieldEst, names
   );
   
   const stats = await ContractBase.deployContract("Stats");
@@ -45,7 +46,7 @@ const setup = deployments.createFixture(async () => {
   return {
     contracts: {
       tempusPool,
-      tempusController,
+      controller,
       aWeth: aWethYieldToken,
       stats
     },
@@ -58,7 +59,7 @@ const setup = deployments.createFixture(async () => {
 describe('Stats <> Chainlink', function () {
   it('verifies querying the TVL of a pull in USD denominations returns a correct result', async () => {
     // arrange
-    const { signers: { aWethHolder }, contracts: { aWeth, tempusController, tempusPool, stats }} = await setup();
+    const { signers: { aWethHolder }, contracts: { aWeth, controller, tempusPool, stats }} = await setup();
     const depositAmount: number = 1234.56789;
     const chainlinkAggregatorEnsHash = NameHash.hash("eth-usd.data.eth");
     const currentBlockDate = new Date(1000 * (await ethers.provider.getBlock(FORKED_BLOCK_NUMBER)).timestamp);
@@ -66,7 +67,7 @@ describe('Stats <> Chainlink', function () {
     
     // act
     await aWeth.approve(aWethHolder, tempusPool.address, depositAmount);
-    await tempusController.depositYieldBearing(aWethHolder, tempusPool, depositAmount, aWethHolder);
+    await controller.depositYieldBearing(aWethHolder, tempusPool, depositAmount, aWethHolder);
     
     // assert
     const totalValueLockedInUSD :BigNumber = await stats.totalValueLockedAtGivenRate(tempusPool.address, chainlinkAggregatorEnsHash);

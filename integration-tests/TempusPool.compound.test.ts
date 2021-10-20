@@ -17,6 +17,7 @@ const setup = deployments.createFixture(async () => {
     keepExistingDeployments: true, // global option to test network like that
   });
   
+  const owner = (await ethers.getSigners())[0];
   const accounts = await getNamedAccounts();
   const daiHolder = accounts["daiHolder"];
   const usdcHolder = accounts["usdcHolder"];
@@ -33,19 +34,19 @@ const setup = deployments.createFixture(async () => {
   const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
   const names = generateTempusSharesNames("cDai compound token", "cDai", maturityTime);
   const yieldEst = 0.1;
-  const controller: TempusController = await TempusController.deploy();
+  const controller = await TempusController.deploy(owner);
   const tempusPool = await TempusPool.deployCompound(
-    daiBackingToken, cDaiYieldToken, controller, maturityTime, yieldEst, names
+    owner, daiBackingToken, cDaiYieldToken, controller, maturityTime, yieldEst, names
   );
-  
+
   await daiBackingToken.transfer(daiHolderSigner, account1, 100000);
   await daiBackingToken.transfer(daiHolderSigner, account2, 100000);
 
   const namesUsdc = generateTempusSharesNames("cUsdc compound token", "cUsdc", maturityTime);
   const tempusPoolUsdc = await TempusPool.deployCompound(
-    usdcBackingToken, cUsdcYieldToken, controller, maturityTime, yieldEst, namesUsdc
+    owner, usdcBackingToken, cUsdcYieldToken, controller, maturityTime, yieldEst, namesUsdc
   );
-  
+
   await usdcBackingToken.connect(usdcHolderSigner).transfer((await ethers.getSigner(account1)).address, 10000000000);
   await usdcBackingToken.connect(usdcHolderSigner).transfer((await ethers.getSigner(account2)).address, 10000000000);
 

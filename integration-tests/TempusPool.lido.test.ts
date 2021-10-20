@@ -18,6 +18,7 @@ const setup = deployments.createFixture(async () => {
     keepExistingDeployments: true, // global option to test network like that
   });
   
+  const owner = (await ethers.getSigners())[0];
   const { lidoOracleMember1, lidoOracleMember2, lidoOracleMember3 } = await getNamedAccounts();
   const [ account1, account2 ] = await getUnnamedAccounts();
 
@@ -30,11 +31,12 @@ const setup = deployments.createFixture(async () => {
   const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
   const names = generateTempusSharesNames("Lido stETH", "stETH", maturityTime);
   const yieldEst = 0.1;
-  const controller: TempusController = await TempusController.deploy();
+
+  const controller = await TempusController.deploy(owner);
   const tempusPool = await TempusPool.deployLido(
-    Weth, lido, controller, maturityTime, yieldEst, names
+    owner, Weth, lido, controller, maturityTime, yieldEst, names
   );
-  
+
   return {
     contracts: {
       lido,

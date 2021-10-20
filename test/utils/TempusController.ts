@@ -1,6 +1,6 @@
 import { Contract, Transaction } from "ethers";
 import { NumberOrString, toWei } from "./Decimal";
-import { ContractBase, SignerOrAddress, addressOf } from "./ContractBase";
+import { ContractBase, Signer, SignerOrAddress, addressOf } from "./ContractBase";
 import { TempusPool } from "./TempusPool";
 import { ITestPool } from "../pool-utils/ITestPool";
 
@@ -19,9 +19,9 @@ export class TempusController extends ContractBase {
    * @returns The singleton instance of TempusController
    * @warning This cannot be used inside Test Fixture callback
    */
-  static async instance(): Promise<TempusController> {
+  static async instance(deployer?:Signer): Promise<TempusController> {
     if (TempusController._instance === null) {
-      TempusController._instance = await this.deploy();
+      TempusController._instance = await this.deploy(deployer);
     }
     return TempusController._instance;
   }
@@ -29,9 +29,16 @@ export class TempusController extends ContractBase {
   /**
    * Deploys a new instance of TempusController
    */
-  static async deploy(): Promise<TempusController> {
-    const controller = await ContractBase.deployContract(TempusController._contractName);
+  static async deploy(deployer:Signer): Promise<TempusController> {
+    const controller = await ContractBase.deployContractBy(TempusController._contractName, deployer);
     return new TempusController(TempusController._contractName, controller);
+  }
+
+  /**
+   * Address string of the owner who deployed TempusController
+   */
+  async owner(): Promise<string> {
+    return await this.contract.owner();
   }
 
   /**
