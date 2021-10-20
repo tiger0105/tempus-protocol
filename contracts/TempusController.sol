@@ -70,14 +70,17 @@ contract TempusController is ReentrancyGuard, Ownable {
         bool isEarlyRedeem
     );
 
-    /// @dev Registers a POOL or an AMM as valid to use with this Controller
-    function register(address authorizedContract) public onlyOwner {
-        registry[authorizedContract] = true;
+    /// @dev Registers a POOL or an AMM as valid or invalid to use with this Controller
+    /// @param authorizedContract Contract which will be allowed to be used inside this Controller
+    /// @param isValid If true, contract is valid to be used, if false, it's not allowed anymore
+    function register(address authorizedContract, bool isValid) public onlyOwner {
+        registry[authorizedContract] = isValid;
     }
 
     /// @dev Validates that the provided contract is registered to be used with this Controller
+    /// @param authorizedContract Contract address to check
     function requireRegistered(address authorizedContract) private view {
-        require(registry[authorizedContract] == true, "Unauthorized contract address");
+        require(registry[authorizedContract], "Unauthorized contract address");
     }
 
     /// @dev Atomically deposits YBT/BT to TempusPool and provides liquidity

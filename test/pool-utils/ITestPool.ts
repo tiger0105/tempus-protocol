@@ -335,17 +335,13 @@ export abstract class ITestPool {
         const asset = (pool as any).asset;
         const ybt = (pool as any).yieldToken;
 
-        // initialize new tempus pool with the controller
+        // initialize new tempus pool with the controller, TempusPool is auto-registered
         const tempus = await TempusPool.deploy(
           this.type, owner, controller, asset, ybt, maturityTime, p.yieldEst, names
         );
 
-        // new AMM instance
-        const amm = await TempusAMM.create(owner, p.ammAmplification, p.ammSwapFee, tempus);
-
-        // register the pool and AMM with the controller
-        await controller.register(owner, tempus.address);
-        await controller.register(owner, amm.address);
+        // new AMM instance and register the AMM with the controller
+        const amm = await TempusAMM.create(owner, controller, p.ammAmplification, p.ammSwapFee, tempus);
 
         // always report the instantiation of new fixtures,
         // because this is a major test bottleneck

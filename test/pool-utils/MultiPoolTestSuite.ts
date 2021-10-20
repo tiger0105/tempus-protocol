@@ -8,6 +8,7 @@ import { Suite } from "mocha";
 
 // Set this to `PoolType.XXX` if you want to only run one specific pool's tests
 const ONLY_RUN_POOL:PoolType = undefined;
+const ONLY_YIELD_TOKEN:string = undefined;
 const ALL_POOLS = [PoolType.Aave, PoolType.Lido, PoolType.Compound];
 const TOTAL_SUPPLY = 10000000000;
 
@@ -54,6 +55,10 @@ function _describeForEachPoolType(title:string, poolTypes:PoolType[], only:boole
     for (let pair of TOKENS[type]) {
       let ASSET_TOKEN:TokenInfo = pair[0];
       let YIELD_TOKEN:TokenInfo = pair[1];
+
+      if (ONLY_YIELD_TOKEN && ONLY_YIELD_TOKEN !== YIELD_TOKEN.symbol) {
+        continue;
+      }
 
       const describeTestBody = () =>
       {

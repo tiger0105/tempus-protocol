@@ -45,9 +45,10 @@ export class TempusController extends ContractBase {
    * Registers a POOL or an AMM as valid to use with this Controller
    * @param user Owner of TempusController
    * @param authorizedContract Address of the contract to authorize
+   * @param isValid Is the contract authorized or not?
    */
-  async register(user:SignerOrAddress, authorizedContract:string): Promise<void> {
-    await this.connect(user).register(authorizedContract);
+  async register(user:SignerOrAddress, authorizedContract:string, isValid:boolean = true): Promise<void> {
+    await this.connect(user).register(authorizedContract, isValid);
   }
 
   /**

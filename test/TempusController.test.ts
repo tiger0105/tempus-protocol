@@ -54,6 +54,12 @@ describeForEachPool("TempusController", (testPool:ITestPool) =>
 
   describe("depositAndProvideLiquidity", () =>
   {
+    it("unauthorized contracts are not allowed", async () =>
+    {
+      await controller.register(owner, pool.address, /*isValid:*/false);
+      (await testPool.expectDepositBT(user1, 1.0)).to.equal("Unauthorized contract address");
+    });
+
     it("deposit YBT and provide liquidity to a pre-initialized AMM", async () =>
     {
       await initAMM(user1, /*ybtDeposit*/1200, /*principals*/120, /*yields*/1200);
