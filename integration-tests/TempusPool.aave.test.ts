@@ -16,7 +16,8 @@ const setup = deployments.createFixture(async () => {
   await deployments.fixture(undefined, {
     keepExistingDeployments: true, // global option to test network like that
   });
-  
+
+  const owner = (await ethers.getSigners())[0];
   const { daiHolder, aDaiHolder } = await getNamedAccounts();
   const [ account1, account2 ] = await getUnnamedAccounts();
   const daiHolderSigner = await ethers.getSigner(daiHolder);
@@ -29,9 +30,10 @@ const setup = deployments.createFixture(async () => {
   const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
   const names = generateTempusSharesNames("aDai aave token", "aDai", maturityTime);
   const yieldEst = 0.1;
-  const controller: TempusController = await TempusController.deploy();
+
+  const controller = await TempusController.deploy(owner);
   const tempusPool = await TempusPool.deployAave(
-    daiBackingToken, aDaiYieldToken, controller, maturityTime, yieldEst, names
+    owner, daiBackingToken, aDaiYieldToken, controller, maturityTime, yieldEst, names
   );
   
   await daiBackingToken.transfer(daiHolderSigner, account1, 100000);

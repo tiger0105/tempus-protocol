@@ -4,11 +4,10 @@ import { ethers } from 'hardhat';
 import { Contract } from '@ethersproject/contracts';
 import { ERC20 } from '../test/utils/ERC20';
 import { generateTempusSharesNames, PoolType, TempusPool } from '../test/utils/TempusPool';
-import { ContractBase } from '../test/utils/ContractBase';
+import { ContractBase, Signer } from '../test/utils/ContractBase';
 import { TempusController } from '../test/utils/TempusController';
 import { DAY, MONTH } from '../test/utils/TempusAMM';
 import { toWei } from '../test/utils/Decimal';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signers';
 
 export interface DeployedPoolInfo {
   address: string;
@@ -53,6 +52,7 @@ interface CookieConfigData {
 
 interface DeployPoolParams {
   poolType: PoolType;
+  owner: Signer;
   backingToken: string;
   bt: ERC20;
   ybt: ERC20;
@@ -78,7 +78,7 @@ class DeployLocalForked {
 
   private controller: TempusController;
   private stats: Contract;
-  private owner: SignerWithAddress;
+  private owner: Signer;
 
   private deployedTempusPoolsInfo: DeployedPoolInfo[] = [];
 
@@ -98,12 +98,13 @@ class DeployLocalForked {
     const maturityTimeOneYear = latestBlock.timestamp + DAY * 365;
     const maturityTimeOneMonth = latestBlock.timestamp + MONTH;
 
-    this.controller = await TempusController.deploy();
+    this.controller = await TempusController.deploy(this.owner);
     this.stats = await ContractBase.deployContract("Stats");
 
     console.log('Deploying Aave Pool - aDAI - 1 year duration...');
     await this.deployPool({
       poolType: PoolType.Aave,
+      owner: this.owner,
       backingToken: 'DAI',
       bt: Dai,
       ybt: aDaiToken,
@@ -121,6 +122,7 @@ class DeployLocalForked {
     console.log('Deploying Aave Pool - aDAI - 1 month duration...');
     await this.deployPool({
       poolType: PoolType.Aave,
+      owner: this.owner,
       backingToken: 'DAI',
       bt: Dai,
       ybt: aDaiToken,
@@ -138,6 +140,7 @@ class DeployLocalForked {
     /*console.log('Deploying Compound Pool - cDAI - 1 year duration...');
     await this.deployPool({
       poolType: PoolType.Compound,
+      owner: this.owner,
       backingToken: 'DAI',
       bt: Dai,
       ybt: cDaiToken,
@@ -153,6 +156,7 @@ class DeployLocalForked {
     console.log('Deploying Compound Pool - cDAI - 1 month duration...');
     await this.deployPool({
       poolType: PoolType.Compound,
+      owner: this.owner,
       backingToken: 'DAI',
       bt: Dai,
       ybt: cDaiToken,
@@ -168,6 +172,7 @@ class DeployLocalForked {
     console.log('Deploying Lido Pool - stETH - 1 year duration...');
     await this.deployPool({
       poolType: PoolType.Lido,
+      owner: this.owner,
       backingToken: 'ETH',
       bt: Weth,
       ybt: stETHToken,
@@ -185,6 +190,7 @@ class DeployLocalForked {
     console.log('Deploying Lido Pool - stETH - 1 month duration...');
     await this.deployPool({
       poolType: PoolType.Lido,
+      owner: this.owner,
       backingToken: 'ETH',
       bt: Weth,
       ybt: stETHToken,
@@ -211,6 +217,7 @@ class DeployLocalForked {
 
   private async deployPool(params: DeployPoolParams) {
     const pool = await params.deploy(
+      params.owner,
       params.bt,
       params.ybt,
       this.controller,

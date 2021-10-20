@@ -1,13 +1,13 @@
 import { ethers } from "hardhat";
 import { BigNumber, Contract, Transaction } from "ethers";
-import { NumberOrString, toWei, fromWei } from "./Decimal";
-import { ContractBase } from "./ContractBase";
+import { NumberOrString, toWei } from "./Decimal";
+import { ContractBase, Signer } from "./ContractBase";
 import { ERC20 } from "./ERC20";
 import { MockProvider } from "@ethereum-waffle/provider";
 import { deployMockContract } from "@ethereum-waffle/mock-contract";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signers";
 import { blockTimestamp, setEvmTime } from "./Utils";
 import { TempusPool } from "./TempusPool";
+import { TempusController } from "./TempusController";
 
 const WETH_ARTIFACTS = require("../../artifacts/@balancer-labs/v2-solidity-utils/contracts/misc/IWETH.sol/IWETH");
 
@@ -49,7 +49,8 @@ export class TempusAMM extends ContractBase {
   }
 
   static async create(
-    owner: SignerWithAddress,
+    owner: Signer,
+    controller: TempusController,
     amplification: Number,
     swapFeePercentage: Number, 
     tempusPool: TempusPool
@@ -60,8 +61,9 @@ export class TempusAMM extends ContractBase {
     const authorizer = await ContractBase.deployContract("@balancer-labs/v2-vault/contracts/Authorizer.sol:Authorizer", owner.address);
     const vault = await ContractBase.deployContract("@balancer-labs/v2-vault/contracts/Vault.sol:Vault", authorizer.address, mockedWETH.address, 3 * MONTH, MONTH);
 
-    let tempusAMM = await ContractBase.deployContract(
-      "TempusAMM", 
+    let tempusAMM = await ContractBase.deployContractBy(
+      "TempusAMM",
+      owner,
       vault.address, 
       "Tempus LP token", 
       "LP", 
@@ -73,6 +75,7 @@ export class TempusAMM extends ContractBase {
       owner.address
     );
 
+    await controller.register(owner, tempusAMM.address);
     return new TempusAMM(tempusAMM, vault, tempusPool);
   }
 
@@ -83,7 +86,7 @@ export class TempusAMM extends ContractBase {
     return {invariant: +this.fromBigNum(inv), amplification: amp};
   }
 
-  async balanceOf(user:SignerWithAddress): Promise<NumberOrString> {
+  async balanceOf(user:Signer): Promise<NumberOrString> {
     return this.fromBigNum(await this.contract.balanceOf(user.address));
   }
 
@@ -127,7 +130,7 @@ export class TempusAMM extends ContractBase {
     ));
   }
 
-  async provideLiquidity(from: SignerWithAddress, principalShareBalance: Number, yieldShareBalance: Number, joinKind: TempusAMMJoinKind) {
+  async provideLiquidity(from: Signer, principalShareBalance: Number, yieldShareBalance: Number, joinKind: TempusAMMJoinKind) {
     await this.principalShare.approve(from, this.vault.address, principalShareBalance);
     await this.yieldShare.approve(from, this.vault.address, yieldShareBalance);
     
@@ -151,7 +154,7 @@ export class TempusAMM extends ContractBase {
     await this.vault.connect(from).joinPool(poolId, from.address, from.address, joinPoolRequest);
   }
 
-  async exitPoolExactLpAmountIn(from: SignerWithAddress, lpTokensAmount: Number) {
+  async exitPoolExactLpAmountIn(from: Signer, lpTokensAmount: Number) {
     const poolId = await this.contract.getPoolId();
     
     const assets = [
@@ -174,7 +177,7 @@ export class TempusAMM extends ContractBase {
     await this.vault.connect(from).exitPool(poolId, from.address, from.address, exitPoolRequest);
   }
 
-  async exitPoolExactAmountOut(from:SignerWithAddress, amountsOut:Number[], maxAmountLpIn:Number) {
+  async exitPoolExactAmountOut(from:Signer, amountsOut:Number[], maxAmountLpIn:Number) {
     const poolId = await this.contract.getPoolId();
     
     const assets = [
@@ -197,7 +200,7 @@ export class TempusAMM extends ContractBase {
     await this.vault.connect(from).exitPool(poolId, from.address, from.address, exitPoolRequest);
   }
 
-  async swapGivenIn(from: SignerWithAddress, assetIn: string, assetOut: string, amount: NumberOrString) {    
+  async swapGivenIn(from: Signer, assetIn: string, assetOut: string, amount: NumberOrString) {    
     await this.yieldShare.connect(from).approve(this.vault.address, this.yieldShare.toBigNum(amount));
     await this.principalShare.connect(from).approve(this.vault.address, this.principalShare.toBigNum(amount));
     const SWAP_KIND_GIVEN_IN = 0;

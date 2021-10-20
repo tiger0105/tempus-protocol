@@ -76,6 +76,17 @@ export abstract class ContractBase
   }
 
   /**
+   * Deploy a contract of any type by Deployer user
+   * @param contractName Name of the solidity contract
+   * @param deployer User who deploys this contract and is marked as `msg.sender` in contract constructor
+   * @param args... Optional arguments for the deployed contract
+   */
+  static async deployContractBy(contractName:string, deployer:Signer, ...args: any[]): Promise<Contract> {
+    const factory = await ethers.getContractFactory(contractName, deployer);
+    return await factory.deploy(...args);
+  }
+
+  /**
    * Attaches to any contract address
    * @param contractName Name of the solidity contract
    * @param contractAddress Address of the contract

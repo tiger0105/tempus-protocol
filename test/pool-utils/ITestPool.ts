@@ -331,13 +331,17 @@ export abstract class ITestPool {
         await deployments.fixture(undefined, { keepExistingDeployments: true, });
         // Note: for fixtures, all contracts must be initialized inside this callback
         const [owner,user,user2] = await ethers.getSigners();
-        const pool = await newPool();
+        const pool = await newPool(); // calls Aave.create
         const asset = (pool as any).asset;
         const ybt = (pool as any).yieldToken;
+
+        // initialize new tempus pool with the controller, TempusPool is auto-registered
         const tempus = await TempusPool.deploy(
-          this.type, controller, asset, ybt, maturityTime, p.yieldEst, names
+          this.type, owner, controller, asset, ybt, maturityTime, p.yieldEst, names
         );
-        const amm = await TempusAMM.create(owner, p.ammAmplification, p.ammSwapFee, tempus);
+
+        // new AMM instance and register the AMM with the controller
+        const amm = await TempusAMM.create(owner, controller, p.ammAmplification, p.ammSwapFee, tempus);
 
         // always report the instantiation of new fixtures,
         // because this is a major test bottleneck
