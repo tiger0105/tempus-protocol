@@ -145,11 +145,6 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         _setAmplificationData(initialAmp);
     }
 
-    modifier beforeMaturity() {
-        require(!tempusPool.matured(), "Pool already finalized!");
-        _;
-    }
-
     function getLastInvariant() external view returns (uint256 lastInvariant, uint256 lastInvariantAmp) {
         lastInvariant = _lastInvariant;
         lastInvariantAmp = _lastInvariantAmp;
@@ -288,7 +283,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         uint256[] memory balances,
         uint256 indexIn,
         uint256 indexOut
-    ) internal virtual override whenNotPaused beforeMaturity returns (uint256) {
+    ) internal virtual override whenNotPaused returns (uint256) {
         (uint256 currentAmp, ) = _getAmplificationParameter();
         (IPoolShare tokenIn, IPoolShare tokenOut) = indexIn == 0 ? (_token0, _token1) : (_token1, _token0);
 
@@ -307,7 +302,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         uint256[] memory,
         uint256,
         uint256
-    ) internal virtual override whenNotPaused beforeMaturity returns (uint256) {
+    ) internal virtual override whenNotPaused returns (uint256) {
         revert("Unsupported swap type");
     }
 
@@ -373,7 +368,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         address,
         uint256[] memory scalingFactors,
         bytes memory userData
-    ) internal virtual override whenNotPaused beforeMaturity returns (uint256, uint256[] memory) {
+    ) internal virtual override whenNotPaused returns (uint256, uint256[] memory) {
         // It would be strange for the Pool to be paused before it is initialized, but for consistency we prevent
         // initialization in this case.
         TempusAMM.JoinKind kind = userData.joinKind();
@@ -414,7 +409,6 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         virtual
         override
         whenNotPaused
-        beforeMaturity
         returns (
             uint256,
             uint256[] memory,
@@ -571,7 +565,7 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
         uint256[] memory balances,
         uint256[] memory scalingFactors,
         bytes memory userData
-    ) private whenNotPaused beforeMaturity returns (uint256, uint256[] memory) {
+    ) private whenNotPaused returns (uint256, uint256[] memory) {
         // This exit function is disabled if the contract is paused.
 
         (uint256[] memory amountsOut, uint256 maxBPTAmountIn) = userData.bptInForExactTokensOut();
