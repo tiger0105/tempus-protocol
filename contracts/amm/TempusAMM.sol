@@ -30,7 +30,7 @@ import "./../token/IPoolShare.sol";
 import "./TempusAMMUserDataHelpers.sol";
 import "./VecMath.sol";
 
-contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRateProvider {
+contract TempusAMM is BaseMinimalSwapInfoPool, StableMath, IRateProvider {
     using FixedPoint for uint256;
     using TempusAMMUserDataHelpers for bytes;
     using VecMath for uint256[];
@@ -276,36 +276,6 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
 
     // Base Pool handlers
 
-    // Swap - General Pool specialization (from BaseGeneralPool)
-
-    function _onSwapGivenIn(
-        SwapRequest memory swapRequest,
-        uint256[] memory balances,
-        uint256 indexIn,
-        uint256 indexOut
-    ) internal virtual override whenNotPaused returns (uint256) {
-        (uint256 currentAmp, ) = _getAmplificationParameter();
-        (IPoolShare tokenIn, IPoolShare tokenOut) = indexIn == 0 ? (_token0, _token1) : (_token1, _token0);
-
-        balances.mul(_getTokenRates(), _TEMPUS_SHARE_PRECISION);
-        uint256 rateAdjustedSwapAmount = (swapRequest.amount * tokenIn.getPricePerFullShare()) /
-            _TEMPUS_SHARE_PRECISION;
-
-        uint256 amountOut = StableMath._calcOutGivenIn(currentAmp, balances, indexIn, indexOut, rateAdjustedSwapAmount);
-        amountOut = (amountOut * _TEMPUS_SHARE_PRECISION) / tokenOut.getPricePerFullShare();
-
-        return amountOut;
-    }
-
-    function _onSwapGivenOut(
-        SwapRequest memory,
-        uint256[] memory,
-        uint256,
-        uint256
-    ) internal virtual override whenNotPaused returns (uint256) {
-        revert("Unsupported swap type");
-    }
-
     // Swap - Two Token Pool specialization (from BaseMinimalSwapInfoPool)
 
     function _onSwapGivenIn(
@@ -319,7 +289,15 @@ contract TempusAMM is BaseGeneralPool, BaseMinimalSwapInfoPool, StableMath, IRat
             balanceTokenOut
         );
 
-        return _onSwapGivenIn(swapRequest, balances, indexIn, indexOut);
+        (uint256 currentAmp, ) = _getAmplificationParameter();
+        (IPoolShare tokenIn, IPoolShare tokenOut) = indexIn == 0 ? (_token0, _token1) : (_token1, _token0);
+
+        balances.mul(_getTokenRates(), _TEMPUS_SHARE_PRECISION);
+        uint256 rateAdjustedSwapAmount = (swapRequest.amount * tokenIn.getPricePerFullShare()) /
+            _TEMPUS_SHARE_PRECISION;
+
+        uint256 amountOut = StableMath._calcOutGivenIn(currentAmp, balances, indexIn, indexOut, rateAdjustedSwapAmount);
+        return (amountOut * _TEMPUS_SHARE_PRECISION) / tokenOut.getPricePerFullShare();
     }
 
     function _onSwapGivenOut(
