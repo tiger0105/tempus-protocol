@@ -89,8 +89,8 @@ describeForEachPool("TempusController", (testPool:ITestPool) =>
 
     it("deposit YBT and provide liquidity to a pre-initialized AMM with more then 100% yield estimate [ @skip-on-coverage ]", async () =>
     {
-      await initAMM(user1, /*ybtDeposit*/1200, /*principals*/120, /*yields*/12);
       await testPool.setInterestRate(10.0);
+      await initAMM(user1, /*ybtDeposit*/1200, /*principals*/120, /*yields*/12);
 
       const ratioBefore = await getAMMBalancesRatio();
       await controller.depositAndProvideLiquidity(testPool, user2, 100, false); 
