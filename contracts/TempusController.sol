@@ -360,10 +360,10 @@ contract TempusController is ReentrancyGuard, Ownable {
         );
 
         // Send remaining Shares to user
-        if (sharesUsed[0] < mintedShares) {
+        if (mintedShares > sharesUsed[0]) {
             ammTokens[0].safeTransfer(msg.sender, mintedShares - sharesUsed[0]);
         }
-        if (sharesUsed[1] < mintedShares) {
+        if (mintedShares > sharesUsed[1]) {
             ammTokens[1].safeTransfer(msg.sender, mintedShares - sharesUsed[1]);
         }
     }
