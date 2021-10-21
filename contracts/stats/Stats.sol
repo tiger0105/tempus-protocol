@@ -91,9 +91,9 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
     /// @param tempusAMM Tempus AMM to use to swap TYS for TPS
     /// @param amount Amount of BackingTokens or YieldBearingTokens that would be deposited
     /// @param isBackingToken If true, @param amount is in BackingTokens, otherwise YieldBearingTokens
-    /// @return lpTokens Ampunt of LP tokens that user could recieve
-    /// @return principals Amount of Principals that user could recieve in this action
-    /// @return yields Amount of Yields that user could recieve in this action
+    /// @return lpTokens Ampunt of LP tokens that user could receive
+    /// @return principals Amount of Principals that user could receive in this action
+    /// @return yields Amount of Yields that user could receive in this action
     function estimatedDepositAndProvideLiquidity(
         ITempusAMM tempusAMM,
         uint256 amount,
@@ -125,7 +125,7 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
     /// @param tempusAMM Tempus AMM to use to swap TYS for TPS
     /// @param amount Amount of BackingTokens or YieldBearingTokens that would be deposited
     /// @param isBackingToken If true, @param amount is in BackingTokens, otherwise YieldBearingTokens
-    /// @return principals Amount of Principals that user could recieve in this action
+    /// @return principals Amount of Principals that user could receive in this action
     function estimatedDepositAndFix(
         ITempusAMM tempusAMM,
         uint256 amount,

@@ -299,7 +299,7 @@ abstract contract StETH is ILido {
 
     /**
      * @return the total amount (in wei) of Ether controlled by the protocol.
-     * @dev This is used for calaulating tokens from shares and vice versa.
+     * @dev This is used for calculating tokens from shares and vice versa.
      * @dev This function is required to be implemented in a derived contract.
      */
     function _getTotalPooledEther() internal virtual view returns (uint256);
