@@ -139,7 +139,7 @@ contract TempusController is ReentrancyGuard, Ownable {
         ITempusPool targetPool,
         uint256 yieldTokenAmount,
         address recipient
-    ) public nonReentrant {
+    ) external nonReentrant {
         require(recipient != address(0), "recipient can not be 0x0");
         requireRegistered(address(targetPool));
         _depositYieldBearing(targetPool, yieldTokenAmount, recipient);
@@ -154,7 +154,7 @@ contract TempusController is ReentrancyGuard, Ownable {
         ITempusPool targetPool,
         uint256 backingTokenAmount,
         address recipient
-    ) public payable nonReentrant {
+    ) external payable nonReentrant {
         require(recipient != address(0), "recipient can not be 0x0");
         requireRegistered(address(targetPool));
         _depositBacking(targetPool, backingTokenAmount, recipient);
@@ -173,7 +173,7 @@ contract TempusController is ReentrancyGuard, Ownable {
         uint256 principalAmount,
         uint256 yieldAmount,
         address recipient
-    ) public nonReentrant {
+    ) external nonReentrant {
         require(recipient != address(0), "recipient can not be 0x0");
         requireRegistered(address(targetPool));
         _redeemToYieldBearing(targetPool, msg.sender, principalAmount, yieldAmount, recipient);
@@ -192,7 +192,7 @@ contract TempusController is ReentrancyGuard, Ownable {
         uint256 principalAmount,
         uint256 yieldAmount,
         address recipient
-    ) public nonReentrant {
+    ) external nonReentrant {
         require(recipient != address(0), "recipient can not be 0x0");
         requireRegistered(address(targetPool));
         _redeemToBacking(targetPool, msg.sender, principalAmount, yieldAmount, recipient);
