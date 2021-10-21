@@ -596,15 +596,7 @@ contract TempusAMM is BaseMinimalSwapInfoPool, StableMath, IRateProvider {
         // token joined/exited, and the token in which fees will be paid).
 
         // The protocol fee is charged using the token with the highest balance in the pool.
-        uint256 chosenTokenIndex = 0;
-        uint256 maxBalance = balances[0];
-        for (uint256 i = 1; i < _TOTAL_TOKENS; ++i) {
-            uint256 currentBalance = balances[i];
-            if (currentBalance > maxBalance) {
-                chosenTokenIndex = i;
-                maxBalance = currentBalance;
-            }
-        }
+        uint256 chosenTokenIndex = balances[0] > balances[1] ? 0 : 1;
 
         // Set the fee amount to pay in the selected token
         dueProtocolFeeAmounts[chosenTokenIndex] = StableMath._calcDueTokenProtocolSwapFeeAmount(
