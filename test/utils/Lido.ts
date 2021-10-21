@@ -81,7 +81,6 @@ export class Lido extends ERC20 {
     const totalShares:BigNumber = await this.contract.getTotalShares();
     const curRate = await this.contract._getInterestRate();
     const newRate = this.toBigNum(interestRate);
-    // TODO: there's a precision issue here
     const difference = newRate.mul(ONE_WEI).div(curRate).sub(ONE_WEI);
     if (difference.isZero())
       return;

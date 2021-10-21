@@ -12,7 +12,7 @@ library Fixed256xVar {
         uint256 b,
         uint256 one
     ) internal pure returns (uint256) {
-        // TODO: should we add rounding rules?
+        // result is always truncated
         return (a * b) / one;
     }
 
@@ -24,7 +24,7 @@ library Fixed256xVar {
         uint256 b,
         uint256 one
     ) internal pure returns (uint256) {
-        // TODO: should we add rounding rules?
+        // result is always truncated
         return (a * one) / b;
     }
 }

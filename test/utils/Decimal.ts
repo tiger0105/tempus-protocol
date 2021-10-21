@@ -8,7 +8,6 @@ export type NumberOrString = Number | string;
  * beyond this # of digits will be converted to a string
  * example: 50.09823182711198    --> 50.09823182711198
  *          50.09823182711198117 --> '50.09823182711198117'
- * TODO: use Decimal.js ?
  */
 export const MAX_NUMBER_DIGITS = 17;
 
