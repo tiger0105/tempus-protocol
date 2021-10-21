@@ -15,7 +15,6 @@ contract CompoundTempusPool is TempusPool {
     using UntrustedERC20 for IERC20;
     using Fixed256xVar for uint256;
 
-    ICErc20 internal immutable cToken;
     bytes32 public constant override protocolName = "Compound";
 
     constructor(
@@ -53,8 +52,6 @@ contract CompoundTempusPool is TempusPool {
         address[] memory markets = new address[](1);
         markets[0] = address(token);
         require(token.comptroller().enterMarkets(markets)[0] == 0, "enterMarkets failed");
-
-        cToken = token;
     }
 
     function depositToUnderlying(uint256 backingAmount) internal override returns (uint256) {
@@ -66,8 +63,8 @@ contract CompoundTempusPool is TempusPool {
         backingAmount = IERC20(backingToken).untrustedTransferFrom(msg.sender, address(this), backingAmount);
 
         // Deposit to Compound
-        IERC20(backingToken).safeIncreaseAllowance(address(cToken), backingAmount);
-        require(cToken.mint(backingAmount) == 0, "CErc20 mint failed");
+        IERC20(backingToken).safeIncreaseAllowance(yieldBearingToken, backingAmount);
+        require(ICErc20(yieldBearingToken).mint(backingAmount) == 0, "CErc20 mint failed");
 
         return IERC20(yieldBearingToken).balanceOf(address(this)) - preDepositBalance;
     }
@@ -78,8 +75,8 @@ contract CompoundTempusPool is TempusPool {
         returns (uint256 backingTokenAmount)
     {
         // tempus pool owns YBT
-        assert(cToken.balanceOf(address(this)) >= yieldBearingTokensAmount);
-        require(cToken.redeem(yieldBearingTokensAmount) == 0, "CErc20 redeem failed");
+        assert(ICErc20(yieldBearingToken).balanceOf(address(this)) >= yieldBearingTokensAmount);
+        require(ICErc20(yieldBearingToken).redeem(yieldBearingTokensAmount) == 0, "CErc20 redeem failed");
 
         // need to rescale the truncated amount which was used during cToken.redeem()
         uint256 backing = numAssetsPerYieldToken(yieldBearingTokensAmount, updateInterestRate());
@@ -92,13 +89,13 @@ contract CompoundTempusPool is TempusPool {
         // NOTE: exchangeRateCurrent() will accrue interest and gets the latest Interest Rate
         //       The default exchange rate for Compound is 0.02 and grows
         //       cTokens are minted as (backingAmount / rate), so 1 DAI = 50 cDAI with 0.02 rate
-        return cToken.exchangeRateCurrent();
+        return ICErc20(yieldBearingToken).exchangeRateCurrent();
     }
 
     /// @return Current Interest Rate in 10**(18 - 8 + Underlying Token Decimals) decimal precision
     ///         This varying rate enables simple conversion from Compound cToken to backing token precision
     function currentInterestRate() public view override returns (uint256) {
-        return cToken.exchangeRateStored();
+        return ICErc20(yieldBearingToken).exchangeRateStored();
     }
 
     // NOTE: yieldTokens are in YieldToken precision, return value is in BackingToken precision
