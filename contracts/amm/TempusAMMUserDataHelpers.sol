@@ -14,8 +14,6 @@
 
 pragma solidity 0.7.6;
 
-import "@balancer-labs/v2-solidity-utils/contracts/openzeppelin/IERC20.sol";
-
 import "./TempusAMM.sol";
 
 library TempusAMMUserDataHelpers {
