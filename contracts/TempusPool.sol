@@ -384,8 +384,12 @@ abstract contract TempusPool is ITempusPool {
             return yieldCurrent;
         }
         uint256 currentTime = block.timestamp;
-        uint256 timeToMaturity = (maturityTime > currentTime) ? (maturityTime - currentTime) : 0;
-        uint256 poolDuration = maturityTime - startTime;
+        uint256 timeToMaturity;
+        uint256 poolDuration;
+        unchecked {
+            timeToMaturity = (maturityTime > currentTime) ? (maturityTime - currentTime) : 0;
+            poolDuration = maturityTime - startTime;
+        }
         uint256 timeLeft = timeToMaturity.divfV(poolDuration, exchangeRateONE);
 
         return yieldCurrent + timeLeft.mulfV(initialEstimatedYield, exchangeRateONE);
