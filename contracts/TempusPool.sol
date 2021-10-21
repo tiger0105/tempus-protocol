@@ -434,7 +434,7 @@ abstract contract TempusPool is ITempusPool {
         return (depositedBT * initialInterestRate) / currentRate;
     }
 
-    function estimatedMintedShares(uint256 amount, bool isBackingToken) public view override returns (uint256) {
+    function estimatedMintedShares(uint256 amount, bool isBackingToken) external view override returns (uint256) {
         uint256 currentRate = currentInterestRate();
         uint256 depositedBT = isBackingToken ? amount : numAssetsPerYieldToken(amount, currentRate);
         return numSharesToMint(depositedBT, currentRate);
@@ -444,7 +444,7 @@ abstract contract TempusPool is ITempusPool {
         uint256 principals,
         uint256 yields,
         bool toBackingToken
-    ) public view override returns (uint256) {
+    ) external view override returns (uint256) {
         uint256 currentRate = currentInterestRate();
         (uint256 yieldTokens, uint256 backingTokens, , ) = getRedemptionAmounts(principals, yields, currentRate);
         return toBackingToken ? backingTokens : yieldTokens;

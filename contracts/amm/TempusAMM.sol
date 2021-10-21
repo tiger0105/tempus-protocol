@@ -171,7 +171,7 @@ contract TempusAMM is BaseMinimalSwapInfoPool, StableMath, IRateProvider {
         uint256 principals,
         uint256 yields,
         uint256 threshold
-    ) public view returns (uint256 amountIn) {
+    ) external view returns (uint256 amountIn) {
         (uint256 difference, bool yieldsIn) = (principals > yields)
             ? (principals - yields, false)
             : (yields - principals, true);
@@ -662,7 +662,7 @@ contract TempusAMM is BaseMinimalSwapInfoPool, StableMath, IRateProvider {
         return rates;
     }
 
-    function getRate() public view override returns (uint256) {
+    function getRate() external view override returns (uint256) {
         (, uint256[] memory balances, ) = getVault().getPoolTokens(getPoolId());
 
         // When calculating the current BPT rate, we may not have paid the protocol fees, therefore
@@ -738,7 +738,7 @@ contract TempusAMM is BaseMinimalSwapInfoPool, StableMath, IRateProvider {
         precision = _AMP_PRECISION;
     }
 
-    function _getAmplificationParameter() internal view returns (uint256 value, bool isUpdating) {
+    function _getAmplificationParameter() private view returns (uint256 value, bool isUpdating) {
         (uint256 startValue, uint256 endValue, uint256 startTime, uint256 endTime) = _getAmplificationData();
 
         // Note that block.timestamp >= startTime, since startTime is set to the current time when an update starts
@@ -839,11 +839,11 @@ contract TempusAMM is BaseMinimalSwapInfoPool, StableMath, IRateProvider {
         }
     }
 
-    function _isToken0(IERC20 token) internal view returns (bool) {
+    function _isToken0(IERC20 token) private view returns (bool) {
         return address(token) == address(_token0);
     }
 
-    function _isToken1(IERC20 token) internal view returns (bool) {
+    function _isToken1(IERC20 token) private view returns (bool) {
         return address(token) == address(_token1);
     }
 

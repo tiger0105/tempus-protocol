@@ -23,7 +23,7 @@ contract ERC20OwnerMintableToken is ERC20 {
 
     /// Destroys `amount` tokens from the caller.
     /// @param amount Number of tokens to burn.
-    function burn(uint256 amount) public {
+    function burn(uint256 amount) external {
         require(msg.sender == manager, "burn: only manager can burn");
         _burn(manager, amount);
     }
@@ -31,7 +31,7 @@ contract ERC20OwnerMintableToken is ERC20 {
     /// Destroys `amount` tokens from `account`.
     /// @param account Source address to burn tokens from
     /// @param amount Number of tokens to burn
-    function burnFrom(address account, uint256 amount) public {
+    function burnFrom(address account, uint256 amount) external {
         require(msg.sender == manager, "burn: only manager can burn");
         _burn(account, amount);
     }
