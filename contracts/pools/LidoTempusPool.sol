@@ -46,9 +46,7 @@ contract LidoTempusPool is TempusPool {
         uint256 preDepositBalance = IERC20(yieldBearingToken).balanceOf(address(this));
         lido.submit{value: msg.value}(referrer);
 
-        /// TODO: figure out why lido.submit returns a different value than this
         uint256 mintedTokens = IERC20(yieldBearingToken).balanceOf(address(this)) - preDepositBalance;
-
         return mintedTokens;
     }
 

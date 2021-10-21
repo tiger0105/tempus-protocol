@@ -317,7 +317,6 @@ abstract contract TempusPool is ITempusPool {
             uint256 yieldPercent = rateDiff.divfV(initialInterestRate, exchangeRateONE);
             uint256 redeemAmountFromYieldShares = yieldAmount.mulfV(yieldPercent, exchangeRateONE);
 
-            // TODO: Scale based on number of decimals for tokens
             redeemableBackingTokens = principalAmount + redeemAmountFromYieldShares;
 
             // after maturity, all additional yield is being collected as fee

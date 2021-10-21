@@ -114,7 +114,6 @@ export class ERC20 extends ContractBase {
    */
   async transferFrom(sender:SignerOrAddress, recipient:SignerOrAddress, amount:NumberOrString) {
     await this.contract.transferFrom(addressOf(sender), addressOf(recipient), this.toBigNum(amount));
-    // TODO: implement (bool) return?
   }
 
   /** Sends some ether directly to the contract,

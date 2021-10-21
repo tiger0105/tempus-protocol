@@ -28,7 +28,6 @@ describeForEachPool("TempusController", (testPool:ITestPool) =>
     await testPool.setupAccounts(owner, [[user1,/*ybt*/1000000],[user2,/*ybt*/100000]]);
   });
 
-  // TODO: refactor math (minimize toWei, fromWei, Number etc...). I think we should just use Decimal.js
   async function getAMMBalancesRatio(): Promise<BigNumber>
   {
     const principals = await pool.principalShare.balanceOf(amm.vault.address);

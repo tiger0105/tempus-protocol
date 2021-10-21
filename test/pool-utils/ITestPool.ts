@@ -288,7 +288,7 @@ export abstract class ITestPool {
     for (let depositor of depositors) { // initial deposit for users
       const user = depositor[0];
       const amount = depositor[1];
-      await this.asset().transfer(owner, user, 100000); // TODO: make this a parameter?
+      await this.asset().transfer(owner, user, 100000);
       await this.tempus.yieldBearing.transfer(owner, user, amount);
     }
   }

@@ -49,7 +49,6 @@ export abstract class ContractBase
 
   /** @return Converts a Number or String into this Contract's BigNumber decimal */
   toBigNum(amount:NumberOrString):BigNumber {
-    // TODO: validate the number/string
     if (typeof(amount) === "string") {
       return parseDecimal(amount, this.decimals);
     }
