@@ -7,7 +7,7 @@ import "@balancer-labs/v2-solidity-utils/contracts/math/FixedPoint.sol";
 library VecMath {
     using FixedPoint for uint256;
 
-    /// @dev Substracting two vectors
+    /// @dev Subtracting two vectors
     /// @notice Vectors must be of same length
     /// @param vec1 First vector, also result will be stored here
     /// @param vec2 Second vector

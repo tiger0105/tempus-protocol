@@ -48,7 +48,7 @@ contract TempusController is ReentrancyGuard, Ownable {
     /// @dev Event emitted on a successful BT/YBT redemption.
     /// @param pool The Tempus Pool from which Tempus Shares were redeemed
     /// @param redeemer Address of the user whose Shares (Principals and Yields) are redeemed
-    /// @param recipient Address of user that recieved Yield Bearing Tokens
+    /// @param recipient Address of user that received Yield Bearing Tokens
     /// @param principalShareAmount Number of Tempus Principal Shares (TPS) to redeem into the Yield Bearing Token (YBT)
     /// @param yieldShareAmount Number of Tempus Yield Shares (TYS) to redeem into the Yield Bearing Token (YBT)
     /// @param yieldTokenAmount Number of Yield bearing tokens redeemed from the pool
@@ -167,7 +167,7 @@ contract TempusController is ReentrancyGuard, Ownable {
     /// @param targetPool The Tempus Pool from which to redeem Tempus Shares
     /// @param principalAmount Amount of Tempus Principals to redeem in PrincipalShare decimal precision
     /// @param yieldAmount Amount of Tempus Yields to redeem in YieldShare decimal precision
-    /// @param recipient Address of user that will recieve yield bearing tokens
+    /// @param recipient Address of user that will receive yield bearing tokens
     function redeemToYieldBearing(
         ITempusPool targetPool,
         uint256 principalAmount,
@@ -186,7 +186,7 @@ contract TempusController is ReentrancyGuard, Ownable {
     /// @param targetPool The Tempus Pool from which to redeem Tempus Shares
     /// @param principalAmount Amount of Tempus Principals to redeem in PrincipalShare decimal precision
     /// @param yieldAmount Amount of Tempus Yields to redeem in YieldShare decimal precision
-    /// @param recipient Address of user that will recieve yield bearing tokens
+    /// @param recipient Address of user that will receive yield bearing tokens
     function redeemToBacking(
         ITempusPool targetPool,
         uint256 principalAmount,

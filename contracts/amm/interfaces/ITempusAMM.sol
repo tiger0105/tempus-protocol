@@ -47,8 +47,8 @@ interface ITempusAMM {
 
     /// @dev queries exiting TempusAMM with exact BPT tokens in
     /// @param bptAmountIn amount of LP tokens in
-    /// @return principals Amount of principals that user would recieve back
-    /// @return yields Amount of yields that user would recieve back
+    /// @return principals Amount of principals that user would receive back
+    /// @return yields Amount of yields that user would receive back
     function getExpectedTokensOutGivenBPTIn(uint256 bptAmountIn)
         external
         view
@@ -65,7 +65,7 @@ interface ITempusAMM {
 
     /// @dev queries joining TempusAMM with exact tokens in
     /// @param amountsIn amount of tokens to be added to the pool
-    /// @return amount of LP tokens that could be recieved
+    /// @return amount of LP tokens that could be received
     function getExpectedLPTokensForTokensIn(uint256[] memory amountsIn) external view returns (uint256);
 
     /// @dev This function returns the appreciation of one BPT relative to the
