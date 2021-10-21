@@ -184,7 +184,7 @@ contract TempusAMM is BaseMinimalSwapInfoPool, StableMath, IRateProvider {
             uint256 rate = yieldsIn
                 ? (principalsRate * _TEMPUS_SHARE_PRECISION) / yieldsRate
                 : (yieldsRate * _TEMPUS_SHARE_PRECISION) / principalsRate;
-            for (uint8 i = 0; i < 32; i++) {
+            for (uint256 i = 0; i < 32; i++) {
                 // if we have accurate rate this should hold
                 amountIn = (difference * _TEMPUS_SHARE_PRECISION) / (rate + _TEMPUS_SHARE_PRECISION);
                 uint256 amountOut = getExpectedReturnGivenIn(amountIn, yieldsIn);
