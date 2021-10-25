@@ -219,7 +219,6 @@ describeForEachPool("TempusPool Redeem", (pool:ITestPool) =>
     await pool.setupAccounts(owner, [[user, 200]]);
 
     await pool.depositYBT(user, 100, /*recipient:*/user);
-    await pool.depositYBT(owner, 10);
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/100);
 
     await pool.setInterestRate(2.0);
@@ -227,7 +226,6 @@ describeForEachPool("TempusPool Redeem", (pool:ITestPool) =>
     {
         (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/200);
         await pool.fastForwardToMaturity();
-        await pool.redeemToYBT(owner, 10, 10);
         await pool.setInterestRate(4.0);
         (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/400);
     
@@ -239,7 +237,6 @@ describeForEachPool("TempusPool Redeem", (pool:ITestPool) =>
     {
         (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/100);
         await pool.fastForwardToMaturity();
-        await pool.redeemToYBT(owner, 10, 10);
         await pool.setInterestRate(4.0);
         (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/100);
     
@@ -254,7 +251,6 @@ describeForEachPool("TempusPool Redeem", (pool:ITestPool) =>
     await pool.createDefault();
     let [owner, user, user2] = pool.signers;
     await pool.setupAccounts(owner, [[user, 500], [user2, 500]]);
-    await pool.depositYBT(owner, 1);
 
     await pool.depositYBT(user, 100, /*recipient:*/user);
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/400);
@@ -276,8 +272,6 @@ describeForEachPool("TempusPool Redeem", (pool:ITestPool) =>
     
         await pool.setInterestRate(2.5);
         await pool.fastForwardToMaturity();
-        // just to update maturity interest rate
-        await pool.redeemToYBT(owner, 0.1, 0.1);
         expect(await pool.tempus.initialInterestRate()).to.equal(1.0);
         expect(await pool.tempus.currentInterestRate()).to.equal(2.5);
         expect(await pool.tempus.maturityInterestRate()).to.equal(2.5);
@@ -307,7 +301,6 @@ describeForEachPool("TempusPool Redeem", (pool:ITestPool) =>
     
         await pool.setInterestRate(2.5);
         await pool.fastForwardToMaturity();
-        await pool.redeemToYBT(owner, 0.1, 0.1);
         expect(await pool.tempus.initialInterestRate()).to.equal(1.0);
         expect(await pool.tempus.currentInterestRate()).to.equal(2.5);
         expect(await pool.tempus.maturityInterestRate()).to.equal(2.5);

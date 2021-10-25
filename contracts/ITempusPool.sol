@@ -79,6 +79,13 @@ interface ITempusPool is ITempusFees {
     /// @return True if maturity has been reached and the pool was finalized.
     function matured() external view returns (bool);
 
+    /// Finalize the pool. This can only happen on or after `maturityTime`.
+    /// Once finalized depositing is not possible anymore, and the behaviour
+    /// redemption will change.
+    ///
+    /// Can be called by anyone and can be called multiple times.
+    function finalize() external;
+
     /// Deposits yield bearing tokens (such as cDAI) into TempusPool
     ///      msg.sender must approve @param yieldTokenAmount to this TempusPool
     ///      NOTE #1 Deposit will fail if maturity has been reached.

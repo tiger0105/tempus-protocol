@@ -257,6 +257,12 @@ abstract contract TempusPool is ITempusPool {
         redeemedYieldTokens = IERC20(yieldBearingToken).untrustedTransfer(recipient, redeemedYieldTokens);
     }
 
+    function finalize() public override {
+        if (matured() && maturityInterestRate == 0) {
+            maturityInterestRate = currentInterestRate();
+        }
+    }
+
     function burnShares(
         address from,
         uint256 principalAmount,
@@ -273,9 +279,7 @@ abstract contract TempusPool is ITempusPool {
         require(IERC20(address(yieldShare)).balanceOf(from) >= yieldAmount, "Insufficient yields.");
 
         if (matured()) {
-            if (maturityInterestRate == 0) {
-                maturityInterestRate = currentInterestRate();
-            }
+            finalize();
         } else {
             // Redeeming prior to maturity is only allowed in equal amounts.
             require(principalAmount == yieldAmount, "Inequal redemption not allowed before maturity.");

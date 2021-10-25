@@ -105,19 +105,16 @@ describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
     (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/498); // receive 98 back
   });
 
-  it("Should collect tokens as fees after maturity with additional yield with fee percantage 0", async () =>
+  it("Should collect tokens as fees after maturity with additional yield with fee percentage 0", async () =>
   {
     await pool.createDefault();
     await pool.setupAccounts(owner, [[user, 500]]);
 
     await pool.depositYBT(user, 100);
-    await pool.depositYBT(owner, 1);
-    expect(await pool.tempus.contractBalance()).to.equal(101); // all 101 in the pool
+    expect(await pool.tempus.contractBalance()).to.equal(100); // all 100 in the pool
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/400);
 
     await pool.fastForwardToMaturity();
-    // just to update maturity interest rate
-    await pool.redeemToYBT(owner, 1, 1);
     await pool.setInterestRate(1.02);
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/pool.yieldPeggedToAsset ? 408 : 400);
 
@@ -128,19 +125,17 @@ describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
     (await pool.userState(user)).expectMulti(0, 0, /*peggedYBT*/508, /*variableYBT*/498.03921568);
   });
 
-  it("Should collect tokens as fees after maturity with additional yield with fee percantage != 0", async () =>
+  it("Should collect tokens as fees after maturity with additional yield with fee percentage != 0", async () =>
   {
     await pool.createDefault();
     await pool.setupAccounts(owner, [[user, 500]]);
 
     await pool.tempus.setFeesConfig(owner, { depositPercent: 0.0, earlyRedeemPercent: 0.0, matureRedeemPercent: 0.01 });
     await pool.depositYBT(user, 100);
-    await pool.depositYBT(owner, 1);
-    expect(await pool.tempus.contractBalance()).to.equal(101); // all 101 in the pool
+    expect(await pool.tempus.contractBalance()).to.equal(100); // all 100 in the pool
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/400);
 
     await pool.fastForwardToMaturity();
-    await pool.redeemToYBT(owner, 1, 1);
     await pool.setInterestRate(1.02);
     (await pool.userState(user)).expectMulti(100, 100, /*peggedYBT*/408, /*variableYBT*/400);
 
