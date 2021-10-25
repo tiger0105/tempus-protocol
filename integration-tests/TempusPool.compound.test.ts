@@ -31,7 +31,7 @@ const setup = deployments.createFixture(async () => {
   const usdcBackingToken = new ERC20("ERC20FixedSupply", 6, (await ethers.getContract('Usdc')));
   const cUsdcYieldToken = new ERC20("ICErc20", 8, await ethers.getContract("cToken_Usdc"));
   
-  const maturityTime = await blockTimestamp() + 60*60; // maturity is in 1hr
+  const maturityTime = await blockTimestamp() + 60*60*24*5; // maturity is in 5 days
   const names = generateTempusSharesNames("cDai compound token", "cDai", maturityTime);
   const yieldEst = 0.1;
   const controller = await TempusController.deploy(owner);

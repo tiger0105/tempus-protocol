@@ -209,13 +209,6 @@ describeForEachPool("TempusAMM", (testFixture:ITestPool) =>
     await testFixture.amm.provideLiquidity(owner, 100, 1000, 1);
     ampInv = await testFixture.amm.getLastInvariant();
     expect(ampInv.invariant).to.be.within(400 / (1.1 / 1.049), 400 / (1.1 / 1.051));
-    
-    // move to the end of the pool
-    await testFixture.setTimeRelativeToPoolStart(1.0);
-    await testFixture.setInterestRate(1.1);
-    await testFixture.amm.provideLiquidity(owner, 100, 1000, 1);
-    ampInv = await testFixture.amm.getLastInvariant();
-    expect(ampInv.invariant).to.be.equal(600);
   });
 
   it("checks amplification update reverts with invalid args", async () =>

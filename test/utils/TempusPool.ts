@@ -307,6 +307,13 @@ export class TempusPool extends ContractBase {
   }
 
   /**
+   * If contract has matured, then this will finalize the pool by setting maturityInterestRate
+   */
+  async finalize(): Promise<void> {
+    await this.contract.finalize();
+  }
+
+  /**
    * @returns The version of the pool
    */
   async version(): Promise<NumberOrString> {

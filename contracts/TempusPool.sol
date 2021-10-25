@@ -41,8 +41,6 @@ abstract contract TempusPool is ITempusPool {
 
     uint256 private immutable initialEstimatedYield;
 
-    bool public override matured;
-
     FeesConfig feesConfig;
 
     uint256 public immutable override maxDepositFee;
@@ -123,15 +121,8 @@ abstract contract TempusPool is ITempusPool {
         virtual
         returns (uint256 backingTokenAmount);
 
-    /// Finalize the pool after maturity.
-    function finalize() external override onlyController {
-        if (!matured) {
-            require(block.timestamp >= maturityTime, "Maturity not been reached yet.");
-            maturityInterestRate = currentInterestRate();
-            matured = true;
-
-            assert(IERC20(address(principalShare)).totalSupply() == IERC20(address(yieldShare)).totalSupply());
-        }
+    function matured() public view override returns (bool) {
+        return block.timestamp >= maturityTime;
     }
 
     function getFeesConfig() external view override returns (FeesConfig memory) {
@@ -202,7 +193,7 @@ abstract contract TempusPool is ITempusPool {
             uint256 rate
         )
     {
-        require(!matured, "Maturity reached.");
+        require(!matured(), "Maturity reached.");
         rate = updateInterestRate();
         require(rate >= initialInterestRate, "Negative yield!");
 
@@ -266,6 +257,12 @@ abstract contract TempusPool is ITempusPool {
         redeemedYieldTokens = IERC20(yieldBearingToken).untrustedTransfer(recipient, redeemedYieldTokens);
     }
 
+    function finalize() public override {
+        if (matured() && maturityInterestRate == 0) {
+            maturityInterestRate = currentInterestRate();
+        }
+    }
+
     function burnShares(
         address from,
         uint256 principalAmount,
@@ -281,9 +278,12 @@ abstract contract TempusPool is ITempusPool {
         require(IERC20(address(principalShare)).balanceOf(from) >= principalAmount, "Insufficient principals.");
         require(IERC20(address(yieldShare)).balanceOf(from) >= yieldAmount, "Insufficient yields.");
 
-        // Redeeming prior to maturity is only allowed in equal amounts.
-        require(matured || (principalAmount == yieldAmount), "Inequal redemption not allowed before maturity.");
-
+        if (matured()) {
+            finalize();
+        } else {
+            // Redeeming prior to maturity is only allowed in equal amounts.
+            require(principalAmount == yieldAmount, "Inequal redemption not allowed before maturity.");
+        }
         // Burn the appropriate shares
         PrincipalShare(address(principalShare)).burnFrom(from, principalAmount);
         YieldShare(address(yieldShare)).burnFrom(from, yieldAmount);
@@ -320,7 +320,7 @@ abstract contract TempusPool is ITempusPool {
             redeemableBackingTokens = principalAmount + redeemAmountFromYieldShares;
 
             // after maturity, all additional yield is being collected as fee
-            if (matured && currentRate > interestRate) {
+            if (matured() && currentRate > interestRate) {
                 uint256 additionalYieldRate = currentRate - interestRate;
                 uint256 feeBackingAmount = yieldAmount.mulfV(
                     additionalYieldRate.mulfV(initialInterestRate, exchangeRateONE),
@@ -332,7 +332,7 @@ abstract contract TempusPool is ITempusPool {
 
         redeemableYieldTokens = numYieldTokensPerAsset(redeemableBackingTokens, currentRate);
 
-        uint256 redeemFeePercent = matured ? feesConfig.matureRedeemPercent : feesConfig.earlyRedeemPercent;
+        uint256 redeemFeePercent = matured() ? feesConfig.matureRedeemPercent : feesConfig.earlyRedeemPercent;
         if (redeemFeePercent != 0) {
             uint256 regularRedeemFee = redeemableYieldTokens.mulfV(redeemFeePercent, yieldBearingONE);
             redeemableYieldTokens -= regularRedeemFee;
@@ -343,7 +343,7 @@ abstract contract TempusPool is ITempusPool {
     }
 
     function effectiveRate(uint256 currentRate) private view returns (uint256) {
-        if (matured) {
+        if (matured() && maturityInterestRate != 0) {
             return (currentRate < maturityInterestRate) ? currentRate : maturityInterestRate;
         } else {
             return currentRate;
@@ -379,7 +379,7 @@ abstract contract TempusPool is ITempusPool {
     /// @param yieldCurrent Current yield - since beginning of the pool
     /// @return Estimated yield at maturity relative to 1, such as 1.05 (+5%) or 0.97 (-3%)
     function estimatedYield(uint256 yieldCurrent) private view returns (uint256) {
-        if (matured) {
+        if (matured()) {
             return yieldCurrent;
         }
         uint256 currentTime = block.timestamp;

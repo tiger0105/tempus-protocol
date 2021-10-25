@@ -289,12 +289,6 @@ contract TempusController is ReentrancyGuard, Ownable {
         );
     }
 
-    /// Finalize the pool after maturity.
-    function finalize(ITempusPool targetPool) external nonReentrant {
-        requireRegistered(address(targetPool));
-        targetPool.finalize();
-    }
-
     /// Transfers accumulated Yield Bearing Token (YBT) fees
     /// from @param targetPool contract to `recipient`.
     /// @param targetPool The Tempus Pool from which to transfer fees
