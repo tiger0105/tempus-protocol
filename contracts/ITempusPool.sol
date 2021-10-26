@@ -176,6 +176,16 @@ interface ITempusPool is ITempusFees {
             uint256 rate
         );
 
+    /// If an underlying pool is syphoned from all the funds, it runs into
+    /// a danger of having an exchangeRate of 0, which makes redemption impossible.
+    /// In such a situation, governance must vote to recover all YBT,
+    /// so these can be manually exchanged to Backing Tokens from the underlying pool's compensation plan.
+    /// NOTE: This function can only be called if exchangeRate is 0
+    /// NOTE: This function can only be called by the Owner (governance)
+    /// @param receiver Address which will receive the tokens
+    /// @return Amount of YBT transferred to @param receiver
+    function governanceRecoverYBT(address receiver) external returns (uint256);
+
     /// Gets the estimated amount of Principals and Yields after a successful deposit
     /// @param amount Amount of BackingTokens or YieldBearingTokens that would be deposited
     /// @param isBackingToken If true, @param amount is in BackingTokens, otherwise YieldBearingTokens

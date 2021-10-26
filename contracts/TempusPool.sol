@@ -342,6 +342,14 @@ abstract contract TempusPool is ITempusPool {
         }
     }
 
+    function governanceRecoverYBT(address receiver) external override onlyOwner returns (uint256) {
+        require(updateInterestRate() == 0, "rate must be 0");
+        uint256 totalYBTLocked = IERC20(yieldBearingToken).balanceOf(address(this));
+        require(totalYBTLocked != 0, "total locked YBT is 0");
+        IERC20(yieldBearingToken).transfer(receiver, totalYBTLocked);
+        return totalYBTLocked;
+    }
+
     function effectiveRate(uint256 currentRate) private view returns (uint256) {
         if (matured() && maturityInterestRate != 0) {
             return (currentRate < maturityInterestRate) ? currentRate : maturityInterestRate;
