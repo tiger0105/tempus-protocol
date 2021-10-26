@@ -283,7 +283,7 @@ contract TempusController is ReentrancyGuard, Ownable {
             lpTokens,
             principals,
             yields,
-            getAMMOrderedAmounts(tempusAMM.tempusPool(), minPrincipalsStaked, minYieldsStaked),
+            getAMMOrderedAmounts(tempusAMM, minPrincipalsStaked, minYieldsStaked),
             maxLeftoverShares,
             toBackingToken
         );
@@ -557,8 +557,7 @@ contract TempusController is ReentrancyGuard, Ownable {
     ) private {
         require(tempusAMM.transferFrom(msg.sender, address(this), lpTokensAmount), "LP token transfer failed");
 
-        ITempusPool tempusPool = tempusAMM.tempusPool();
-        uint256[] memory amounts = getAMMOrderedAmounts(tempusPool, principalAmountOutMin, yieldAmountOutMin);
+        uint256[] memory amounts = getAMMOrderedAmounts(tempusAMM, principalAmountOutMin, yieldAmountOutMin);
         _exitTempusAMMGivenLP(tempusAMM, address(this), msg.sender, lpTokensAmount, amounts, toInternalBalances);
     }
 
@@ -624,7 +623,7 @@ contract TempusController is ReentrancyGuard, Ownable {
         // transfer LP tokens to controller
         require(tempusAMM.transferFrom(msg.sender, address(this), maxLpTokensToRedeem), "LP token transfer failed");
 
-        uint256[] memory amounts = getAMMOrderedAmounts(tempusPool, principalsStaked, yieldsStaked);
+        uint256[] memory amounts = getAMMOrderedAmounts(tempusAMM, principalsStaked, yieldsStaked);
         _exitTempusAMMGivenAmountsOut(tempusAMM, address(this), msg.sender, amounts, maxLpTokensToRedeem, false);
 
         // transfer remainder of LP tokens back to user
@@ -715,12 +714,14 @@ contract TempusController is ReentrancyGuard, Ownable {
     }
 
     function getAMMOrderedAmounts(
-        ITempusPool tempusPool,
+        ITempusAMM tempusAMM,
         uint256 principalAmount,
         uint256 yieldAmount
     ) private view returns (uint256[] memory) {
+        IVault vault = tempusAMM.getVault();
+        (IERC20[] memory ammTokens, , ) = vault.getPoolTokens(tempusAMM.getPoolId());
         uint256[] memory amounts = new uint256[](2);
-        (amounts[0], amounts[1]) = (tempusPool.principalShare() < tempusPool.yieldShare())
+        (amounts[0], amounts[1]) = (address(tempusAMM.tempusPool().principalShare()) == address(ammTokens[0]))
             ? (principalAmount, yieldAmount)
             : (yieldAmount, principalAmount);
         return amounts;
