@@ -266,6 +266,7 @@ contract TempusController is ReentrancyGuard, Ownable {
     /// @param minPrincipalsStaked Minimum amount of staked principals to redeem for `lpTokens`
     /// @param minYieldsStaked Minimum amount of staked yields to redeem for `lpTokens`
     /// @param maxLeftoverShares Maximum amount of Principals or Yields to be left in case of early exit
+    /// @param minRate Minimum rate for possible swap if swap is needed to end with equal shgares
     /// @param toBackingToken If true redeems to backing token, otherwise redeems to yield bearing
     function exitTempusAmmAndRedeem(
         ITempusAMM tempusAMM,
@@ -275,6 +276,7 @@ contract TempusController is ReentrancyGuard, Ownable {
         uint256 minPrincipalsStaked,
         uint256 minYieldsStaked,
         uint256 maxLeftoverShares,
+        uint256 minRate,
         bool toBackingToken
     ) external nonReentrant {
         requireRegistered(address(tempusAMM));
@@ -285,6 +287,7 @@ contract TempusController is ReentrancyGuard, Ownable {
             yields,
             getAMMOrderedAmounts(tempusAMM, minPrincipalsStaked, minYieldsStaked),
             maxLeftoverShares,
+            minRate,
             toBackingToken
         );
     }
@@ -644,6 +647,7 @@ contract TempusController is ReentrancyGuard, Ownable {
         uint256 yields,
         uint256[] memory minLpAmountsOut,
         uint256 maxLeftoverShares,
+        uint256 minRate,
         bool toBackingToken
     ) private {
         ITempusPool tempusPool = tempusAMM.tempusPool();
@@ -665,21 +669,15 @@ contract TempusController is ReentrancyGuard, Ownable {
         yields = yieldShare.balanceOf(address(this));
 
         if (!tempusPool.matured()) {
-            bool yieldsIn = yields > principals;
-            uint256 difference = yieldsIn ? (yields - principals) : (principals - yields);
+            uint256 difference = (yields > principals) ? (yields - principals) : (principals - yields);
 
             if (difference >= maxLeftoverShares) {
-                (IERC20 tokenIn, IERC20 tokenOut) = yieldsIn
+                (IERC20 tokenIn, IERC20 tokenOut) = (yields > principals)
                     ? (yieldShare, principalShare)
                     : (principalShare, yieldShare);
 
-                swap(
-                    tempusAMM,
-                    tempusAMM.getSwapAmountToEndWithEqualShares(principals, yields, maxLeftoverShares),
-                    tokenIn,
-                    tokenOut,
-                    0
-                );
+                uint256 swapAmount = tempusAMM.getSwapAmountToEndWithEqualShares(principals, yields, maxLeftoverShares);
+                swap(tempusAMM, swapAmount, tokenIn, tokenOut, swapAmount.mulfV(minRate, tempusPool.backingTokenONE()));
 
                 principals = principalShare.balanceOf(address(this));
                 yields = yieldShare.balanceOf(address(this));
