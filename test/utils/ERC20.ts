@@ -1,12 +1,12 @@
 import { Contract } from "ethers";
 import { NumberOrString } from "./Decimal";
 import { ContractBase, SignerOrAddress, Signer, addressOf } from "./ContractBase";
+import { IERC20 } from "./IERC20";
 
 /**
  * Typed wrapper for ERC20 contracts
  */
-export class ERC20 extends ContractBase {
-
+export class ERC20 extends ContractBase implements IERC20 {
   constructor(contractName:string, decimals:number, contract?:Contract) {
     super(contractName, decimals/*default decimals*/, contract);
   }
@@ -78,9 +78,9 @@ export class ERC20 extends ContractBase {
    * @param recipient ERC20 transfer recipient's address
    * @param amount Amount of tokens to send in contract decimals, eg 2.0 or "0.00001"
    */
-  async transfer(sender:SignerOrAddress, recipient:SignerOrAddress, etherAmount:NumberOrString) {
+  async transfer(sender:SignerOrAddress, recipient:SignerOrAddress, amount:NumberOrString): Promise<any> {
     const connected = this.connect(sender);
-    return await connected.transfer(addressOf(recipient), this.toBigNum(etherAmount));
+    return await connected.transfer(addressOf(recipient), this.toBigNum(amount));
   }
 
   /**
@@ -100,7 +100,7 @@ export class ERC20 extends ContractBase {
    * @param spender ERC20 approve's, spender's address
    * @param amount Amount of tokens to approve in contract decimals, eg 2.0 or "0.00001"
    */
-  async approve(caller:SignerOrAddress, spender:SignerOrAddress, amount:NumberOrString) {
+  async approve(caller:SignerOrAddress, spender:SignerOrAddress, amount:NumberOrString): Promise<any> {
     const connected = this.connect(caller);
     return await connected.approve(addressOf(spender), this.toBigNum(amount));
   }
@@ -112,7 +112,7 @@ export class ERC20 extends ContractBase {
    * @param recipient ERC20 transferFrom recipient's address
    * @param amount Amount of tokens to send in contract decimals, eg 2.0 or "0.00001"
    */
-  async transferFrom(sender:SignerOrAddress, recipient:SignerOrAddress, amount:NumberOrString) {
+  async transferFrom(sender:SignerOrAddress, recipient:SignerOrAddress, amount:NumberOrString): Promise<any> {
     await this.contract.transferFrom(addressOf(sender), addressOf(recipient), this.toBigNum(amount));
   }
 

@@ -2,6 +2,7 @@ import { ITestPool, TempusAMMParams } from "./ITestPool";
 import { TokenInfo } from "./TokenInfo";
 import { ContractBase, Signer, SignerOrAddress } from "../utils/ContractBase";
 import { ERC20 } from "../utils/ERC20";
+import { IERC20 } from "../utils/IERC20";
 import { TempusPool, PoolType } from "../utils/TempusPool";
 import { Comptroller } from "../utils/Comptroller";
 import { NumberOrString } from "test/utils/Decimal";
@@ -19,7 +20,7 @@ export class CompoundTestPool extends ITestPool {
   public pool(): ContractBase {
     return this.compound;
   }
-  public asset(): ERC20 {
+  public asset(): IERC20 {
     return this.compound.asset;
   }
   public yieldToken(): ERC20 {

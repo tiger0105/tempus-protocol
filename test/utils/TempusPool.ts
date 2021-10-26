@@ -2,6 +2,7 @@ import { BigNumber, BytesLike, Contract, Transaction } from "ethers";
 import { NumberOrString, toWei, parseDecimal, formatDecimal } from "./Decimal";
 import { ContractBase, Signer, SignerOrAddress, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
+import { IERC20 } from "./IERC20";
 import { PoolShare, ShareKind } from "./PoolShare";
 import { TempusController } from "./TempusController";
 
@@ -49,7 +50,7 @@ export class TempusPool extends ContractBase {
   type:PoolType;
   owner:Signer;
   controller:TempusController;
-  asset:ERC20; // asset token or in case of Lido, mocked asset
+  asset:IERC20; // asset token or in case of Lido, ETH wrapper
   yieldBearing:ERC20; // actual yield bearing token such as AToken or CToken
   principalShare:PoolShare;
   yieldShare:PoolShare;
@@ -60,7 +61,7 @@ export class TempusPool extends ContractBase {
     owner:Signer,
     pool:Contract,
     controller:TempusController,
-    asset:ERC20,
+    asset:IERC20,
     yieldBearing:ERC20,
     principalShare:PoolShare,
     yieldShare:PoolShare,
@@ -88,7 +89,7 @@ export class TempusPool extends ContractBase {
    */
   static async deployAave(
     owner:Signer,
-    asset:ERC20,
+    asset:IERC20,
     yieldToken:ERC20,
     controller:TempusController,
     maturityTime:number,
@@ -111,7 +112,7 @@ export class TempusPool extends ContractBase {
    */
   static async deployCompound(
     owner:Signer,
-    asset:ERC20,
+    asset:IERC20,
     yieldToken:ERC20,
     controller:TempusController,
     maturityTime:number,
@@ -134,7 +135,7 @@ export class TempusPool extends ContractBase {
    */
   static async deployLido(
     owner:Signer,
-    asset:ERC20,
+    asset:IERC20,
     yieldToken:ERC20,
     controller:TempusController,
     maturityTime:number,
@@ -173,7 +174,7 @@ export class TempusPool extends ContractBase {
     type:PoolType,
     owner:Signer,
     controller:TempusController,
-    asset:ERC20,
+    asset:IERC20,
     yieldToken:ERC20,
     maturityTime:number,
     estimatedYield:number,

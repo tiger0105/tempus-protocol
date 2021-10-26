@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { Contract, BigNumber } from "ethers";
-import { NumberOrString, parseDecimal, formatDecimal, MAX_NUMBER_DIGITS } from "./Decimal";
+import { NumberOrString, parseDecimal, formatDecimal, MAX_NUMBER_DIGITS, DecimalConvertible } from "./Decimal";
 import * as signers from "@nomiclabs/hardhat-ethers/dist/src/signers";
 
 export type Signer = signers.SignerWithAddress;
@@ -19,19 +19,18 @@ export function addressOf(signer:SignerOrAddress) {
  * Base class for Any contract
  * Contains several utilities for deploying, attaching and type conversions
  */
-export abstract class ContractBase
+export abstract class ContractBase extends DecimalConvertible
 {
   contractName:string;
   contract:Contract;
-  decimals:number;
   address:string; // address of the contract, `this.contract.address`
 
   constructor(contractName:string, decimals:number, contract?:Contract) {
+    super(decimals);
     if (!contractName)
       throw new Error("`contractName` cannot be empty or null");
     this.contractName = contractName;
     this.contract = contract!;
-    this.decimals = decimals;
     this.address = contract ? contract.address : '0x0';
   }
 
@@ -45,23 +44,6 @@ export abstract class ContractBase
   /** Connects a user to the contract, so that transactions can be sent by the user */
   connect(user:SignerOrAddress): Contract {
     return this.contract.connect(user);
-  }
-
-  /** @return Converts a Number or String into this Contract's BigNumber decimal */
-  toBigNum(amount:NumberOrString):BigNumber {
-    if (typeof(amount) === "string") {
-      return parseDecimal(amount, this.decimals);
-    }
-    const decimal = amount.toString();
-    if (decimal.length > MAX_NUMBER_DIGITS) {
-      throw new Error("ERC20.toBigNum possible number overflow, use a string instead: " + decimal);
-    }
-    return parseDecimal(decimal, this.decimals);
-  }
-
-  /** @return Converts a BN big decimal of this Contract into a String or Number */
-  fromBigNum(contractDecimal:BigNumber): NumberOrString {
-    return formatDecimal(contractDecimal, this.decimals);
   }
 
   /**

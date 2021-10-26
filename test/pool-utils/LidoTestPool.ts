@@ -1,9 +1,9 @@
 import { Transaction } from "ethers";
-import { ethers } from "hardhat";
 import { ITestPool, TempusAMMParams } from "./ITestPool";
 import { TokenInfo } from "./TokenInfo";
 import { ContractBase, Signer, SignerOrAddress } from "../utils/ContractBase";
 import { ERC20 } from "../utils/ERC20";
+import { IERC20 } from "../utils/IERC20";
 import { TempusPool, PoolType } from "../utils/TempusPool";
 import { Lido } from "../utils/Lido";
 import { fromWei, NumberOrString } from "../utils/Decimal";
@@ -20,18 +20,17 @@ export class LidoTestPool extends ITestPool {
   public pool(): ContractBase {
     return this.lido;
   }
-  public asset(): ERC20 {
+  public asset(): IERC20 {
     return this.lido.asset;
   }
   public yieldToken(): ERC20 {
     return this.lido.yieldToken;
   }
   async yieldTokenBalance(user:SignerOrAddress): Promise<NumberOrString> {
-    return this.lido.balanceOf(user);
+    return this.lido.yieldToken.balanceOf(user);
   }
   async backingTokenBalance(user:Signer): Promise<NumberOrString> {
-    const ethBalance = await ethers.provider.getBalance(user.address);
-    return fromWei(ethBalance);
+    return this.lido.asset.balanceOf(user);
   }
   async setInterestRate(rate:number): Promise<void> {
     await this.lido.setInterestRate(rate);

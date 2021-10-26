@@ -1,6 +1,7 @@
 import { ITestPool, TempusAMMParams } from "./ITestPool";
 import { ContractBase, Signer, SignerOrAddress } from "../utils/ContractBase";
 import { ERC20 } from "../utils/ERC20";
+import { IERC20 } from "../utils/IERC20";
 import { TempusPool, PoolType } from "../utils/TempusPool";
 import { YearnVault } from "../utils/YearnVault";
 import { NumberOrString } from "test/utils/Decimal";
@@ -18,7 +19,7 @@ export class YearnTestPool extends ITestPool {
   public pool(): ContractBase {
     return this.yearn;
   }
-  public asset(): ERC20 {
+  public asset(): IERC20 {
     return this.yearn.asset;
   }
   public yieldToken(): ERC20 {
