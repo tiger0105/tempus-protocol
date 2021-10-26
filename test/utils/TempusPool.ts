@@ -276,7 +276,7 @@ export class TempusPool extends ContractBase {
    * @param recipient Address to which redeemed Backing Tokens should be transferred
    */
   async redeemToBacking(user:SignerOrAddress, principalAmount:NumberOrString, yieldAmount:NumberOrString, from: SignerOrAddress = user, recipient: SignerOrAddress = user): Promise<Transaction> {
-    return this.contract.connect(user).redeemToBacking(
+    return this.connect(user).redeemToBacking(
       addressOf(from), this.principalShare.toBigNum(principalAmount), this.yieldShare.toBigNum(yieldAmount), addressOf(recipient)
     );
   }
@@ -291,12 +291,21 @@ export class TempusPool extends ContractBase {
    */
   async redeem(user:SignerOrAddress, principalAmount:NumberOrString, yieldAmount:NumberOrString, from: SignerOrAddress = user, recipient: SignerOrAddress = user): Promise<Transaction> {
     try {
-      return this.contract.connect(user).redeem(
+      return this.connect(user).redeem(
         addressOf(from), this.principalShare.toBigNum(principalAmount), this.yieldShare.toBigNum(yieldAmount), addressOf(recipient)
       );
     } catch(e) {
       throw new Error("TempusPool.redeem failed: " + e.message);
     }
+  }
+
+  /**
+   * If exchangeRate == 0, can be used to recover all YBT to manually return tokens to users
+   * @param owner Owner of this pool
+   * @param receiver Account which will receive all YBT
+   */
+  async governanceRecoverYBT(owner:SignerOrAddress, receiver:SignerOrAddress): Promise<void> {
+    await this.connect(owner).governanceRecoverYBT(addressOf(receiver));
   }
 
   /**
