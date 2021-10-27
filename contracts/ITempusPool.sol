@@ -79,15 +79,14 @@ interface ITempusPool is ITempusFees {
     /// @return True if maturity has been reached and the pool was finalized.
     function matured() external view returns (bool);
 
-    /// Finalize the pool. This can only happen on or after `maturityTime`.
+    /// Finalizes the pool. This can only happen on or after `maturityTime`.
     /// Once finalized depositing is not possible anymore, and the behaviour
     /// redemption will change.
     ///
     /// Can be called by anyone and can be called multiple times.
     function finalize() external;
 
-    /// Deposits yield bearing tokens (such as cDAI) into TempusPool
-    ///      msg.sender must approve @param yieldTokenAmount to this TempusPool
+    /// Yield bearing tokens deposit hook.
     /// @notice Deposit will fail if maturity has been reached.
     /// @notice This function can only be called by TempusController
     /// @notice This function assumes funds were already transferred to the TempusPool from the TempusController
@@ -97,7 +96,7 @@ interface ITempusPool is ITempusFees {
     /// @return depositedBT The YBT value deposited, denominated as Backing Tokens
     /// @return fee The fee which was deducted (in terms of YBT)
     /// @return rate The interest rate at the time of the deposit
-    function deposit(uint256 yieldTokenAmount, address recipient)
+    function onDepositYieldBearing(uint256 yieldTokenAmount, address recipient)
         external
         returns (
             uint256 mintedShares,
@@ -106,7 +105,7 @@ interface ITempusPool is ITempusFees {
             uint256 rate
         );
 
-    /// Deposits backing token to the underlying protocol, and then to Tempus Pool.
+    /// Backing tokens deposit hook.
     /// @notice Deposit will fail if maturity has been reached.
     /// @notice This function can only be called by TempusController
     /// @notice This function assumes funds were already transferred to the TempusPool from the TempusController
@@ -116,7 +115,7 @@ interface ITempusPool is ITempusFees {
     /// @return depositedYBT The BT value deposited, denominated as Yield Bearing Tokens
     /// @return fee The fee which was deducted (in terms of YBT)
     /// @return rate The interest rate at the time of the deposit
-    function depositBacking(uint256 backingTokenAmount, address recipient)
+    function onDepositBacking(uint256 backingTokenAmount, address recipient)
         external
         payable
         returns (
@@ -126,7 +125,7 @@ interface ITempusPool is ITempusFees {
             uint256 rate
         );
 
-    /// Redeem yield bearing tokens from this TempusPool
+    /// Redeems yield bearing tokens from this TempusPool
     ///      msg.sender will receive the YBT
     ///      NOTE #1 Before maturity, principalAmount must equal to yieldAmount.
     ///      NOTE #2 This function can only be called by TempusController
@@ -150,7 +149,7 @@ interface ITempusPool is ITempusFees {
             uint256 rate
         );
 
-    /// Redeem TPS+TYS held by msg.sender into backing tokens
+    /// Redeems TPS+TYS held by msg.sender into backing tokens
     ///      `msg.sender` must approve TPS and TYS amounts to this TempusPool.
     ///      `msg.sender` will receive the backing tokens
     ///      NOTE #1 Before maturity, principalAmount must equal to yieldAmount.

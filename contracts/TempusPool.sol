@@ -145,7 +145,7 @@ abstract contract TempusPool is ITempusPool {
         token.safeTransfer(recipient, amount);
     }
 
-    function depositBacking(uint256 backingTokenAmount, address recipient)
+    function onDepositBacking(uint256 backingTokenAmount, address recipient)
         external
         payable
         override
@@ -162,10 +162,10 @@ abstract contract TempusPool is ITempusPool {
         depositedYBT = depositToUnderlying(backingTokenAmount);
         assert(depositedYBT > 0);
 
-        (mintedShares, , fee, rate) = _deposit(depositedYBT, recipient);
+        (mintedShares, , fee, rate) = _mintShares(depositedYBT, recipient);
     }
 
-    function deposit(uint256 yieldTokenAmount, address recipient)
+    function onDepositYieldBearing(uint256 yieldTokenAmount, address recipient)
         external
         override
         onlyController
@@ -178,11 +178,12 @@ abstract contract TempusPool is ITempusPool {
     {
         require(yieldTokenAmount > 0, "yieldTokenAmount must be greater than 0");
 
-        (mintedShares, depositedBT, fee, rate) = _deposit(yieldTokenAmount, recipient);
+        (mintedShares, depositedBT, fee, rate) = _mintShares(yieldTokenAmount, recipient);
     }
 
     /// @param yieldTokenAmount YBT amount in YBT decimal precision
-    function _deposit(uint256 yieldTokenAmount, address recipient)
+    /// @param recipient address to which shares will be minted
+    function _mintShares(uint256 yieldTokenAmount, address recipient)
         internal
         returns (
             uint256 mintedShares,

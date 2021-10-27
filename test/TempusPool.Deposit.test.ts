@@ -101,7 +101,7 @@ describeForEachPool("TempusPool Deposit", (pool:PoolTestFixture) =>
     await pool.createDefault();
     await pool.setupAccounts(owner, [[user, 500]]);
     
-    (await expectRevert(pool.tempus.deposit(user, 1, user))).to.equal("Only callable by TempusController");
+    (await expectRevert(pool.tempus.onDepositYieldBearing(user, 1, user))).to.equal("Only callable by TempusController");
   });
 
   it("Should increase YBT 2x after changing rate to 2.0", async () =>
