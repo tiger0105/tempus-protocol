@@ -1,11 +1,11 @@
 import { utils } from "ethers";
 import { expect } from "chai";
-import { ITestPool } from "./pool-utils/ITestPool";
+import { PoolTestFixture } from "./pool-utils/PoolTestFixture";
 import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
 import { TempusPool } from "./utils/TempusPool";
 import { expectRevert, blockTimestamp } from "./utils/Utils";
 
-describeForEachPool("TempusPool Deploy", (testPool:ITestPool) =>
+describeForEachPool("TempusPool Deploy", (testPool:PoolTestFixture) =>
 {
   let pool:TempusPool;
 

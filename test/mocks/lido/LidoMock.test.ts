@@ -3,10 +3,10 @@ import { Lido } from "../../utils/Lido";
 import { Signer } from "../../utils/ContractBase";
 import { expectRevert } from "../../utils/Utils";
 import { PoolType } from "../../utils/TempusPool";
-import { ITestPool } from "../../pool-utils/ITestPool";
+import { PoolTestFixture } from "../../pool-utils/PoolTestFixture";
 import { describeForEachPool } from "../../pool-utils/MultiPoolTestSuite";
 
-describeForEachPool.type("Lido Mock", [PoolType.Lido], (testPool:ITestPool) =>
+describeForEachPool.type("Lido Mock", [PoolType.Lido], (testPool:PoolTestFixture) =>
 {
   let owner:Signer, user:Signer;
   let lido:Lido;

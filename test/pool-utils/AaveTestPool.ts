@@ -1,4 +1,4 @@
-import { ITestPool, TempusAMMParams } from "./ITestPool";
+import { PoolTestFixture, TempusAMMParams } from "./PoolTestFixture";
 import { TokenInfo } from "./TokenInfo";
 import { ContractBase, Signer, SignerOrAddress } from "../utils/ContractBase";
 import { ERC20 } from "../utils/ERC20";
@@ -7,7 +7,7 @@ import { TempusPool, PoolType } from "../utils/TempusPool";
 import { Aave } from "../utils/Aave";
 import { NumberOrString } from "../utils/Decimal";
 
-export class AaveTestPool extends ITestPool {
+export class AaveTestPool extends PoolTestFixture {
   aave:Aave;
   ASSET_TOKEN:TokenInfo;
   YIELD_TOKEN:TokenInfo;

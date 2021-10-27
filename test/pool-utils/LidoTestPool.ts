@@ -1,5 +1,5 @@
 import { Transaction } from "ethers";
-import { ITestPool, TempusAMMParams } from "./ITestPool";
+import { PoolTestFixture, TempusAMMParams } from "./PoolTestFixture";
 import { TokenInfo } from "./TokenInfo";
 import { ContractBase, Signer, SignerOrAddress } from "../utils/ContractBase";
 import { ERC20 } from "../utils/ERC20";
@@ -8,7 +8,7 @@ import { TempusPool, PoolType } from "../utils/TempusPool";
 import { Lido } from "../utils/Lido";
 import { fromWei, NumberOrString } from "../utils/Decimal";
 
-export class LidoTestPool extends ITestPool {
+export class LidoTestPool extends PoolTestFixture {
   lido:Lido;
   ASSET_TOKEN:TokenInfo;
   YIELD_TOKEN:TokenInfo;

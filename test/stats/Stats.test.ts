@@ -2,12 +2,12 @@ import { expect } from "chai";
 import { Signer } from "../utils/ContractBase";
 import { TempusPool } from "../utils/TempusPool";
 import { describeForEachPool } from "../pool-utils/MultiPoolTestSuite";
-import { ITestPool } from "../pool-utils/ITestPool";
+import { PoolTestFixture } from "../pool-utils/PoolTestFixture";
 import { Stats } from "../utils/Stats";
 import { TempusController } from "../utils/TempusController";
 import { TempusAMM, TempusAMMJoinKind } from "../utils/TempusAMM";
 
-describeForEachPool("Stats", (testPool:ITestPool) =>
+describeForEachPool("Stats", (testPool:PoolTestFixture) =>
 {
   let owner:Signer, user1:Signer, user2:Signer;
   let pool:TempusPool;

@@ -1,4 +1,4 @@
-import { ITestPool, TempusAMMParams } from "./ITestPool";
+import { PoolTestFixture, TempusAMMParams } from "./PoolTestFixture";
 import { ContractBase, Signer, SignerOrAddress } from "../utils/ContractBase";
 import { ERC20 } from "../utils/ERC20";
 import { IERC20 } from "../utils/IERC20";
@@ -7,7 +7,7 @@ import { YearnVault } from "../utils/YearnVault";
 import { NumberOrString } from "test/utils/Decimal";
 import { TokenInfo } from "./TokenInfo";
 
-export class YearnTestPool extends ITestPool {
+export class YearnTestPool extends PoolTestFixture {
   yearn:YearnVault;
   ASSET_TOKEN:TokenInfo;
   YIELD_TOKEN:TokenInfo;

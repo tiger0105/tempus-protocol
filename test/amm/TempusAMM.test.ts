@@ -6,7 +6,7 @@ import { PoolType, TempusPool } from "../utils/TempusPool";
 import { evmMine, evmSetAutomine, expectRevert, increaseTime } from "../utils/Utils";
 import { TempusAMM, TempusAMMExitKind, TempusAMMJoinKind } from "../utils/TempusAMM";
 import { describeForEachPool } from "../pool-utils/MultiPoolTestSuite";
-import { ITestPool } from "../pool-utils/ITestPool";
+import { PoolTestFixture } from "../pool-utils/PoolTestFixture";
 import exp = require("constants");
 import { ethers } from "hardhat";
 
@@ -32,7 +32,7 @@ interface CreateParams {
   ammBalancePrincipal?:number;
 }
 
-describeForEachPool("TempusAMM", (testFixture:ITestPool) =>
+describeForEachPool("TempusAMM", (testFixture:PoolTestFixture) =>
 {
   let owner:Signer, user:Signer, user1:Signer;
   const SWAP_FEE_PERC:number = 0.02;
