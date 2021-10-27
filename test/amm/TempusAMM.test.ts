@@ -333,7 +333,7 @@ describeForEachPool("TempusAMM", (testFixture:ITestPool) =>
     await tempusAMM.provideLiquidity(user1, 100, 1000, TempusAMMJoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT);
     
     expect(+await tempusAMM.balanceOf(user1)).to.be.within(180, 181);
-    expect(+await tempusAMM.getRate()).to.be.within(1.00598, 1.0060);
+    expect(+await tempusAMM.getRate()).to.be.within(1.005975, 1.0060);
   });
 
   it("test swaps principal in with balances aligned with Interest Rate", async () =>

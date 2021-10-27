@@ -9,6 +9,7 @@ export enum PoolType {
   Aave = "Aave",
   Lido = "Lido",
   Compound = "Compound",
+  Yearn = "Yearn",
 }
 
 export interface TempusSharesNames {
@@ -145,6 +146,29 @@ export class TempusPool extends ContractBase {
     );
   }
 
+  /**
+   * Deploys YearnTempusPool
+   * @param owner Owner who deploys TempusPool and also deployed Controller
+   * @param yieldToken The yield bearing token, such as yvBoost
+   * @param controller The Tempus Controller address to bind to the TempusPool
+   * @param maturityTime Maturity time of the pool
+   * @param estimatedYield Initial estimated APR
+   * @param tempusShareNames Symbol names for TPS+TYS
+   */
+   static async deployYearn(
+     owner:Signer,
+     asset:ERC20,
+     yieldToken:ERC20,
+     controller: TempusController,
+     maturityTime:number,
+     estimatedYield:number,
+     tempusShareNames:TempusSharesNames
+  ): Promise<TempusPool> {
+    return TempusPool.deploy(
+      PoolType.Yearn, owner, controller, asset, yieldToken, maturityTime, estimatedYield, tempusShareNames
+    );
+  }
+
   static async deploy(
     type:PoolType,
     owner:Signer,
@@ -207,6 +231,25 @@ export class TempusPool extends ContractBase {
         controller.address,
         maturityTime,
         parseDecimal(1.0, exchangeRatePrec),
+        parseDecimal(estimatedYield, exchangeRatePrec),
+        shareNames.principalName,
+        shareNames.principalSymbol,
+        shareNames.yieldName,
+        shareNames.yieldSymbol,
+        /*maxFeeSetup:*/{
+          depositPercent:      yieldToken.toBigNum(0.5), // fees are stored in YBT
+          earlyRedeemPercent:  yieldToken.toBigNum(1.0),
+          matureRedeemPercent: yieldToken.toBigNum(0.5)
+        }
+      );
+    } else if (type === PoolType.Yearn) {
+      exchangeRatePrec = asset.decimals; // exchange rate precision = Underlying Token Decimals
+      pool = await ContractBase.deployContractBy(
+        type + "TempusPool",
+        owner,
+        yieldToken.address,
+        controller.address,
+        maturityTime,
         parseDecimal(estimatedYield, exchangeRatePrec),
         shareNames.principalName,
         shareNames.principalSymbol,

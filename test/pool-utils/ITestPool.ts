@@ -1,11 +1,11 @@
 import { expect } from "chai";
-import { Transaction } from "ethers";
+import { BigNumber, Transaction } from "ethers";
 import { ethers, deployments } from "hardhat";
 import { ContractBase, Signer, SignerOrAddress } from "../utils/ContractBase";
 import { TempusPool, PoolType, TempusSharesNames, generateTempusSharesNames } from "../utils/TempusPool";
 import { blockTimestamp, setEvmTime, setNextBlockTimestamp } from "../utils/Utils";
 import { ERC20 } from "../utils/ERC20";
-import { NumberOrString } from "../utils/Decimal";
+import { NumberOrString, formatDecimal } from "../utils/Decimal";
 import { getRevertMessage } from "../utils/Utils";
 import { TempusController } from "../utils/TempusController";
 import { TempusAMM } from "../utils/TempusAMM";
@@ -15,13 +15,21 @@ export class UserState {
   yieldShares:Number;
   yieldBearing:Number;
   yieldPeggedToAsset:boolean;
+  yieldBearingEpsilon: number;
 
   // non-async to give us actual test failure line #
   public expectMulti(principalShares:number, yieldShares:number, yieldBearingPegged:number, yieldBearingVariable:number, message:string = null) {
     const msg = message ? (": expected " + message) : "";
     expect(this.principalShares).to.equal(principalShares, "principalShares did not match expected value"+msg);
     expect(this.yieldShares).to.equal(yieldShares, "yieldShares did not match expected value"+msg);
-    expect(this.yieldBearing).to.equal(this.yieldPeggedToAsset ? yieldBearingPegged : yieldBearingVariable, "yieldBearing did not match expected value"+msg);
+    
+    const yieldBearing = this.yieldPeggedToAsset ? yieldBearingPegged : yieldBearingVariable;
+    /// allow smallest rounding errors
+    expect(this.yieldBearing).to.be.within(
+      yieldBearing - this.yieldBearingEpsilon,
+      yieldBearing + this.yieldBearingEpsilon,
+      "yieldBearing did not match expected value"+msg
+    );
   }
 
   // non-async to give us actual test failure line #
@@ -29,7 +37,13 @@ export class UserState {
     const msg = message ? (": expected " + message) : "";
     expect(this.principalShares).to.equal(principalShares, ("principalShares did not match expected value"+msg));
     expect(this.yieldShares).to.equal(yieldShares, ("yieldShares did not match expected value"+msg));
-    expect(this.yieldBearing).to.equal(yieldBearing, ("yieldBearing did not match expected value"+msg));
+    
+    /// allow smallest rounding errors
+    expect(this.yieldBearing).to.be.within(
+      yieldBearing - this.yieldBearingEpsilon,
+      yieldBearing + this.yieldBearingEpsilon,
+      ("yieldBearing did not match expected value"+msg)
+    );
   }
 }
 
@@ -302,6 +316,7 @@ export abstract class ITestPool {
     state.yieldShares = Number(await this.tempus.yieldShare.balanceOf(user));
     state.yieldBearing = Number(await this.yieldTokenBalance(user));
     state.yieldPeggedToAsset = this.yieldPeggedToAsset;
+    state.yieldBearingEpsilon = Number(formatDecimal(BigNumber.from(1), this.tempus.yieldBearing.decimals));
     return state;
   }
 

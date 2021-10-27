@@ -1,6 +1,7 @@
 import { ITestPool } from "./ITestPool";
 import { AaveTestPool } from "./AaveTestPool";
 import { LidoTestPool } from "./LidoTestPool";
+import { YearnTestPool } from "./YearnTestPool";
 import { TokenInfo } from "./TokenInfo";
 import { CompoundTestPool } from "./CompoundTestPool";
 import { PoolType } from "../utils/TempusPool";
@@ -9,7 +10,7 @@ import { Suite } from "mocha";
 // Set this to `PoolType.XXX` if you want to only run one specific pool's tests
 const ONLY_RUN_POOL:PoolType = undefined;
 const ONLY_YIELD_TOKEN:string = undefined;
-const ALL_POOLS = [PoolType.Aave, PoolType.Lido, PoolType.Compound];
+const ALL_POOLS = [PoolType.Aave, PoolType.Lido, PoolType.Compound, PoolType.Yearn];
 const TOTAL_SUPPLY = 10000000000;
 
 // pairs of [ASSET_TOKEN, YIELD_TOKEN] infos
@@ -38,6 +39,16 @@ const TOKENS: { [type:string]: TokenInfo[][]; } = {
     [
       { decimals:18, name:"wETH Mock", symbol:"wETH", totalSupply:TOTAL_SUPPLY },
       { decimals:18, name:"Liquid staked Ether 2.0", symbol:"stETH" }
+    ]
+  ],
+  "Yearn": [
+    [
+      { decimals:18, name:"Dai Stablecoin", symbol:"DAI", totalSupply:TOTAL_SUPPLY },
+      { decimals:18,  name:"Dai yVault",   symbol:"yvDAI" }
+    ],
+    [
+      { decimals:6, name:"USD Coin",          symbol:"USDC", totalSupply:TOTAL_SUPPLY },
+      { decimals:6, name:"USDC yVault", symbol:"yvUSDC" }
     ]
   ]
 };
@@ -82,6 +93,7 @@ function _describeForEachPoolType(title:string, poolTypes:PoolType[], only:boole
           case PoolType.Aave:     pool = new AaveTestPool(ASSET_TOKEN, YIELD_TOKEN); break;
           case PoolType.Lido:     pool = new LidoTestPool(ASSET_TOKEN, YIELD_TOKEN); break;
           case PoolType.Compound: pool = new CompoundTestPool(ASSET_TOKEN, YIELD_TOKEN); break;
+          case PoolType.Yearn: pool = new YearnTestPool(ASSET_TOKEN, YIELD_TOKEN); break;
         }
         fn(pool);
       };
