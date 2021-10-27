@@ -6,7 +6,7 @@ import { ERC20 } from "../utils/ERC20";
 import { IERC20 } from "../utils/IERC20";
 import { TempusPool, PoolType } from "../utils/TempusPool";
 import { Lido } from "../utils/Lido";
-import { fromWei, NumberOrString } from "../utils/Decimal";
+import { NumberOrString } from "../utils/Decimal";
 
 export class LidoTestPool extends PoolTestFixture {
   lido:Lido;
