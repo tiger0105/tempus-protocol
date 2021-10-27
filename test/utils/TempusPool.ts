@@ -281,32 +281,15 @@ export class TempusPool extends ContractBase {
     return this.yieldBearing.balanceOf(this.contract.address);
   }
 
-  /**
-   * Deposits yield bearing tokens into Tempus Pool on behalf of user
-   * @param user User who is depositing
-   * @param yieldBearingAmount Amount of Yield Bearing Tokens to deposit
-   * @param recipient Address or User who will receive the minted shares
-   */
-  async deposit(user:SignerOrAddress, yieldBearingAmount:NumberOrString, recipient:SignerOrAddress): Promise<Transaction> {
-    try {
-      await this.yieldBearing.approve(user, this.contract.address, yieldBearingAmount);
-      return this.connect(user).deposit(
-        this.yieldBearing.toBigNum(yieldBearingAmount), addressOf(recipient)
-      );
-      // NOTE: we can't easily test the return value of a transaction, so it's omitted
-    } catch(e) {
-      throw new Error("TempusPool.deposit failed: " + e.message);
-    }
+  async onDepositYieldBearing(user:SignerOrAddress, yieldBearingAmount:NumberOrString, recipient:SignerOrAddress): Promise<Transaction> {
+    await this.yieldBearing.approve(user, this.contract.address, yieldBearingAmount);
+    return this.connect(user).onDepositYieldBearing(
+      this.yieldBearing.toBigNum(yieldBearingAmount), addressOf(recipient)
+    );
   }
 
-  /**
-  * Deposits backing tokens into Tempus Pool on behalf of user
-  * @param user User who is depositing
-  * @param yieldBearingAmount Amount of Backing Tokens to deposit
-  * @param recipient Address or User who will receive the minted shares
-  */
-  async depositBacking(user:SignerOrAddress, backingTokenAmount:NumberOrString, recipient:SignerOrAddress, ethValue: NumberOrString = 0): Promise<Transaction> {
-    return this.connect(user).depositBacking(
+  async onDepositBacking(user:SignerOrAddress, backingTokenAmount:NumberOrString, recipient:SignerOrAddress, ethValue: NumberOrString = 0): Promise<Transaction> {
+    return this.connect(user).onDepositBacking(
       this.asset.toBigNum(backingTokenAmount), addressOf(recipient), { value: toWei(ethValue)}
     );
   }

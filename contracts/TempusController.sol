@@ -446,7 +446,10 @@ contract TempusController is ReentrancyGuard, Ownable {
             yieldTokenAmount
         );
 
-        (uint mintedShares, uint depositedBT, uint fee, uint rate) = targetPool.deposit(transferredYBT, recipient);
+        (uint mintedShares, uint depositedBT, uint fee, uint rate) = targetPool.onDepositYieldBearing(
+            transferredYBT,
+            recipient
+        );
 
         emit Deposited(
             address(targetPool),
@@ -481,7 +484,7 @@ contract TempusController is ReentrancyGuard, Ownable {
             require(address(backingToken) == address(0), "given TempusPool's Backing Token is not ETH");
         }
 
-        (uint256 mintedShares, uint256 depositedYBT, uint256 fee, uint256 interestRate) = targetPool.depositBacking{
+        (uint256 mintedShares, uint256 depositedYBT, uint256 fee, uint256 interestRate) = targetPool.onDepositBacking{
             value: msg.value
         }(backingTokenAmount, recipient);
 
