@@ -177,8 +177,6 @@ abstract contract TempusPool is ITempusPool {
         )
     {
         require(yieldTokenAmount > 0, "yieldTokenAmount must be greater than 0");
-        // Collect the deposit
-        yieldTokenAmount = IERC20(yieldBearingToken).untrustedTransferFrom(msg.sender, address(this), yieldTokenAmount);
 
         (mintedShares, depositedBT, fee, rate) = _deposit(yieldTokenAmount, recipient);
     }

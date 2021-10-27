@@ -88,8 +88,9 @@ interface ITempusPool is ITempusFees {
 
     /// Deposits yield bearing tokens (such as cDAI) into TempusPool
     ///      msg.sender must approve @param yieldTokenAmount to this TempusPool
-    ///      NOTE #1 Deposit will fail if maturity has been reached.
-    ///      NOTE #2 This function can only be called by TempusController
+    /// @notice Deposit will fail if maturity has been reached.
+    /// @notice This function can only be called by TempusController
+    /// @notice This function assumes funds were already transferred to the TempusPool from the TempusController
     /// @param yieldTokenAmount Amount of yield bearing tokens to deposit in YieldToken decimal precision
     /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
     /// @return mintedShares Amount of TPS and TYS minted to `recipient`
@@ -106,8 +107,9 @@ interface ITempusPool is ITempusFees {
         );
 
     /// Deposits backing token to the underlying protocol, and then to Tempus Pool.
-    ///      NOTE #1 Deposit will fail if maturity has been reached.
-    ///      NOTE #2 This function can only be called by TempusController
+    /// @notice Deposit will fail if maturity has been reached.
+    /// @notice This function can only be called by TempusController
+    /// @notice This function assumes funds were already transferred to the TempusPool from the TempusController
     /// @param backingTokenAmount amount of Backing Tokens to be deposited to underlying protocol in BackingToken decimal precision
     /// @param recipient Address which will receive Tempus Principal Shares (TPS) and Tempus Yield Shares (TYS)
     /// @return mintedShares Amount of TPS and TYS minted to `recipient`

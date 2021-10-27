@@ -59,9 +59,6 @@ contract AaveTempusPool is TempusPool {
     function depositToUnderlying(uint256 amount) internal override returns (uint256) {
         require(msg.value == 0, "ETH deposits not supported");
 
-        // Pull user's Backing Tokens
-        amount = IERC20(backingToken).untrustedTransferFrom(msg.sender, address(this), amount);
-
         // Deposit to AAVE
         IERC20(backingToken).safeIncreaseAllowance(address(aavePool), amount);
         aavePool.deposit(address(backingToken), amount, address(this), 0);

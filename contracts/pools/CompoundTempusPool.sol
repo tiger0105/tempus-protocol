@@ -59,9 +59,6 @@ contract CompoundTempusPool is TempusPool {
 
         uint preDepositBalance = IERC20(yieldBearingToken).balanceOf(address(this));
 
-        // Pull user's Backing Tokens
-        backingAmount = IERC20(backingToken).untrustedTransferFrom(msg.sender, address(this), backingAmount);
-
         // Deposit to Compound
         IERC20(backingToken).safeIncreaseAllowance(yieldBearingToken, backingAmount);
         require(ICErc20(yieldBearingToken).mint(backingAmount) == 0, "CErc20 mint failed");

@@ -439,9 +439,12 @@ contract TempusController is ReentrancyGuard, Ownable {
 
         IERC20 yieldBearingToken = IERC20(targetPool.yieldBearingToken());
 
-        // Deposit to controller and approve transfer from controller to targetPool
-        uint transferredYBT = yieldBearingToken.untrustedTransferFrom(msg.sender, address(this), yieldTokenAmount);
-        yieldBearingToken.safeIncreaseAllowance(address(targetPool), transferredYBT);
+        // Transfer funds from msg.sender to targetPool
+        uint transferredYBT = yieldBearingToken.untrustedTransferFrom(
+            msg.sender,
+            address(targetPool),
+            yieldTokenAmount
+        );
 
         (uint mintedShares, uint depositedBT, uint fee, uint rate) = targetPool.deposit(transferredYBT, recipient);
 
@@ -469,8 +472,11 @@ contract TempusController is ReentrancyGuard, Ownable {
         IERC20 backingToken = IERC20(targetPool.backingToken());
 
         if (msg.value == 0) {
-            backingTokenAmount = backingToken.untrustedTransferFrom(msg.sender, address(this), backingTokenAmount);
-            backingToken.safeIncreaseAllowance(address(targetPool), backingTokenAmount);
+            backingTokenAmount = backingToken.untrustedTransferFrom(
+                msg.sender,
+                address(targetPool),
+                backingTokenAmount
+            );
         } else {
             require(address(backingToken) == address(0), "given TempusPool's Backing Token is not ETH");
         }
