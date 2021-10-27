@@ -1,10 +1,10 @@
 import { expect } from "chai";
 import { PoolType } from "./utils/TempusPool";
-import { ITestPool } from "./pool-utils/ITestPool";
+import { PoolTestFixture } from "./pool-utils/PoolTestFixture";
 import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
 import { expectRevert } from "./utils/Utils";
 
-describeForEachPool.type("TempusPool Redeem", [PoolType.Aave, PoolType.Compound], (pool:ITestPool) =>
+describeForEachPool.type("TempusPool Redeem", [PoolType.Aave, PoolType.Compound], (pool:PoolTestFixture) =>
 {
   it("Should redeem correct BackingTokens after depositing BackingTokens", async () =>
   {
@@ -47,7 +47,7 @@ describeForEachPool.type("TempusPool Redeem", [PoolType.Aave, PoolType.Compound]
   });
 });
 
-describeForEachPool("TempusPool Redeem", (pool: ITestPool) =>
+describeForEachPool("TempusPool Redeem", (pool: PoolTestFixture) =>
 {
   it("Should revert when trying to call redeem BT directly on TempusPool (not via the TempusController)", async () => 
   {
@@ -59,7 +59,7 @@ describeForEachPool("TempusPool Redeem", (pool: ITestPool) =>
   });
 });
 
-describeForEachPool.type("TempusPool Redeem", [PoolType.Lido], (pool:ITestPool) =>
+describeForEachPool.type("TempusPool Redeem", [PoolType.Lido], (pool:PoolTestFixture) =>
 {
   it("Should revert on redeem", async () =>
   {

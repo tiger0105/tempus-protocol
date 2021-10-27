@@ -1,4 +1,4 @@
-import { ITestPool, TempusAMMParams } from "./ITestPool";
+import { PoolTestFixture, TempusAMMParams } from "./PoolTestFixture";
 import { TokenInfo } from "./TokenInfo";
 import { ContractBase, Signer, SignerOrAddress } from "../utils/ContractBase";
 import { ERC20 } from "../utils/ERC20";
@@ -8,7 +8,7 @@ import { Comptroller } from "../utils/Comptroller";
 import { NumberOrString } from "test/utils/Decimal";
 
 // Compound CErc20
-export class CompoundTestPool extends ITestPool {
+export class CompoundTestPool extends PoolTestFixture {
   compound:Comptroller;
   ASSET_TOKEN:TokenInfo;
   YIELD_TOKEN:TokenInfo;

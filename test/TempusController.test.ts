@@ -6,12 +6,12 @@ import { expectRevert } from "./utils/Utils";
 import { PoolType, TempusPool } from "./utils/TempusPool";
 import { TempusController } from "./utils/TempusController";
 import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
-import { ITestPool } from "./pool-utils/ITestPool";
+import { PoolTestFixture } from "./pool-utils/PoolTestFixture";
 import { BigNumber } from "@ethersproject/bignumber";
 
 const SWAP_LIMIT_ERROR_MESSAGE = "BAL#507";
 
-describeForEachPool("TempusController", (testPool:ITestPool) =>
+describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
 {
   let owner:Signer, user1:Signer, user2:Signer;
   let pool:TempusPool;

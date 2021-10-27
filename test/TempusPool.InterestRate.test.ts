@@ -2,10 +2,10 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { Signer } from "./utils/ContractBase";
-import { ITestPool } from "./pool-utils/ITestPool";
+import { PoolTestFixture } from "./pool-utils/PoolTestFixture";
 import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
 
-describeForEachPool("TempusPool InterestRate", (pool:ITestPool) =>
+describeForEachPool("TempusPool InterestRate", (pool:PoolTestFixture) =>
 {
   it("Should give correct Interest Rate and token amounts with Rate=1.0", async () =>
   {

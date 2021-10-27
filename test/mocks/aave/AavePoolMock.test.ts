@@ -2,10 +2,10 @@ import { expect } from "chai";
 import { Aave } from "../../utils/Aave";
 import { Signer } from "../../utils/ContractBase";
 import { PoolType } from "../../utils/TempusPool";
-import { ITestPool } from "../../pool-utils/ITestPool";
+import { PoolTestFixture } from "../../pool-utils/PoolTestFixture";
 import { describeForEachPool } from "../../pool-utils/MultiPoolTestSuite";
 
-describeForEachPool.type("AAVE Mock", [PoolType.Aave], async (testPool:ITestPool) =>
+describeForEachPool.type("AAVE Mock", [PoolType.Aave], async (testPool:PoolTestFixture) =>
 {
   let owner:Signer, user:Signer;
   let pool:Aave;

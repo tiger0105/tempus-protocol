@@ -1,4 +1,4 @@
-import { ITestPool } from "./ITestPool";
+import { PoolTestFixture } from "./PoolTestFixture";
 import { AaveTestPool } from "./AaveTestPool";
 import { LidoTestPool } from "./LidoTestPool";
 import { YearnTestPool } from "./YearnTestPool";
@@ -53,7 +53,7 @@ const TOKENS: { [type:string]: TokenInfo[][]; } = {
   ]
 };
 
-function _describeForEachPoolType(title:string, poolTypes:PoolType[], only:boolean, fn:(pool:ITestPool) => void)
+function _describeForEachPoolType(title:string, poolTypes:PoolType[], only:boolean, fn:(pool:PoolTestFixture) => void)
 {
   let parent:Suite = null;
 
@@ -88,7 +88,7 @@ function _describeForEachPoolType(title:string, poolTypes:PoolType[], only:boole
           console.log('\x1b[F\x1b[100C\x1b[%sm%sms\x1b[0m', color, elapsedMs);
         });
   
-        let pool:ITestPool;
+        let pool:PoolTestFixture;
         switch (type) {
           case PoolType.Aave:     pool = new AaveTestPool(ASSET_TOKEN, YIELD_TOKEN); break;
           case PoolType.Lido:     pool = new LidoTestPool(ASSET_TOKEN, YIELD_TOKEN); break;
@@ -115,27 +115,27 @@ interface MultiPoolSuiteFunction {
   /**
    * Batch describes unit test block for each specified PoolType
    */
-  (title:string, fn:(pool:ITestPool) => void): void;
+  (title:string, fn:(pool:PoolTestFixture) => void): void;
 
   /**
    * Batch describes unit test block for specific PoolTypes
    */
-  type: (title:string, poolTypes:PoolType[], fn:(pool:ITestPool) => void) => void;
+  type: (title:string, poolTypes:PoolType[], fn:(pool:PoolTestFixture) => void) => void;
 
   /**
    * Indicates this suite should be executed exclusively.
    */
-  only: (title:string, fn:(pool:ITestPool) => void) => void;
+  only: (title:string, fn:(pool:PoolTestFixture) => void) => void;
 }
 
 function createDescribeForEachPool(): MultiPoolSuiteFunction {
-  const f:MultiPoolSuiteFunction = (title:string, fn:(pool:ITestPool) => void) => {
+  const f:MultiPoolSuiteFunction = (title:string, fn:(pool:PoolTestFixture) => void) => {
     _describeForEachPoolType(title, ALL_POOLS, /*only*/false, fn);
   };
-  f.type = (title:string, poolTypes:PoolType[], fn:(pool:ITestPool) => void) => {
+  f.type = (title:string, poolTypes:PoolType[], fn:(pool:PoolTestFixture) => void) => {
     _describeForEachPoolType(title, poolTypes, /*only*/false, fn);
   };
-  f.only = (title:string, fn:(pool:ITestPool) => void) => {
+  f.only = (title:string, fn:(pool:PoolTestFixture) => void) => {
     _describeForEachPoolType(title, ALL_POOLS, /*only*/true, fn);
   };
   return f;

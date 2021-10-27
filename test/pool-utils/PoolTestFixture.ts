@@ -78,7 +78,7 @@ export interface TempusAMMParams {
 // each parameter set is kept separately here
 const POOL_FIXTURES: { [signature: string]: FixtureState } = {};
 
-export abstract class ITestPool {
+export abstract class PoolTestFixture {
   type:PoolType;
 
   // if true, underlying pool pegs YieldToken 1:1 to BackingToken

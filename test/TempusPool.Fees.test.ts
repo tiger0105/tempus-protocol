@@ -1,12 +1,12 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { ITestPool } from "./pool-utils/ITestPool";
+import { PoolTestFixture } from "./pool-utils/PoolTestFixture";
 import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
 
 import { Signer } from "./utils/ContractBase";
 import { expectRevert } from "./utils/Utils";
 
-describeForEachPool("TempusPool Fees", (pool:ITestPool) =>
+describeForEachPool("TempusPool Fees", (pool:PoolTestFixture) =>
 {
   let owner:Signer, user:Signer, user2:Signer;
 

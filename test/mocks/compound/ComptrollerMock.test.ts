@@ -3,10 +3,10 @@ import { Comptroller } from "../../utils/Comptroller";
 import { Signer } from "../../utils/ContractBase";
 import { expectRevert } from "../../utils/Utils";
 import { PoolType } from "../../utils/TempusPool";
-import { ITestPool } from "../../pool-utils/ITestPool";
+import { PoolTestFixture } from "../../pool-utils/PoolTestFixture";
 import { describeForEachPool } from "../../pool-utils/MultiPoolTestSuite";
 
-describeForEachPool.type("Compound Mock", [PoolType.Compound], async (testPool:ITestPool) =>
+describeForEachPool.type("Compound Mock", [PoolType.Compound], async (testPool:PoolTestFixture) =>
 {
   let owner:Signer, user:Signer;
   let pool:Comptroller;

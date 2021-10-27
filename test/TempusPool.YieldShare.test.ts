@@ -1,8 +1,8 @@
 import { expect } from "chai";
-import { ITestPool } from "./pool-utils/ITestPool";
+import { PoolTestFixture } from "./pool-utils/PoolTestFixture";
 import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
 
-describeForEachPool("TempusPool YieldShare", (pool:ITestPool) =>
+describeForEachPool("TempusPool YieldShare", (pool:PoolTestFixture) =>
 {
   it("Should have correct rates for Yields and Principals before Maturity", async () =>
   {

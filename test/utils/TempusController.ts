@@ -2,7 +2,7 @@ import { Contract, Transaction } from "ethers";
 import { NumberOrString, toWei } from "./Decimal";
 import { ContractBase, Signer, SignerOrAddress, addressOf } from "./ContractBase";
 import { TempusPool } from "./TempusPool";
-import { ITestPool } from "../pool-utils/ITestPool";
+import { PoolTestFixture } from "../pool-utils/PoolTestFixture";
 
 /**
  * Wrapper around TempusController
@@ -111,7 +111,7 @@ export class TempusController extends ContractBase {
   /**
    * Approves either BT or YBT transfer
    */
-  async approve(pool:ITestPool, user:SignerOrAddress, amount:NumberOrString, isBackingToken:boolean) {
+  async approve(pool:PoolTestFixture, user:SignerOrAddress, amount:NumberOrString, isBackingToken:boolean) {
     const token = isBackingToken ? pool.asset() : pool.yieldToken();
     await token.approve(user, this.address, amount);
   }
@@ -126,7 +126,7 @@ export class TempusController extends ContractBase {
    * @param ethValue value of ETH to send with the tx
    */
   async depositAndProvideLiquidity(
-    pool: ITestPool,
+    pool: PoolTestFixture,
     user: SignerOrAddress,
     tokenAmount: NumberOrString,
     isBackingToken: boolean,
@@ -149,7 +149,7 @@ export class TempusController extends ContractBase {
    * @param ethValue value of ETH to send with the tx
    */
   async depositAndFix(
-    pool: ITestPool,
+    pool: PoolTestFixture,
     user: SignerOrAddress,
     tokenAmount: NumberOrString,
     isBackingToken: boolean,
@@ -164,7 +164,7 @@ export class TempusController extends ContractBase {
   }
 
   async provideLiquidity(
-    pool: ITestPool,
+    pool: PoolTestFixture,
     user: SignerOrAddress,
     sharesAmount: NumberOrString
   ): Promise<Transaction> {
@@ -174,7 +174,7 @@ export class TempusController extends ContractBase {
   }
 
   async exitTempusAMMAndRedeem(
-    pool: ITestPool,
+    pool: PoolTestFixture,
     user: SignerOrAddress,
     principals: NumberOrString,
     yields: NumberOrString,
@@ -198,7 +198,7 @@ export class TempusController extends ContractBase {
   }
 
   async exitTempusAmm(
-    pool: ITestPool,
+    pool: PoolTestFixture,
     user: SignerOrAddress,
     lpTokensAmount: Number
   ): Promise<Transaction> {
@@ -208,7 +208,7 @@ export class TempusController extends ContractBase {
   }
 
   async exitTempusAmmAndRedeem(
-    pool:ITestPool, 
+    pool:PoolTestFixture, 
     user: SignerOrAddress, 
     lpTokens:NumberOrString, 
     principals:NumberOrString, 
@@ -246,7 +246,7 @@ export class TempusController extends ContractBase {
   /**
    * Transfers fees from contract to recipient
    */
-  async transferFees(pool:ITestPool, owner:SignerOrAddress, recipient:SignerOrAddress) {
+  async transferFees(pool:PoolTestFixture, owner:SignerOrAddress, recipient:SignerOrAddress) {
     await this.connect(owner).transferFees(pool.tempus.address, addressOf(recipient));
   }
 }

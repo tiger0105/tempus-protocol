@@ -1,9 +1,9 @@
 import { expect } from "chai";
-import { ITestPool } from "./pool-utils/ITestPool";
+import { PoolTestFixture } from "./pool-utils/PoolTestFixture";
 import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
 import { expectRevert } from "./utils/Utils";
 
-describeForEachPool("TempusPool Redeem", (pool:ITestPool) =>
+describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
 {
   it("Should emit correct event on redemption", async () =>
   {
