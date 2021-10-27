@@ -1,19 +1,12 @@
 import { expect } from "chai";
 import { BigNumber } from "ethers";
-import { fromWei, NumberOrString } from "../utils/Decimal";
+import { NumberOrString } from "../utils/Decimal";
 import { Signer } from "../utils/ContractBase";
-import { PoolType, TempusPool } from "../utils/TempusPool";
+import { TempusPool } from "../utils/TempusPool";
 import { evmMine, evmSetAutomine, expectRevert, increaseTime } from "../utils/Utils";
-import { TempusAMM, TempusAMMExitKind, TempusAMMJoinKind } from "../utils/TempusAMM";
+import { TempusAMM, TempusAMMJoinKind } from "../utils/TempusAMM";
 import { describeForEachPool } from "../pool-utils/MultiPoolTestSuite";
 import { PoolTestFixture } from "../pool-utils/PoolTestFixture";
-import exp = require("constants");
-import { ethers } from "hardhat";
-
-enum SwapType {
-  SWAP_GIVEN_IN,
-  SWAP_GIVEN_OUT
-}
 
 interface SwapTestRun {
   amplification:number;

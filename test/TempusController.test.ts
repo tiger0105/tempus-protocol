@@ -1,5 +1,4 @@
 import { expect } from "chai";
-import { fromWei, ONE_WEI, toWei } from "./utils/Decimal";
 import { Signer } from "./utils/ContractBase";
 import { TempusAMM, TempusAMMJoinKind } from "./utils/TempusAMM";
 import { expectRevert } from "./utils/Utils";
@@ -32,7 +31,7 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
   {
     const principals = await pool.principalShare.balanceOf(amm.vault.address);
     const yields = await pool.yieldShare.balanceOf(amm.vault.address);
-    return ONE_WEI.mul(toWei(principals)).div(toWei(yields));
+    return amm.toBigNum(1.0).mul(amm.toBigNum(principals)).div(amm.toBigNum(yields));
   }
 
   // pre-initialize AMM liquidity
@@ -308,7 +307,7 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
         900000, 
         "balance should decrease as there is some of it locked in amm"
       );
-      expect(+fromWei(await testPool.amm.contract.balanceOf(user1.address))).to.be.within(181000, 182000);
+      expect(+await testPool.amm.balanceOf(user1)).to.be.within(181000, 182000);
       
       await testPool.setInterestRate(1.1);
       await testPool.fastForwardToMaturity();
@@ -343,7 +342,7 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
         900000,
         "balance should decrease as there is some of it locked in amm"
       );
-      expect(+fromWei(await testPool.amm.contract.balanceOf(user1.address))).to.be.within(181000, 182000);
+      expect(+await testPool.amm.balanceOf(user1)).to.be.within(181000, 182000);
 
       await testPool.setInterestRate(1.1);
       await testPool.fastForwardToMaturity();

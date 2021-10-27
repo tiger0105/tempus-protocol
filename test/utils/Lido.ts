@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { BigNumber, Contract } from "ethers";
-import { NumberOrString, toWei, ONE_WEI } from "./Decimal";
+import { NumberOrString } from "./Decimal";
 import { ContractBase, SignerOrAddress, Signer, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
 import { ERC20Ether } from "./ERC20Ether";
@@ -80,11 +80,12 @@ export class Lido extends ERC20 {
     const totalShares:BigNumber = await this.contract.getTotalShares();
     const curRate = await this.contract._getInterestRate();
     const newRate = this.toBigNum(interestRate);
-    const difference = newRate.mul(ONE_WEI).div(curRate).sub(ONE_WEI);
+    const ONE = this.toBigNum(1.0);
+    const difference = newRate.mul(ONE).div(curRate).sub(ONE);
     if (difference.isZero())
       return;
 
-    const change = totalETHSupply.mul(difference).div(ONE_WEI);
+    const change = totalETHSupply.mul(difference).div(ONE);
     const newETHSupply = totalETHSupply.add(change);
     await this.contract._setSharesAndEthBalance(totalShares, newETHSupply);
   }
@@ -108,7 +109,7 @@ export class Lido extends ERC20 {
    * @param balance Actual balance in the ETH2 oracle
    */
   async pushBeacon(owner:Signer, validators:number, balance:number): Promise<void> {
-    await this.connect(owner).pushBeacon(validators, toWei(balance));
+    await this.connect(owner).pushBeacon(validators, this.toBigNum(balance));
   }
   // pushes balance to achieve certain amount of `totalRewards`
   async pushBeaconRewards(owner:Signer, validators:number, rewards:number): Promise<void> {
@@ -119,7 +120,7 @@ export class Lido extends ERC20 {
   async withdraw(signer:Signer, shareAmount:Number): Promise<void> {
     // We ignore the pubKeyHash.
     const hash = ethers.utils.formatBytes32String("");
-    await this.connect(signer).withdraw(toWei(shareAmount), hash);
+    await this.connect(signer).withdraw(this.toBigNum(shareAmount), hash);
   }
   async printState(title: string, owner: string, user: string) {
     console.log("State:", title);
