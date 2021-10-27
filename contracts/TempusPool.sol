@@ -463,9 +463,9 @@ abstract contract TempusPool is ITempusPool {
     /// @return Stored Interest Rate, decimal precision depends on specific TempusPool implementation
     function currentInterestRate() public view virtual override returns (uint256);
 
-    function numYieldTokensPerAsset(uint backingTokens, uint interestRate) public pure virtual override returns (uint);
+    function numYieldTokensPerAsset(uint backingTokens, uint interestRate) public view virtual override returns (uint);
 
-    function numAssetsPerYieldToken(uint yieldTokens, uint interestRate) public pure virtual override returns (uint);
+    function numAssetsPerYieldToken(uint yieldTokens, uint interestRate) public view virtual override returns (uint);
 
     /// @return Converts an interest rate decimal into a Principal/Yield Share decimal
     function interestRateToSharePrice(uint interestRate) internal view virtual returns (uint);
