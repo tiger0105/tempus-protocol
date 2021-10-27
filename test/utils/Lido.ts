@@ -1,30 +1,29 @@
 import { ethers } from "hardhat";
 import { BigNumber, Contract } from "ethers";
-import { NumberOrString, toWei, ONE_WEI, parseDecimal } from "./Decimal";
+import { NumberOrString, toWei, ONE_WEI } from "./Decimal";
 import { ContractBase, SignerOrAddress, Signer, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
+import { ERC20Ether } from "./ERC20Ether";
 import { TokenInfo } from "../pool-utils/TokenInfo";
 
 export class Lido extends ERC20 {
   // asset is ETH
-  asset:ERC20; // wETH mock
+  asset:ERC20Ether; // ERC20 Ether Wrapper (not WETH!)
   yieldToken:ERC20; // StETH
 
-  constructor(pool:Contract, mockAsset:ERC20) {
-    super("LidoMock", mockAsset.decimals, pool);
-    this.asset = mockAsset;
+  constructor(pool:Contract, asset:ERC20Ether) {
+    super("LidoMock", asset.decimals, pool);
+    this.asset = asset;
     this.yieldToken = this; // for Lido, the pool itself is the Yield Token
   }
 
   /**
-   * @param ASSET ASSET token info
+   * @param ASSET ASSET token info (IGNORED)
    * @param YIELD YIELD token info
    * @param initialRate Initial interest rate
    */
   static async create(ASSET:TokenInfo, YIELD:TokenInfo, initialRate:Number): Promise<Lido> {
-    const asset = await ERC20.deploy(
-      "ERC20FixedSupply", ASSET.decimals, ASSET.decimals, ASSET.name, ASSET.symbol, parseDecimal(ASSET.totalSupply, ASSET.decimals)
-    );
+    const asset = new ERC20Ether();
     const pool = await ContractBase.deployContract(
       "LidoMock", YIELD.decimals, YIELD.name, YIELD.symbol
     );

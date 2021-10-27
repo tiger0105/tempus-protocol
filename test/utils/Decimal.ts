@@ -74,3 +74,33 @@ export function fromRay(wei:BigNumber): NumberOrString {
 export function toEth(wei:BigNumber): NumberOrString {
   return formatDecimal(wei, 18);
 }
+
+/**
+ * A type which has a standard `decimals` property
+ * and can convert TypeScript number types into Solidity
+ * contract fixed decimal point integers
+ */
+export class DecimalConvertible {
+  decimals:number; // number of decimals for this fixed point number
+  
+  constructor(decimals:number) {
+    this.decimals = decimals;
+  }
+
+  /** @return Converts a Number or String into this Contract's BigNumber decimal */
+  public toBigNum(amount:NumberOrString):BigNumber {
+    if (typeof(amount) === "string") {
+      return parseDecimal(amount, this.decimals);
+    }
+    const decimal = amount.toString();
+    if (decimal.length > MAX_NUMBER_DIGITS) {
+      throw new Error("toBigNum possible number overflow, use a string instead: " + decimal);
+    }
+    return parseDecimal(decimal, this.decimals);
+  }
+
+  /** @return Converts a BN big decimal of this Contract into a String or Number */
+  public fromBigNum(contractDecimal:BigNumber): NumberOrString {
+    return formatDecimal(contractDecimal, this.decimals);
+  }
+}

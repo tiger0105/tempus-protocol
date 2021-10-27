@@ -5,6 +5,7 @@ import { ContractBase, Signer, SignerOrAddress } from "../utils/ContractBase";
 import { TempusPool, PoolType, TempusSharesNames, generateTempusSharesNames } from "../utils/TempusPool";
 import { blockTimestamp, setEvmTime, setNextBlockTimestamp } from "../utils/Utils";
 import { ERC20 } from "../utils/ERC20";
+import { IERC20 } from "../utils/IERC20";
 import { NumberOrString, formatDecimal } from "../utils/Decimal";
 import { getRevertMessage } from "../utils/Utils";
 import { TempusController } from "../utils/TempusController";
@@ -111,7 +112,7 @@ export abstract class ITestPool {
   /**
    * @return The underlying asset token of the backing pool
    */
-  abstract asset(): ERC20;
+  abstract asset(): IERC20;
 
   /**
    * @return The yield token of the backing tool

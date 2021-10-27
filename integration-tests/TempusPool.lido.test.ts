@@ -8,6 +8,7 @@ import {
 import { blockTimestamp } from '../test/utils/Utils';
 import { generateTempusSharesNames, TempusPool } from "../test/utils/TempusPool";
 import { ERC20 } from "../test/utils/ERC20";
+import { ERC20Ether } from "../test/utils/ERC20Ether";
 import { TempusController } from "../test/utils/TempusController";
 import { fromWei, parseDecimal, toWei } from "../test/utils/Decimal";
 import { BigNumber } from "ethers";
@@ -24,7 +25,7 @@ const setup = deployments.createFixture(async () => {
 
   // NOTE: using Weth here as a mock ETH ticker for the testing system
   // Lido actually uses native ETH
-  const Weth = new ERC20("ERC20", 18, (await ethers.getContract("Weth")));
+  const eth = new ERC20Ether();
   const lido = new ERC20("ILido", 18, (await ethers.getContract('Lido')));
   const lidoOracle = await ethers.getContract('LidoOracle');
 
@@ -34,7 +35,7 @@ const setup = deployments.createFixture(async () => {
 
   const controller = await TempusController.deploy(owner);
   const tempusPool = await TempusPool.deployLido(
-    owner, Weth, lido, controller, maturityTime, yieldEst, names
+    owner, eth, lido, controller, maturityTime, yieldEst, names
   );
 
   return {
