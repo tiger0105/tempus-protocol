@@ -45,42 +45,5 @@ describe("Tempus Token", async () => {
       expect(await token.balanceOf(user1)).to.equal(0);
       expect(await token.totalSupply()).to.equal(Number(initialTotalSupply) - amount);
     });
-
-    it("Should allow users to burn their other users' tokens if approved", async () =>
-    {
-      const amount = 10;
-      const initialTotalSupply = await token.totalSupply();
-
-      await token.transfer(owner, user1, amount); // Owner transfers to User
-      expect(await token.balanceOf(user1)).to.equal(amount);
-
-      await token.approve(user1, user2, amount);
-      await token.burnFrom(user2, user1, amount);
-
-      expect(await token.balanceOf(user1)).to.equal(0);
-      expect(await token.totalSupply()).to.equal(Number(initialTotalSupply) - amount);
-    });
-
-    it("Should not allow users to burn other users' tokens", async () =>
-    {
-      const amount = 10;
-
-      await token.transfer(owner, user1, amount); // Owner transfers to User
-      expect(await token.balanceOf(user1)).to.equal(amount);
-
-      // User tries to burn another user's tokens
-      (await expectRevert(token.burnFrom(user2, user1, amount))).to.equal("ERC20: burn amount exceeds allowance");
-    });
-
-    it("Should not allow owner to burn users' tokens", async () =>
-    {
-      const amount = 10;
-
-      await token.transfer(owner, user1, amount); // Owner transfers to User
-      expect(await token.balanceOf(user1)).to.equal(amount);
-
-      // Owner burns User, but more than existing
-      (await expectRevert(token.burnFrom(owner, user1, 10))).to.equal("ERC20: burn amount exceeds allowance");
-    });
   });
 });
