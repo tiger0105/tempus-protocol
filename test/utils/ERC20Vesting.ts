@@ -65,6 +65,10 @@ export class ERC20Vesting extends ContractBase {
     return this.connect(sender).stopVesting(addressOf(receiver));
   }
 
+  async transferVesting(sender:SignerOrAddress, receiver:SignerOrAddress): Promise<Transaction> {
+    return this.connect(sender).transferVesting(addressOf(receiver));
+  }
+
   async claimable(receiver:SignerOrAddress): Promise<NumberOrString> {
     return this.fromBigNum(await this.contract.claimable(addressOf(receiver)));
   }
