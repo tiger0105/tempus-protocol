@@ -137,6 +137,7 @@ jobs:
             sudo yarn mythx-install
       - run:
           name: "Run mythx"
+          no_output_timeout: 30m
           command: yarn mythx-pool
 
   runMythX-AMM:
@@ -156,6 +157,7 @@ jobs:
             sudo yarn mythx-install
       - run:
           name: "Run mythx"
+          no_output_timeout: 30m
           command: yarn mythx-amm
 
   runMythX-Misc:
@@ -175,6 +177,7 @@ jobs:
             sudo yarn mythx-install
       - run:
           name: "Run mythx"
+          no_output_timeout: 30m
           command: yarn mythx-misc
 
 workflows:
