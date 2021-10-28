@@ -147,7 +147,7 @@ export class TempusController extends ContractBase {
    * @param isBackingToken Specifies whether the deposited asset is YBT or BT
    * @param minTYSRate Minimum TYS rate (denominated in TPS) to receive in exchange to TPS
    * @param ethValue value of ETH to send with the tx
-   * @param deadline A timestamp after which, if a swap is necessary, it would forcibly reverted
+   * @param deadline A timestamp by which the transaction must be completed, otherwise it would revert
    */
   async depositAndFix(
     pool: PoolTestFixture,
