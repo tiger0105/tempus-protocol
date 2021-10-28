@@ -120,14 +120,16 @@ contract TempusController is ReentrancyGuard, Ownable {
     /// @param tokenAmount Amount of YBT/BT to be deposited in underlying YBT/BT decimal precision
     /// @param isBackingToken specifies whether the deposited asset is the Backing Token or Yield Bearing Token
     /// @param minTYSRate Minimum exchange rate of TYS (denominated in TPS) to receive in exchange for TPS
+    /// @param deadline A timestamp after which, if a swap is necessary, it would forcibly reverted
     function depositAndFix(
         ITempusAMM tempusAMM,
         uint256 tokenAmount,
         bool isBackingToken,
-        uint256 minTYSRate
+        uint256 minTYSRate,
+        uint256 deadline
     ) external payable nonReentrant {
         requireRegistered(address(tempusAMM));
-        _depositAndFix(tempusAMM, tokenAmount, isBackingToken, minTYSRate);
+        _depositAndFix(tempusAMM, tokenAmount, isBackingToken, minTYSRate, deadline);
     }
 
     /// @dev Deposits Yield Bearing Tokens to a Tempus Pool.
@@ -268,6 +270,7 @@ contract TempusController is ReentrancyGuard, Ownable {
     /// @param maxLeftoverShares Maximum amount of Principals or Yields to be left in case of early exit
     /// @param minRate Minimum rate for possible swap if swap is needed to end with equal shgares
     /// @param toBackingToken If true redeems to backing token, otherwise redeems to yield bearing
+    /// @param deadline A timestamp after which, if a swap is necessary, it would forcibly reverted
     function exitTempusAmmAndRedeem(
         ITempusAMM tempusAMM,
         uint256 lpTokens,
@@ -277,7 +280,8 @@ contract TempusController is ReentrancyGuard, Ownable {
         uint256 minYieldsStaked,
         uint256 maxLeftoverShares,
         uint256 minRate,
-        bool toBackingToken
+        bool toBackingToken,
+        uint256 deadline
     ) external nonReentrant {
         requireRegistered(address(tempusAMM));
         _exitTempusAmmAndRedeem(
@@ -288,6 +292,7 @@ contract TempusController is ReentrancyGuard, Ownable {
             getAMMOrderedAmounts(tempusAMM, minPrincipalsStaked, minYieldsStaked),
             maxLeftoverShares,
             minRate,
+            deadline,
             toBackingToken
         );
     }
@@ -307,7 +312,8 @@ contract TempusController is ReentrancyGuard, Ownable {
         uint256 swapAmount,
         IERC20 tokenIn,
         IERC20 tokenOut,
-        uint256 minReturn
+        uint256 minReturn,
+        uint256 deadline
     ) private {
         require(swapAmount > 0, "Invalid swap amount.");
         tokenIn.safeIncreaseAllowance(address(tempusAMM.getVault()), swapAmount);
@@ -329,7 +335,7 @@ contract TempusController is ReentrancyGuard, Ownable {
             recipient: payable(address(this)),
             toInternalBalance: false
         });
-        vault.swap(singleSwap, fundManagement, minReturn, block.timestamp);
+        vault.swap(singleSwap, fundManagement, minReturn, deadline);
     }
 
     function _depositAndProvideLiquidity(
@@ -401,7 +407,8 @@ contract TempusController is ReentrancyGuard, Ownable {
         ITempusAMM tempusAMM,
         uint256 tokenAmount,
         bool isBackingToken,
-        uint256 minTYSRate
+        uint256 minTYSRate,
+        uint256 deadline
     ) private {
         ITempusPool targetPool = tempusAMM.tempusPool();
         IERC20 principalShares = IERC20(address(targetPool.principalShare()));
@@ -411,7 +418,7 @@ contract TempusController is ReentrancyGuard, Ownable {
 
         yieldShares.safeIncreaseAllowance(address(tempusAMM.getVault()), swapAmount);
         uint256 minReturn = swapAmount.mulfV(minTYSRate, targetPool.backingTokenONE());
-        swap(tempusAMM, swapAmount, yieldShares, principalShares, minReturn);
+        swap(tempusAMM, swapAmount, yieldShares, principalShares, minReturn, deadline);
 
         // At this point all TYS must be swapped for TPS
         uint256 principalsBalance = principalShares.balanceOf(address(this));
@@ -657,6 +664,7 @@ contract TempusController is ReentrancyGuard, Ownable {
         uint256[] memory minLpAmountsOut,
         uint256 maxLeftoverShares,
         uint256 minRate,
+        uint256 deadline,
         bool toBackingToken
     ) private {
         ITempusPool tempusPool = tempusAMM.tempusPool();
@@ -678,15 +686,20 @@ contract TempusController is ReentrancyGuard, Ownable {
         yields = yieldShare.balanceOf(address(this));
 
         if (!tempusPool.matured()) {
-            uint256 difference = (yields > principals) ? (yields - principals) : (principals - yields);
-
-            if (difference >= maxLeftoverShares) {
+            if (((yields > principals) ? (yields - principals) : (principals - yields)) >= maxLeftoverShares) {
                 (IERC20 tokenIn, IERC20 tokenOut) = (yields > principals)
                     ? (yieldShare, principalShare)
                     : (principalShare, yieldShare);
 
                 uint256 swapAmount = tempusAMM.getSwapAmountToEndWithEqualShares(principals, yields, maxLeftoverShares);
-                swap(tempusAMM, swapAmount, tokenIn, tokenOut, swapAmount.mulfV(minRate, tempusPool.backingTokenONE()));
+                swap(
+                    tempusAMM,
+                    swapAmount,
+                    tokenIn,
+                    tokenOut,
+                    swapAmount.mulfV(minRate, tempusPool.backingTokenONE()),
+                    deadline
+                );
 
                 principals = principalShare.balanceOf(address(this));
                 yields = yieldShare.balanceOf(address(this));
