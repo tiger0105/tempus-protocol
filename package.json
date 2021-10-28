@@ -45,8 +45,8 @@
   },
   "scripts": {
     "build": "npx hardhat compile",
-    "test": "npx hardhat test test/*.ts test/amm/*.ts test/mocks/**/*.ts test/token/*.ts test/token/vesting/*.ts test/stats/*.ts",
-    "test:integration": "cross-env ETH_NODE_URI_MAINNET=https://eth-mainnet.alchemyapi.io/v2/yInmJCdHvCzXe4qAxfPMDFgrbYIGsUhJ HARDHAT_FORK=mainnet HARDHAT_FORK_NUMBER=13281002 npx hardhat test integration-tests/TempusPool.aave.test.ts integration-tests/TempusPool.compound.test.ts integration-tests/TempusPool.lido.test.ts integration-tests/TempusPool.yearn.test.ts integration-tests/stats/Stats.test.ts",
+    "test": "cross-env yarn build && npx mocha --require hardhat/register --timeout 10000 --recursive --parallel --extension ts",
+    "test:integration": "cross-env yarn build && ETH_NODE_URI_MAINNET=https://eth-mainnet.alchemyapi.io/v2/yInmJCdHvCzXe4qAxfPMDFgrbYIGsUhJ HARDHAT_FORK=mainnet HARDHAT_FORK_NUMBER=13281002 npx mocha --timeout 120000 --require hardhat/register --recursive --parallel --extension ts integration-tests",
     "coverage": "npx hardhat coverage --testfiles \"test/**/*.ts\"",
     "coverage:integration": "cross-env HARDHAT_FORK=mainnet HARDHAT_FORK_NUMBER=13281002 npx hardhat coverage --testfiles \"integration-tests/**/*.ts\"",
     "solhint": "solhint \"contracts/**/*.sol\"",
