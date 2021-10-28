@@ -60,6 +60,13 @@ contract ERC20Vesting is IERC20Vesting {
         token.transfer(to, value);
     }
 
+    function transferVesting(address receiver) external override {
+        require(receiver != address(0), "Receiver cannot be 0.");
+        require(vestingTerms[receiver].startTime == 0, "Vesting already started for receiver.");
+        vestingTerms[receiver] = vestingTerms[msg.sender];
+        delete vestingTerms[msg.sender];
+    }
+
     function stopVesting(address receiver) external override onlyWallet {
         require(receiver != address(0), "Receiver cannot be 0.");
 

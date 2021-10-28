@@ -33,7 +33,7 @@ interface IERC20Vesting {
     function startVesting(address receiver, VestingTerms calldata terms) external;
 
     /// @dev Adds multiple accounts for vesting
-    /// @notice arrays need to be of same length
+    /// Arrays need to be of same length
     /// @param receivers Beneficiaries for vesting tokens
     /// @param terms Vesting terms for all accounts
     function startVestingBatch(address[] calldata receivers, VestingTerms[] calldata terms) external;
@@ -42,6 +42,11 @@ interface IERC20Vesting {
     /// @param to Address of token receiver
     /// @param value Number of tokens to claim
     function claim(address to, uint256 value) external;
+
+    /// @dev Transfers vesting schedule from `msg.sender` to new address
+    /// A receiver cannot have an existing vesting schedule.
+    /// @param receiver Address for new token receiver
+    function transferVesting(address receiver) external;
 
     /// @dev Stops vesting for receiver and sends all tokens back to wallet
     /// @param receiver Address of account for which we are stopping vesting

@@ -6,13 +6,13 @@ import { ERC20OwnerMintable } from "../../utils/ERC20OwnerMintable";
 import { ERC20Vesting, VestingTerms } from "../../utils/ERC20Vesting";
 
 describe("ERC20 Vesting", async () => {
-  let owner:Signer, user:Signer;
+  let owner:Signer, user:Signer, user2:Signer;
   let token:ERC20OwnerMintable;
   let vesting:ERC20Vesting;
   const DAY = 60*60*24;
 
   beforeEach(async () => {
-    [owner, user] = await ethers.getSigners();
+    [owner, user, user2] = await ethers.getSigners();
     token = await ERC20OwnerMintable.create("ERC20OwnerMintableToken", "Owner Mintable Test Token", "OTEST");
     await token.mint(owner, owner, 300);
     vesting = await ERC20Vesting.create(token, owner);
@@ -78,6 +78,10 @@ describe("ERC20 Vesting", async () => {
 
     it("stopVesting invalid inputs", async () => {
       (await expectRevert(vesting.stopVesting(owner,"0x0000000000000000000000000000000000000000"))).to.equal("Receiver cannot be 0.");
+    });
+
+    it("transferVesting invalid inputs", async () => {
+      (await expectRevert(vesting.transferVesting(user,"0x0000000000000000000000000000000000000000"))).to.equal("Receiver cannot be 0.");
     });
 
     it("claim reverts on input", async () => {
@@ -161,6 +165,96 @@ describe("ERC20 Vesting", async () => {
       await increaseTime(period / 2);
       await vesting.claim(user, user, await vesting.claimable(user));
       expect(+await token.balanceOf(user)).to.be.within(15, 15.1);
+    });
+  });
+
+  describe("Transfer vesting", async () => {
+    it("Expected state after transferVesting", async () => {
+      const startTime = await blockTimestamp();
+      const period = DAY * 30;
+      await vesting.startVesting(
+        owner,
+        user,
+        {startTime: startTime, period: period, amount: 30, claimed: 0}
+      );
+      expect(await token.balanceOf(owner)).to.equal(270);
+
+      await vesting.transferVesting(user, user2);
+
+      const terms1:VestingTerms = await vesting.getVestingTerms(user);
+      expect(terms1.amount).to.equal(0);
+      expect(terms1.startTime).to.equal(0);
+      expect(terms1.period).to.equal(0);
+      expect(terms1.claimed).to.equal(0);
+
+      const terms2:VestingTerms = await vesting.getVestingTerms(user2);
+      expect(terms2.amount).to.equal(30);
+      expect(terms2.startTime).to.equal(startTime);
+      expect(terms2.period).to.equal(period);
+      expect(terms2.claimed).to.equal(0);
+    });
+
+    it("Transfer between two claims", async () => {
+      const startTime = await blockTimestamp();
+      const period = DAY * 30;
+      await vesting.startVesting(
+        owner,
+        user,
+        {startTime: startTime, period: period, amount: 30, claimed: 0}
+      );
+      expect(await token.balanceOf(owner)).to.equal(270);
+
+      await increaseTime(period / 2);
+      await vesting.claim(user, user, await vesting.claimable(user));
+      expect(+await token.balanceOf(user)).to.be.within(15, 15.1);
+
+      await vesting.transferVesting(user, user2);
+
+      await increaseTime(period / 2);
+      await vesting.claim(user2, user2, await vesting.claimable(user2));
+      expect(+await token.balanceOf(user2)).to.be.within(14.9, 15);
+
+      const terms1:VestingTerms = await vesting.getVestingTerms(user);
+      expect(terms1.amount).to.equal(0);
+      expect(terms1.startTime).to.equal(0);
+      expect(terms1.period).to.equal(0);
+      expect(terms1.claimed).to.equal(0);
+
+      const terms2:VestingTerms = await vesting.getVestingTerms(user2);
+      expect(terms2.amount).to.equal(30);
+      expect(terms2.startTime).to.equal(startTime);
+      expect(terms2.period).to.equal(period);
+      expect(terms2.claimed).to.equal(30);
+    });
+
+    it("Expected state after transferVesting", async () => {
+      const startTime = await blockTimestamp();
+      const period = DAY * 30;
+      await vesting.startVesting(
+        owner,
+        user,
+        {startTime: startTime, period: period, amount: 30, claimed: 0}
+      );
+      await vesting.startVesting(
+        owner,
+        user2,
+        {startTime: startTime + 10, period: period + 10, amount: 10, claimed: 0}
+      );
+      expect(await token.balanceOf(owner)).to.equal(260);
+
+      (await expectRevert(vesting.transferVesting(user,user2))).to.equal("Vesting already started for receiver.");
+
+      const terms1:VestingTerms = await vesting.getVestingTerms(user);
+      expect(terms1.amount).to.equal(30);
+      expect(terms1.startTime).to.equal(startTime);
+      expect(terms1.period).to.equal(period);
+      expect(terms1.claimed).to.equal(0);
+
+      const terms2:VestingTerms = await vesting.getVestingTerms(user2);
+      expect(terms2.amount).to.equal(10);
+      expect(terms2.startTime).to.equal(startTime + 10);
+      expect(terms2.period).to.equal(period + 10);
+      expect(terms2.claimed).to.equal(0);
     });
   });
 
