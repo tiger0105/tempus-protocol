@@ -42,11 +42,11 @@ describeForEachPool("TempusPool Deposit", (pool:PoolTestFixture) =>
       pool.tempus.address, /*pool*/
       user.address, /*depositor*/
       user.address, /*recipient*/
-      pool.tempus.yieldBearing.toBigNum(100), /*yieldTokenAmount*/
-      pool.tempus.asset.toBigNum(100), /*backingTokenValue*/
-      pool.tempus.principalShare.toBigNum(100), /*shareAmounts*/
+      pool.ybt.toBigNum(100), /*yieldTokenAmount*/
+      pool.asset.toBigNum(100), /*backingTokenValue*/
+      pool.principals.toBigNum(100), /*shareAmounts*/
       pool.tempus.toContractExchangeRate(1.0), /*interestRate*/
-      pool.tempus.yieldBearing.toBigNum(0) /*fee*/
+      pool.ybt.toBigNum(0) /*fee*/
     );
   });
 
@@ -61,7 +61,7 @@ describeForEachPool("TempusPool Deposit", (pool:PoolTestFixture) =>
     await pool.createDefault();
     await pool.forceFailNextDepositOrRedeem();
 
-    await pool.asset().approve(owner, pool.tempus.controller.address, 100);
+    await pool.asset.approve(owner, pool.tempus.controller.address, 100);
     (await pool.expectDepositBT(owner, 100)).to.not.equal('success');
   });
 

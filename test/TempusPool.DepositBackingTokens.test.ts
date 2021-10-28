@@ -13,7 +13,7 @@ describeForEachPool("TempusPool DepositBackingTokens", (pool:PoolTestFixture) =>
     await pool.setupAccounts(owner, [[user, 500]]);
     (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/500);
     
-    await pool.asset().approve(user, pool.tempus.controller.address, depositAmount);
+    await pool.asset.approve(user, pool.tempus.controller.address, depositAmount);
     (await pool.expectDepositBT(user, depositAmount)).to.equal('success');
 
     (await pool.userState(user)).expect(depositAmount, depositAmount, /*yieldBearing:*/500);
@@ -25,7 +25,7 @@ describeForEachPool("TempusPool DepositBackingTokens", (pool:PoolTestFixture) =>
     let [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 200]]);
 
-    await pool.asset().approve(user, pool.tempus.controller.address, 200);
+    await pool.asset.approve(user, pool.tempus.controller.address, 200);
     (await pool.expectDepositBT(user, 100)).to.equal('success');
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/200);
 

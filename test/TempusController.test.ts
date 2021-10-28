@@ -180,9 +180,9 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
       await controller.exitTempusAmm(testPool, user1, 100000);
       const redeemPercent:number = 100000 / totalSupply;
       expect(+await testPool.amm.balanceOf(user1)).to.be.within(81000, 82000);
-      expect(+await testPool.tempus.yieldShare.balanceOf(user1)).to.be.within(0.999999 * redeemPercent * 1000000, 1.000001 * redeemPercent * 1000000);
+      expect(+await testPool.yields.balanceOf(user1)).to.be.within(0.999999 * redeemPercent * 1000000, 1.000001 * redeemPercent * 1000000);
       // user already had 900000 because he provided liquidity with 100000 only
-      const redeemedPrincipals = (+await testPool.tempus.principalShare.balanceOf(user1)) - 900000;
+      const redeemedPrincipals = (+await testPool.principals.balanceOf(user1)) - 900000;
       expect(redeemedPrincipals).to.be.within(0.999999 * redeemPercent * 100000, 1.000001 * redeemPercent * 100000);
     });
   });
@@ -196,8 +196,8 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
       await controller.depositYieldBearing(user2, pool, 10000, user2);
       await testPool.amm.provideLiquidity(user2, 1000, 10000, TempusAMMJoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT);
       
-      const userP:number = +await testPool.tempus.principalShare.balanceOf(user2);
-      const userY:number = +await testPool.tempus.yieldShare.balanceOf(user2);
+      const userP:number = +await testPool.principals.balanceOf(user2);
+      const userY:number = +await testPool.yields.balanceOf(user2);
       const userPRedeem:number = userP < 9999 ? userP : 9999;
       const userYRedeem:number = userY < 9999 ? userY : 9999;
       await controller.exitTempusAMMAndRedeem(
@@ -220,8 +220,8 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
       await initAMM(user1, /*ybtDeposit*/1000000, /*principals*/100000, /*yields*/1000000);
       await controller.depositYieldBearing(user2, pool, 10000, user2);
       await testPool.amm.provideLiquidity(user2, 1000, 10000, TempusAMMJoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT);
-      const userP:number = +await testPool.tempus.principalShare.balanceOf(user2);
-      const userY:number = +await testPool.tempus.yieldShare.balanceOf(user2);
+      const userP:number = +await testPool.principals.balanceOf(user2);
+      const userY:number = +await testPool.yields.balanceOf(user2);
       const userPRedeem:number = userP < 9999 ? userP : 9999;
       const userYRedeem:number = userY < 9999 ? userY : 9999;
       const reedemAction = controller.exitTempusAMMAndRedeem(
@@ -241,7 +241,7 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
         expect(await pool.yieldShare.balanceOf(user2)).to.equal(0);
         expect(await pool.principalShare.balanceOf(user2)).to.equal(0);
         expect(+await amm.balanceOf(user2)).to.be.within(0.991, 0.993);
-        expect(await testPool.asset().balanceOf(user2)).to.equal(109999);
+        expect(await testPool.asset.balanceOf(user2)).to.equal(109999);
       }
     });
 
@@ -270,8 +270,8 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
     {
       await initAMM(user1, /*ybtDeposit*/1000000, /*principals*/100000, /*yields*/1000000);
       
-      const preBalanceUser2 = +await testPool.yieldTokenBalance(user2);
-      const preBalanceOwner = +await testPool.yieldTokenBalance(owner);
+      const preBalanceUser2 = +await testPool.ybt.balanceOf(user2);
+      const preBalanceOwner = +await testPool.ybt.balanceOf(owner);
       await testPool.controller.depositAndProvideLiquidity(testPool, user2, 10000, false);
       await testPool.controller.depositAndFix(testPool, owner, 100, false, 0);
 
@@ -279,21 +279,21 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
         testPool, 
         user2, 
         await testPool.amm.balanceOf(user2), 
-        await testPool.tempus.principalShare.balanceOf(user2),
-        await testPool.tempus.yieldShare.balanceOf(user2), 
+        await testPool.principals.balanceOf(user2),
+        await testPool.yields.balanceOf(user2), 
         false
       );
       await controller.exitTempusAmmAndRedeem(
         testPool, 
         owner, 
         await testPool.amm.balanceOf(owner), 
-        await testPool.tempus.principalShare.balanceOf(owner),
-        await testPool.tempus.yieldShare.balanceOf(owner), 
+        await testPool.principals.balanceOf(owner),
+        await testPool.yields.balanceOf(owner), 
         false
       );
 
-      const postBalanceUser2 = +await testPool.yieldTokenBalance(user2);
-      const postBalanceOwner = +await testPool.yieldTokenBalance(owner);
+      const postBalanceUser2 = +await testPool.ybt.balanceOf(user2);
+      const postBalanceOwner = +await testPool.ybt.balanceOf(owner);
 
       expect(postBalanceOwner).to.be.within(preBalanceOwner - 1, preBalanceOwner + 1);
       expect(postBalanceUser2).to.be.within(preBalanceUser2 - 1, preBalanceUser2 + 1);
@@ -302,8 +302,8 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
     it("Complete exit to yield bearing", async () => 
     {
       await initAMM(user1, /*ybtDeposit*/1000000, /*principals*/100000, /*yields*/1000000);
-      expect(await testPool.tempus.yieldShare.balanceOf(user1)).to.equal(0, "all yields are in amm");
-      expect(await testPool.tempus.principalShare.balanceOf(user1)).to.equal(
+      expect(await testPool.yields.balanceOf(user1)).to.equal(0, "all yields are in amm");
+      expect(await testPool.principals.balanceOf(user1)).to.equal(
         900000, 
         "balance should decrease as there is some of it locked in amm"
       );
@@ -312,24 +312,24 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
       await testPool.setInterestRate(1.1);
       await testPool.fastForwardToMaturity();
 
-      expect(await testPool.yieldTokenBalance(user1)).to.equal(0);
+      expect(await testPool.ybt.balanceOf(user1)).to.equal(0);
 
       await controller.exitTempusAmmAndRedeem(
         testPool, 
         user1, 
         await testPool.amm.balanceOf(user1), 
-        await testPool.tempus.principalShare.balanceOf(user1),
-        await testPool.tempus.yieldShare.balanceOf(user1),
+        await testPool.principals.balanceOf(user1),
+        await testPool.yields.balanceOf(user1),
         false
       );
 
-      expect(await testPool.tempus.yieldShare.balanceOf(user1)).to.equal(0);
-      expect(await testPool.tempus.principalShare.balanceOf(user1)).to.equal(0);
+      expect(await testPool.yields.balanceOf(user1)).to.equal(0);
+      expect(await testPool.principals.balanceOf(user1)).to.equal(0);
       expect(await testPool.amm.contract.balanceOf(user1.address)).to.equal(0);
       if (testPool.yieldPeggedToAsset) {
-        expect(+await testPool.yieldTokenBalance(user1)).to.be.within(1099000, 1101000);
+        expect(+await testPool.ybt.balanceOf(user1)).to.be.within(1099000, 1101000);
       } else {
-        expect(+await testPool.yieldTokenBalance(user1)).to.be.within(999000, 1001000);
+        expect(+await testPool.ybt.balanceOf(user1)).to.be.within(999000, 1001000);
       }
 
     });
@@ -353,8 +353,8 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
           testPool, 
           user1, 
           await testPool.amm.balanceOf(user1), 
-          await testPool.tempus.principalShare.balanceOf(user1),
-          await testPool.tempus.yieldShare.balanceOf(user1),
+          await testPool.principals.balanceOf(user1),
+          await testPool.yields.balanceOf(user1),
           true
         ))).to.equal(
           "LidoTempusPool.withdrawFromUnderlyingProtocol not supported"
@@ -362,19 +362,19 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
       }
       else
       {
-        expect(await testPool.backingTokenBalance(user1)).to.equal(100000);
+        expect(await testPool.asset.balanceOf(user1)).to.equal(100000);
         await controller.exitTempusAmmAndRedeem(
           testPool, 
           user1, 
           await testPool.amm.balanceOf(user1), 
-          await testPool.tempus.principalShare.balanceOf(user1),
-          await testPool.tempus.yieldShare.balanceOf(user1),
+          await testPool.principals.balanceOf(user1),
+          await testPool.yields.balanceOf(user1),
           true
         );
         expect(await pool.yieldShare.balanceOf(user1)).to.equal(0);
         expect(await pool.principalShare.balanceOf(user1)).to.equal(0);
         expect(await testPool.amm.contract.balanceOf(user1.address)).to.equal(0);
-        expect(+await testPool.backingTokenBalance(user1)).to.be.within(1199000, 1200000);
+        expect(+await testPool.asset.balanceOf(user1)).to.be.within(1199000, 1200000);
       }
     });
   });

@@ -16,11 +16,11 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
       pool.tempus.address, // pool
       user.address, // redeemer
       user.address, // recipient
-      pool.tempus.principalShare.toBigNum(100), // principal amount
-      pool.tempus.yieldShare.toBigNum(100), // yield amount
-      pool.tempus.yieldBearing.toBigNum(100), // yield bearing token amount
-      pool.tempus.asset.toBigNum(100), // backing token amount
-      pool.tempus.yieldShare.toBigNum(0), // fee
+      pool.principals.toBigNum(100), // principal amount
+      pool.yields.toBigNum(100), // yield amount
+      pool.ybt.toBigNum(100), // yield bearing token amount
+      pool.asset.toBigNum(100), // backing token amount
+      pool.yields.toBigNum(0), // fee
       pool.tempus.toContractExchangeRate(1.0), // rate
       true // early redeem
     );
@@ -231,7 +231,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     
         await pool.redeemToYBT(user, 100, 100);
         (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/600);
-        expect(await pool.yieldTokenBalance(pool.tempus.address)).to.equal(200);
+        expect(await pool.ybt.balanceOf(pool.tempus.address)).to.equal(200);
     }
     else
     {
@@ -242,7 +242,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     
         await pool.redeemToYBT(user, 100, 100);
         (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/150);
-        expect(await pool.yieldTokenBalance(pool.tempus.address)).to.equal(50);
+        expect(await pool.ybt.balanceOf(pool.tempus.address)).to.equal(50);
     }
   });
 

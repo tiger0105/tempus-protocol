@@ -1,11 +1,8 @@
 import { PoolTestFixture, TempusAMMParams } from "./PoolTestFixture";
-import { TokenInfo } from "./TokenInfo";
 import { ContractBase, Signer, SignerOrAddress } from "../utils/ContractBase";
-import { ERC20 } from "../utils/ERC20";
-import { IERC20 } from "../utils/IERC20";
 import { TempusPool, PoolType } from "../utils/TempusPool";
+import { TokenInfo } from "./TokenInfo";
 import { Aave } from "../utils/Aave";
-import { NumberOrString } from "../utils/Decimal";
 
 export class AaveTestPool extends PoolTestFixture {
   aave:Aave;
@@ -16,18 +13,6 @@ export class AaveTestPool extends PoolTestFixture {
     this.ASSET_TOKEN = ASSET_TOKEN;
     this.YIELD_TOKEN = YIELD_TOKEN;
   }
-  public pool(): ContractBase {
-    return this.aave;
-  }
-  public asset(): IERC20 {
-    return this.aave.asset;
-  }
-  public yieldToken(): ERC20 {
-    return this.aave.yieldToken;
-  }
-  async yieldTokenBalance(user:SignerOrAddress): Promise<NumberOrString> {
-    return this.aave.yieldToken.balanceOf(user);
-  }
   async setInterestRate(rate:number): Promise<void> {
     await this.aave.setLiquidityIndex(rate);
   }
@@ -37,12 +22,13 @@ export class AaveTestPool extends PoolTestFixture {
   async deposit(user:Signer, amount:number): Promise<void> {
     await this.aave.deposit(user, amount);
   }
-
   async createWithAMM(params:TempusAMMParams): Promise<TempusPool> {
     return await this.initPool(params, this.YIELD_TOKEN.name, this.YIELD_TOKEN.symbol, async () => {
       return await Aave.create(this.ASSET_TOKEN, this.YIELD_TOKEN, this.initialRate);
     }, (pool:ContractBase) => {
       this.aave = <Aave>pool;
+      this.asset = this.aave.asset;
+      this.ybt = this.aave.yieldToken;
     });
   }
 }

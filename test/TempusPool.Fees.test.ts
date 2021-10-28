@@ -145,7 +145,7 @@ describeForEachPool("TempusPool Fees", (pool:PoolTestFixture) =>
     expect(await pool.tempus.totalFees()).to.equal(10);
 
     await pool.controller.transferFees(pool, owner, user2);
-    expect(await pool.yieldTokenBalance(user2)).to.equal(10);
+    expect(await pool.ybt.balanceOf(user2)).to.equal(10);
     expect(await pool.tempus.totalFees()).to.equal(0);
   });
 });
