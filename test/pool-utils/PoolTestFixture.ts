@@ -10,6 +10,7 @@ import { NumberOrString, formatDecimal } from "../utils/Decimal";
 import { getRevertMessage } from "../utils/Utils";
 import { TempusController } from "../utils/TempusController";
 import { TempusAMM } from "../utils/TempusAMM";
+import { PoolShare } from "../utils/PoolShare";
 
 export class UserState {
   principalShares:Number;
@@ -99,36 +100,24 @@ export abstract class PoolTestFixture {
   poolDuration:number; // pool duration in seconds
   names:TempusSharesNames;
 
+  /** The underlying pool contract, such as Aave, Lido or Comptroller */
+  pool:ContractBase;
+
+  /** The BackingToken of the underlying pool */
+  asset:IERC20;
+
+  /** The YieldBearingToken of the underlying pool */
+  ybt:ERC20;
+
+  /** Tempus Principal Share */
+  principals:PoolShare;
+
+  /** Tempus Yield Share */
+  yields:PoolShare; 
+
   constructor(type:PoolType, yieldPeggedToAsset:boolean) { 
     this.type = type;
     this.yieldPeggedToAsset = yieldPeggedToAsset;
-  }
-
-  /**
-   * @return The underlying pool contract, such as Aave, Lido or Comptroller
-   */
-  abstract pool(): ContractBase;
-
-  /**
-   * @return The underlying asset token of the backing pool
-   */
-  abstract asset(): IERC20;
-
-  /**
-   * @return The yield token of the backing tool
-   */
-  abstract yieldToken(): ERC20;
-
-  /**
-   * @return Current Yield Bearing Token balance of the user
-   */
-  abstract yieldTokenBalance(user:SignerOrAddress): Promise<NumberOrString>;
-
-  /**
-   * @return Current Backing Token balance of the user
-   */
-  async backingTokenBalance(user:SignerOrAddress): Promise<NumberOrString> {
-    return this.asset().balanceOf(user);
   }
 
   /**
@@ -303,8 +292,8 @@ export abstract class PoolTestFixture {
     for (let depositor of depositors) { // initial deposit for users
       const user = depositor[0];
       const amount = depositor[1];
-      await this.asset().transfer(owner, user, 100000);
-      await this.tempus.yieldBearing.transfer(owner, user, amount);
+      await this.asset.transfer(owner, user, 100000);
+      await this.ybt.transfer(owner, user, amount);
     }
   }
 
@@ -313,11 +302,11 @@ export abstract class PoolTestFixture {
    */
   async userState(user:Signer): Promise<UserState> {
     let state = new UserState();
-    state.principalShares = Number(await this.tempus.principalShare.balanceOf(user));
-    state.yieldShares = Number(await this.tempus.yieldShare.balanceOf(user));
-    state.yieldBearing = Number(await this.yieldTokenBalance(user));
+    state.principalShares = Number(await this.principals.balanceOf(user));
+    state.yieldShares = Number(await this.yields.balanceOf(user));
+    state.yieldBearing = Number(await this.ybt.balanceOf(user));
     state.yieldPeggedToAsset = this.yieldPeggedToAsset;
-    state.yieldBearingEpsilon = Number(formatDecimal(BigNumber.from(1), this.tempus.yieldBearing.decimals));
+    state.yieldBearingEpsilon = Number(formatDecimal(BigNumber.from(1), this.ybt.decimals));
     return state;
   }
 
@@ -377,10 +366,13 @@ export abstract class PoolTestFixture {
     this.names = f.names;
     this.signers = [s.signers.owner, s.signers.user, s.signers.user2];
 
-    setPool(s.contracts.pool);
+    this.pool = s.contracts.pool;
+    setPool(this.pool);
     this.tempus = s.contracts.tempus;
     this.controller = this.tempus.controller;
     this.amm = s.contracts.amm;
+    this.principals = this.tempus.principalShare;
+    this.yields = this.tempus.yieldShare;
     return this.tempus;
   }
 }

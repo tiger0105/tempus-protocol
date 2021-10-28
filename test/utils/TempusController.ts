@@ -112,7 +112,7 @@ export class TempusController extends ContractBase {
    * Approves either BT or YBT transfer
    */
   async approve(pool:PoolTestFixture, user:SignerOrAddress, amount:NumberOrString, isBackingToken:boolean) {
-    const token = isBackingToken ? pool.asset() : pool.yieldToken();
+    const token = isBackingToken ? pool.asset : pool.ybt;
     await token.approve(user, this.address, amount);
   }
 
@@ -133,7 +133,7 @@ export class TempusController extends ContractBase {
     ethValue: NumberOrString = 0
   ): Promise<Transaction> {
     await this.approve(pool, user, tokenAmount, isBackingToken);
-    const amount = isBackingToken ? pool.tempus.asset.toBigNum(tokenAmount) : pool.tempus.yieldBearing.toBigNum(tokenAmount);
+    const amount = isBackingToken ? pool.tempus.asset.toBigNum(tokenAmount) : pool.ybt.toBigNum(tokenAmount);
     return this.connect(user).depositAndProvideLiquidity(
       pool.amm.address, amount, isBackingToken, { value: toWei(ethValue) }
     );
@@ -157,7 +157,7 @@ export class TempusController extends ContractBase {
     ethValue: NumberOrString = 0
   ): Promise<Transaction> {
     await this.approve(pool, user, tokenAmount, isBackingToken);
-    const amount = isBackingToken ? pool.tempus.asset.toBigNum(tokenAmount) : pool.tempus.yieldBearing.toBigNum(tokenAmount);
+    const amount = isBackingToken ? pool.tempus.asset.toBigNum(tokenAmount) : pool.ybt.toBigNum(tokenAmount);
     return this.connect(user).depositAndFix(
       pool.amm.address, amount, isBackingToken, pool.tempus.asset.toBigNum(minTYSRate), { value: toWei(ethValue) }
     );
@@ -168,9 +168,9 @@ export class TempusController extends ContractBase {
     user: SignerOrAddress,
     sharesAmount: NumberOrString
   ): Promise<Transaction> {
-    await pool.tempus.yieldShare.approve(user, this.address, sharesAmount);
-    await pool.tempus.principalShare.approve(user, this.address, sharesAmount);
-    return this.connect(user).provideLiquidity(pool.amm.address, pool.tempus.principalShare.toBigNum(sharesAmount));
+    await pool.yields.approve(user, this.address, sharesAmount);
+    await pool.principals.approve(user, this.address, sharesAmount);
+    return this.connect(user).provideLiquidity(pool.amm.address, pool.principals.toBigNum(sharesAmount));
   }
 
   async exitTempusAMMAndRedeem(

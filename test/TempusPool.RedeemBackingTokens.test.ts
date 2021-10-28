@@ -10,26 +10,26 @@ describeForEachPool.type("TempusPool Redeem", [PoolType.Aave, PoolType.Compound]
   {
     await pool.createDefault();
     let [owner, user] = pool.signers;
-    await pool.asset().transfer(owner, user, 1000);
+    await pool.asset.transfer(owner, user, 1000);
 
-    await pool.asset().approve(user, pool.tempus.controller.address, 100);
+    await pool.asset.approve(user, pool.tempus.controller.address, 100);
     (await pool.expectDepositBT(user, 100)).to.equal('success');
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/0, "0 YBT because we did BT deposit");
 
-    expect(await pool.backingTokenBalance(user)).to.equal(900);
+    expect(await pool.asset.balanceOf(user)).to.equal(900);
 
     (await pool.expectRedeemBT(user, 100, 100)).to.equal('success');
     (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/0, "burn TPS+TYS, 0 YBT because we did BT redeem");
 
-    expect(await pool.backingTokenBalance(user)).to.equal(1000);
+    expect(await pool.asset.balanceOf(user)).to.equal(1000);
   });
 
   it("Should redeem more BackingTokens after changing rate to 2.0", async () =>
   {
     await pool.createDefault();
     let [owner, user] = pool.signers;
-    await pool.asset().transfer(owner, user, 1000);
-    await pool.asset().approve(user, pool.tempus.controller.address, 100);
+    await pool.asset.transfer(owner, user, 1000);
+    await pool.asset.approve(user, pool.tempus.controller.address, 100);
     (await pool.expectDepositBT(user, 100)).to.equal('success');
 
     await pool.setInterestRate(2.0);
@@ -37,13 +37,13 @@ describeForEachPool.type("TempusPool Redeem", [PoolType.Aave, PoolType.Compound]
 
     // since we change interest rate to 2.0x, tempus pool actually doesn't have enough BackingTokens to redeem
     // so here we just add large amount of funds from owner into the pool
-    await pool.asset().approve(owner, pool.tempus.controller.address, 200);
+    await pool.asset.approve(owner, pool.tempus.controller.address, 200);
     (await pool.depositBT(owner, 200));
 
     (await pool.expectRedeemBT(user, 100, 100)).to.equal('success');
     (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/0, "burn TPS+TYS, 0 YBT because we did BT redeem");
 
-    expect(await pool.backingTokenBalance(user)).to.equal(1100, "gain extra 100 backing tokens due to interest 2.0x");
+    expect(await pool.asset.balanceOf(user)).to.equal(1100, "gain extra 100 backing tokens due to interest 2.0x");
   });
 });
 
@@ -65,8 +65,8 @@ describeForEachPool.type("TempusPool Redeem", [PoolType.Lido], (pool:PoolTestFix
   {
     await pool.createDefault();
     let [owner, user] = pool.signers;
-    await pool.asset().transfer(owner, user, 1000);
-    await pool.asset().approve(user, pool.tempus.controller.address, 100);
+    await pool.asset.transfer(owner, user, 1000);
+    await pool.asset.approve(user, pool.tempus.controller.address, 100);
     (await pool.expectDepositBT(user, 100)).to.equal('success');
 
     (await pool.expectRedeemBT(user, 100, 100)).to.equal('LidoTempusPool.withdrawFromUnderlyingProtocol not supported');
