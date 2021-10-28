@@ -20,6 +20,15 @@ export class ERC20Vesting extends ContractBase {
     this.erc20 = token;
   }
 
+  convertVesting(terms:VestingTerms):VestingTerms {
+    return {
+      startTime: terms.startTime,
+      period: terms.period,
+      amount: this.toBigNum(terms.amount).toString(),
+      claimed: this.toBigNum(terms.claimed).toString()
+    }
+  }
+
   static async create(token:ERC20, wallet: SignerOrAddress): Promise<ERC20Vesting> {
     const contractName = "ERC20Vesting";
     const contract = await this.deployContract(contractName, token.address, addressOf(wallet));
@@ -42,13 +51,30 @@ export class ERC20Vesting extends ContractBase {
     this.erc20.approve(sender, this.address, terms.amount);
     return this.connect(sender).startVesting(
       addressOf(receiver),
-      {
-        startTime: terms.startTime,
-        period: terms.period,
-        amount: this.toBigNum(terms.amount),
-        claimed: this.toBigNum(terms.claimed)
-      }
+      this.convertVesting(terms)
     );
+  }
+
+  async startVestingBatch(
+    sender:SignerOrAddress, 
+    receivers:SignerOrAddress[],
+    terms:VestingTerms[]
+  ):Promise<Transaction> {
+    let amountToVest = 0;
+
+    let convertedTerms:VestingTerms[] = [];
+    for(let i = 0; i < terms.length; i++) {
+      convertedTerms.push(this.convertVesting(terms[i]));
+      amountToVest += +terms[i].amount;
+    }
+    await this.erc20.approve(sender, this.address, amountToVest);
+
+    let convertedReceivers:String[] = [];
+    for(let i = 0; i < receivers.length; i++) {
+      convertedReceivers.push(addressOf(receivers[i]));
+    }
+
+    return this.connect(sender).startVestingBatch(convertedReceivers, convertedTerms);
   }
 
   async getVestingTerms(receiver:SignerOrAddress): Promise<VestingTerms> {

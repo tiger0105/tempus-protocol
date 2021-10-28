@@ -72,6 +72,28 @@ describe("ERC20 Vesting", async () => {
       ))).to.equal("Vesting already started for account.");
     });
 
+    it("startVestingBatch only callable by wallet", async () => {
+      (await expectRevert(vesting.startVestingBatch(user,[],[]))).to.equal("Only wallet is allowed to proceed");
+    });
+
+    it("startVestingBatch zero receivers", async () => {
+      (await expectRevert(vesting.startVestingBatch(owner,[],[]))).to.equal("Zero receivers.");
+    });
+
+    it("startVestingBatch receivers and terms different length", async () => {
+      (await expectRevert(vesting.startVestingBatch(
+        owner,
+        [user],
+        [{startTime: 1, period: 1, amount: 30, claimed: 0}, {startTime: 1, period: 1, amount: 30, claimed: 0}]
+      ))).to.equal("Terms and receivers mush have same length.");
+
+      (await expectRevert(vesting.startVestingBatch(
+        owner,
+        [user, user2],
+        [{startTime: 1, period: 1, amount: 30, claimed: 0}]
+      ))).to.equal("Terms and receivers mush have same length.");
+    });
+
     it("stopVesting only callable by wallet", async () => {
       (await expectRevert(vesting.stopVesting(user,user))).to.equal("Only wallet is allowed to proceed");
     });
@@ -116,6 +138,33 @@ describe("ERC20 Vesting", async () => {
       expect(terms.claimed).to.equal(0);
 
       expect(await token.balanceOf(owner)).to.equal(270);
+    });
+
+    it("Expected state after startVestingBatch", async () => {
+      const startTime = await blockTimestamp();
+      const period = DAY * 30;
+      await vesting.startVestingBatch(
+        owner,
+        [user, user2],
+        [
+          {startTime: startTime + 1, period: period - 1, amount: 60, claimed: 0},
+          {startTime: startTime, period: period, amount: 30, claimed: 0}
+        ]
+      );
+
+      const terms:VestingTerms = await vesting.getVestingTerms(user);
+      expect(terms.amount).to.equal(60);
+      expect(terms.startTime).to.equal(startTime + 1);
+      expect(terms.period).to.equal(period - 1);
+      expect(terms.claimed).to.equal(0);
+
+      const terms2:VestingTerms = await vesting.getVestingTerms(user2);
+      expect(terms2.amount).to.equal(30);
+      expect(terms2.startTime).to.equal(startTime);
+      expect(terms2.period).to.equal(period);
+      expect(terms2.claimed).to.equal(0);
+
+      expect(await token.balanceOf(owner)).to.equal(210);
     });
 
     it("Expected state after stopVesting", async () => {
