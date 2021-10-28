@@ -125,10 +125,13 @@ describe("ERC20 Vesting", async () => {
     it("Expected state after startVesting", async () => {
       const startTime = await blockTimestamp();
       const period = DAY * 30;
-      await vesting.startVesting(
+      expect(await vesting.startVesting(
         owner,
         user,
         {startTime: startTime, period: period, amount: 30, claimed: 0}
+      )).to.emit(vesting.contract, "VestingAdded").withArgs(
+        addressOf(user), 
+        [startTime, period, vesting.toBigNum(30), 0]
       );
 
       const terms:VestingTerms = await vesting.getVestingTerms(user);
@@ -175,7 +178,10 @@ describe("ERC20 Vesting", async () => {
         user,
         {startTime: startTime, period: period, amount: 30, claimed: 0}
       );
-      await vesting.stopVesting(owner, user);
+      expect(await vesting.stopVesting(owner, user)).to.emit(
+        vesting.contract, 
+        "VestingRemoved"
+      ).withArgs(addressOf(user));
   
       const terms:VestingTerms = await vesting.getVestingTerms(user);
       expect(terms.amount).to.equal(0);
@@ -198,7 +204,11 @@ describe("ERC20 Vesting", async () => {
       );
 
       await increaseTime(period * 2);
-      await vesting.claim(user, user, await vesting.claimable(user));
+      const amountToClaim = await vesting.claimable(user);
+      expect(await vesting.claim(user, user, amountToClaim)).to.emit(
+        vesting.contract,
+        "VestingClaimed"
+      ).withArgs(addressOf(user), addressOf(user), vesting.toBigNum(amountToClaim));
       expect(await token.balanceOf(user)).to.equal(30);
     });
 
@@ -228,7 +238,10 @@ describe("ERC20 Vesting", async () => {
       );
       expect(await token.balanceOf(owner)).to.equal(270);
 
-      await vesting.transferVesting(user, user2);
+      expect(await vesting.transferVesting(user, user2)).to.emit(
+        vesting.contract, 
+        "VestingTransferred"
+      ).withArgs(addressOf(user), addressOf(user2));
 
       const terms1:VestingTerms = await vesting.getVestingTerms(user);
       expect(terms1.amount).to.equal(0);
