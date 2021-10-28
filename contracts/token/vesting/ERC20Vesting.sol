@@ -25,6 +25,7 @@ contract ERC20Vesting is IERC20Vesting {
     }
 
     function startVesting(address receiver, VestingTerms calldata terms) public override onlyWallet {
+        require(receiver != address(0), "Receiver cannot be 0.");
         require(terms.amount > 0, "Amount must be > 0.");
         require(terms.startTime != 0, "Start time must be set.");
         require(terms.period > 0, "Period must be set.");
@@ -32,7 +33,7 @@ contract ERC20Vesting is IERC20Vesting {
         require(vestingTerms[receiver].startTime == 0, "Vesting already started for account.");
 
         vestingTerms[receiver] = terms;
-        token.transferFrom(msg.sender, address(this), terms.amount);
+        token.transferFrom(wallet, address(this), terms.amount);
     }
 
     function startVestingBatch(address[] calldata receivers, VestingTerms[] calldata terms)
@@ -49,7 +50,7 @@ contract ERC20Vesting is IERC20Vesting {
     }
 
     function claim(address to, uint256 value) external override {
-        require(to != address(0), "to can not be 0x0.");
+        require(to != address(0), "Receiver cannot be 0.");
         require(value > 0, "Claiming 0 tokens.");
         VestingTerms memory terms = vestingTerms[msg.sender];
         require(terms.startTime != 0, "No vesting data for sender.");
@@ -60,6 +61,8 @@ contract ERC20Vesting is IERC20Vesting {
     }
 
     function stopVesting(address receiver) external override onlyWallet {
+        require(receiver != address(0), "Receiver cannot be 0.");
+
         VestingTerms memory terms = vestingTerms[receiver];
         delete vestingTerms[receiver];
 
