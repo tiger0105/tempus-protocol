@@ -4,10 +4,10 @@ pragma solidity 0.8.6;
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import "../utils/Ownable.sol";
 
-/// Tempus Token with initial supply that can increase by 2% yearly after 4 years.
-/// Holders are having the ability to burn their own tokens.
-/// Token holders have ability to vote and participate in governance.
-/// It support delegating voting rights.
+/// Tempus Token with initial supply that be increased by up to 2% yearly after 4 years.
+/// Holders have the ability to burn their own tokens.
+/// Token holders have the ability to vote and participate in governance.
+/// It also supports delegating voting rights.
 contract TempusToken is Ownable, ERC20Votes {
     /// @dev initial supply to be minted
     uint256 public constant INITIAL_SUPPLY = 1_000_000_000e18;
