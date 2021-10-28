@@ -30,7 +30,8 @@ contract ERC20Vesting is IERC20Vesting {
         require(terms.startTime != 0, "Start time must be set.");
         require(terms.period > 0, "Period must be set.");
         require(terms.claimed == 0, "Can not start vesting with already claimed tokens.");
-        require(vestingTerms[receiver].startTime == 0, "Vesting already started for account.");
+        assert(isScheduleValid(terms));
+        require(!isScheduleValid(vestingTerms[receiver]), "Vesting already started for account.");
 
         vestingTerms[receiver] = terms;
         token.transferFrom(wallet, address(this), terms.amount);
@@ -53,7 +54,7 @@ contract ERC20Vesting is IERC20Vesting {
         require(to != address(0), "Receiver cannot be 0.");
         require(value > 0, "Claiming 0 tokens.");
         VestingTerms memory terms = vestingTerms[msg.sender];
-        require(terms.startTime != 0, "No vesting data for sender.");
+        require(isScheduleValid(terms), "No vesting data for sender.");
         require(value <= _claimable(terms), "Claiming amount exceeds allowed tokens.");
 
         vestingTerms[msg.sender].claimed += value;
@@ -62,7 +63,7 @@ contract ERC20Vesting is IERC20Vesting {
 
     function transferVesting(address receiver) external override {
         require(receiver != address(0), "Receiver cannot be 0.");
-        require(vestingTerms[receiver].startTime == 0, "Vesting already started for receiver.");
+        require(!isScheduleValid(vestingTerms[receiver]), "Vesting already started for receiver.");
         vestingTerms[receiver] = vestingTerms[msg.sender];
         delete vestingTerms[msg.sender];
     }
@@ -93,5 +94,9 @@ contract ERC20Vesting is IERC20Vesting {
                 claimableTokens = maxTokens - terms.claimed;
             }
         }
+    }
+
+    function isScheduleValid(VestingTerms memory terms) private pure returns (bool) {
+        return terms.startTime != 0;
     }
 }
