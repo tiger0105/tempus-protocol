@@ -120,7 +120,7 @@ contract TempusController is ReentrancyGuard, Ownable {
     /// @param tokenAmount Amount of YBT/BT to be deposited in underlying YBT/BT decimal precision
     /// @param isBackingToken specifies whether the deposited asset is the Backing Token or Yield Bearing Token
     /// @param minTYSRate Minimum exchange rate of TYS (denominated in TPS) to receive in exchange for TPS
-    /// @param deadline A timestamp after which, if a swap is necessary, it would forcibly reverted
+    /// @param deadline A timestamp by which the transaction must be completed, otherwise it would revert
     function depositAndFix(
         ITempusAMM tempusAMM,
         uint256 tokenAmount,
@@ -270,7 +270,8 @@ contract TempusController is ReentrancyGuard, Ownable {
     /// @param maxLeftoverShares Maximum amount of Principals or Yields to be left in case of early exit
     /// @param minRate Minimum rate for possible swap if swap is needed to end with equal shgares
     /// @param toBackingToken If true redeems to backing token, otherwise redeems to yield bearing
-    /// @param deadline A timestamp after which, if a swap is necessary, it would forcibly reverted
+    /// @param deadline A timestamp by which, if a swap is necessary, the transaction must be completed,
+    ///    otherwise it would revert
     function exitTempusAmmAndRedeem(
         ITempusAMM tempusAMM,
         uint256 lpTokens,

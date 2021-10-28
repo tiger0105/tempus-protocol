@@ -161,7 +161,12 @@ export class TempusController extends ContractBase {
     await this.approve(pool, user, tokenAmount, isBackingToken);
     const amount = isBackingToken ? pool.tempus.asset.toBigNum(tokenAmount) : pool.tempus.yieldBearing.toBigNum(tokenAmount);
     return this.connect(user).depositAndFix(
-      pool.amm.address, amount, isBackingToken, pool.tempus.asset.toBigNum(minTYSRate), parseInt((deadline.getTime() / 1000).toFixed(0)), { value: toWei(ethValue) }
+      pool.amm.address,
+      amount,
+      isBackingToken,
+      pool.tempus.asset.toBigNum(minTYSRate),
+      parseInt((deadline.getTime() / 1000).toFixed(0)),
+      { value: toWei(ethValue) }
     );
   }
 
