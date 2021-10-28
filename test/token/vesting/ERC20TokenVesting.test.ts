@@ -31,6 +31,12 @@ describe("ERC20 Vesting", async () => {
       const period = DAY * 30;
       (await expectRevert(vesting.startVesting(
         owner,
+        "0x0000000000000000000000000000000000000000",
+        {startTime: 0, period: period, amount: 30, claimed: 0}
+      ))).to.equal("Receiver cannot be 0.");
+
+      (await expectRevert(vesting.startVesting(
+        owner,
         user,
         {startTime: 0, period: period, amount: 30, claimed: 0}
       ))).to.equal("Start time must be set.");
@@ -70,9 +76,14 @@ describe("ERC20 Vesting", async () => {
       (await expectRevert(vesting.stopVesting(user,user))).to.equal("Only wallet is allowed to proceed");
     });
 
+    it("stopVesting invalid inputs", async () => {
+      (await expectRevert(vesting.stopVesting(owner,"0x0000000000000000000000000000000000000000"))).to.equal("Receiver cannot be 0.");
+    });
+
     it("claim reverts on input", async () => {
-      (await expectRevert(vesting.claim(user, 0))).to.equal("Claiming 0 tokens.");
-      (await expectRevert(vesting.claim(user, 10))).to.equal("No vesting data for sender.");
+      (await expectRevert(vesting.claim(user, "0x0000000000000000000000000000000000000000", 1))).to.equal("Receiver cannot be 0.");
+      (await expectRevert(vesting.claim(user, user, 0))).to.equal("Claiming 0 tokens.");
+      (await expectRevert(vesting.claim(user, user, 10))).to.equal("No vesting data for sender.");
 
       await vesting.startVesting(
         owner,
@@ -80,7 +91,7 @@ describe("ERC20 Vesting", async () => {
         {startTime: await blockTimestamp(), period: DAY * 30, amount: 30, claimed: 0}
       );
 
-      (await expectRevert(vesting.claim(user, 100))).to.equal("Claiming amount exceeds allowed tokens.");
+      (await expectRevert(vesting.claim(user, user, 100))).to.equal("Claiming amount exceeds allowed tokens.");
     });
   });
 
@@ -134,7 +145,7 @@ describe("ERC20 Vesting", async () => {
       );
 
       await increaseTime(period * 2);
-      await vesting.claim(user, await vesting.claimable(user));
+      await vesting.claim(user, user, await vesting.claimable(user));
       expect(await token.balanceOf(user)).to.equal(30);
     });
 
@@ -148,7 +159,7 @@ describe("ERC20 Vesting", async () => {
       );
   
       await increaseTime(period / 2);
-      await vesting.claim(user, await vesting.claimable(user));
+      await vesting.claim(user, user, await vesting.claimable(user));
       expect(+await token.balanceOf(user)).to.be.within(15, 15.1);
     });
   });
