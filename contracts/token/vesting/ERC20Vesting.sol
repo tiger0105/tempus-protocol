@@ -72,6 +72,7 @@ contract ERC20Vesting is IERC20Vesting {
         require(receiver != address(0), "Receiver cannot be 0.");
 
         VestingTerms memory terms = vestingTerms[receiver];
+        require(isScheduleValid(terms), "No vesting data for receiver.");
         delete vestingTerms[receiver];
 
         // transfer tokens that are not claimed yet
