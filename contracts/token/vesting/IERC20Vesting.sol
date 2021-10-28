@@ -60,8 +60,9 @@ interface IERC20Vesting {
 
     /// @dev Transfers vesting schedule from `msg.sender` to new address
     /// A receiver cannot have an existing vesting schedule.
-    /// @param receiver Address for new token receiver
-    function transferVesting(address receiver) external;
+    /// @param oldAddress Address for current token receiver
+    /// @param newAddress Address for new token receiver
+    function transferVesting(address oldAddress, address newAddress) external;
 
     /// @dev Stops vesting for receiver and sends all tokens back to wallet
     /// @param receiver Address of account for which we are stopping vesting
