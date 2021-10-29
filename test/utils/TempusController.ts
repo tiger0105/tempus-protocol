@@ -147,6 +147,7 @@ export class TempusController extends ContractBase {
    * @param isBackingToken Specifies whether the deposited asset is YBT or BT
    * @param minTYSRate Minimum TYS rate (denominated in TPS) to receive in exchange to TPS
    * @param ethValue value of ETH to send with the tx
+   * @param deadline A timestamp by which the transaction must be completed, otherwise it would revert
    */
   async depositAndFix(
     pool: PoolTestFixture,
@@ -154,12 +155,18 @@ export class TempusController extends ContractBase {
     tokenAmount: NumberOrString,
     isBackingToken: boolean,
     minTYSRate: NumberOrString,
-    ethValue: NumberOrString = 0
+    ethValue: NumberOrString = 0,
+    deadline: Date = new Date(8640000000000000) /// default is 9/12/275760 (no deadline)
   ): Promise<Transaction> {
     await this.approve(pool, user, tokenAmount, isBackingToken);
     const amount = isBackingToken ? pool.tempus.asset.toBigNum(tokenAmount) : pool.ybt.toBigNum(tokenAmount);
     return this.connect(user).depositAndFix(
-      pool.amm.address, amount, isBackingToken, pool.tempus.asset.toBigNum(minTYSRate), { value: toWei(ethValue) }
+      pool.amm.address,
+      amount,
+      isBackingToken,
+      pool.tempus.asset.toBigNum(minTYSRate),
+      parseInt((deadline.getTime() / 1000).toFixed(0)),
+      { value: toWei(ethValue) }
     );
   }
 
@@ -213,7 +220,8 @@ export class TempusController extends ContractBase {
     lpTokens:NumberOrString, 
     principals:NumberOrString, 
     yields:NumberOrString, 
-    toBacking: boolean
+    toBacking: boolean,
+    deadline: Date = new Date(8640000000000000) /// default is 9/12/275760 (no deadline)
   ): Promise<Transaction> {
     const amm = pool.amm, t = pool.tempus, addr = addressOf(user);
     await amm.connect(user).approve(this.address, amm.contract.balanceOf(addr));
@@ -239,7 +247,8 @@ export class TempusController extends ContractBase {
       0,
       maxLeftoverShares,
       0,
-      toBacking
+      toBacking,
+      parseInt((deadline.getTime() / 1000).toFixed(0))
     );
   }
 
