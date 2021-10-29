@@ -100,6 +100,7 @@ describe("ERC20 Vesting", async () => {
 
     it("stopVesting invalid inputs", async () => {
       (await expectRevert(vesting.stopVesting(owner,"0x0000000000000000000000000000000000000000"))).to.equal("Receiver cannot be 0.");
+      (await expectRevert(vesting.stopVesting(owner,"0x1234000000000000000000000000000000000000"))).to.equal("No vesting data for receiver.");
     });
 
     it("transferVesting invalid inputs", async () => {
