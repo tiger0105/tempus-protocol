@@ -26,7 +26,7 @@ interface IERC20Vesting {
     event VestingTransferred(address indexed oldReceiver, address newReceiver);
 
     /// Some portion of the available amount was claimed by the vesting receiver.
-    event VestingClaimed(address indexed receiver, address to, uint256 value);
+    event VestingClaimed(address indexed receiver, uint256 value);
 
     /// @return Address of account that starts and stops vesting for different parties
     function wallet() external view returns (address);
@@ -51,9 +51,8 @@ interface IERC20Vesting {
     function startVestingBatch(address[] calldata receivers, VestingTerms[] calldata terms) external;
 
     /// @dev Transfers tokens to a given address
-    /// @param to Address of token receiver
     /// @param value Number of tokens to claim
-    function claim(address to, uint256 value) external;
+    function claim(uint256 value) external;
 
     /// @dev Transfers vesting schedule from `msg.sender` to new address
     /// A receiver cannot have an existing vesting schedule.

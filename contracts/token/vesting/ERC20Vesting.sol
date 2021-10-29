@@ -52,17 +52,16 @@ contract ERC20Vesting is IERC20Vesting {
         }
     }
 
-    function claim(address to, uint256 value) external override {
-        require(to != address(0), "Receiver cannot be 0.");
+    function claim(uint256 value) external override {
         require(value > 0, "Claiming 0 tokens.");
         VestingTerms memory terms = vestingTerms[msg.sender];
         require(isScheduleValid(terms), "No vesting data for sender.");
         require(value <= _claimable(terms), "Claiming amount exceeds allowed tokens.");
 
         vestingTerms[msg.sender].claimed += value;
-        token.transfer(to, value);
+        token.transfer(msg.sender, value);
 
-        emit VestingClaimed(msg.sender, to, value);
+        emit VestingClaimed(msg.sender, value);
     }
 
     function transferVesting(address receiver) external override {
