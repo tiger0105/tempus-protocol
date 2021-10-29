@@ -113,7 +113,9 @@ contract ERC20Vesting is IERC20Vesting {
     }
 
     function claimable(address receiver) external view override returns (uint256) {
-        return _claimable(vestingTerms[receiver]);
+        VestingTerms memory terms = vestingTerms[receiver];
+        require(isScheduleValid(terms), "No vesting data for receiver.");
+        return _claimable(terms);
     }
 
     function _claimable(VestingTerms memory terms) private view returns (uint256 claimableTokens) {
