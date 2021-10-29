@@ -194,7 +194,7 @@ describe("ERC20 Vesting", async () => {
       expect(await token.balanceOf(owner)).to.equal(300);
     });
 
-    it("claiming after period finished", async () => {
+    it("Claiming after period finished", async () => {
       const startTime = await blockTimestamp();
       const period = DAY;
       await vesting.startVesting(
@@ -212,7 +212,7 @@ describe("ERC20 Vesting", async () => {
       expect(await token.balanceOf(user)).to.equal(30);
     });
 
-    it("claiming after half period", async () => {
+    it("Claiming specific amount after half period", async () => {
       const startTime = await blockTimestamp();
       const period = DAY;
       await vesting.startVesting(
@@ -220,11 +220,60 @@ describe("ERC20 Vesting", async () => {
         user,
         {startTime: startTime, period: period, amount: 30, claimed: 0}
       );
-  
+
+      await increaseTime(period / 2);
+      await vesting.claim(user, 7);
+      expect(+await token.balanceOf(user)).to.equal(7);
+    });
+
+    it("Claiming maximum (with helper) after half period", async () => {
+      const startTime = await blockTimestamp();
+      const period = DAY;
+      await vesting.startVesting(
+        owner,
+        user,
+        {startTime: startTime, period: period, amount: 30, claimed: 0}
+      );
+
       await increaseTime(period / 2);
       await vesting.claim(user, await vesting.claimable(user));
       expect(+await token.balanceOf(user)).to.be.within(15, 15.1);
     });
+
+    it("Claiming maximum after half period", async () => {
+      const startTime = await blockTimestamp();
+      const period = DAY;
+      await vesting.startVesting(
+        owner,
+        user,
+        {startTime: startTime, period: period, amount: 30, claimed: 0}
+      );
+
+      await increaseTime(period / 2);
+      await vesting.claim(user)
+      expect(+await token.balanceOf(user)).to.be.within(15, 15.1);
+    });
+
+    it("Claiming twice within period", async () => {
+      const startTime = await blockTimestamp();
+      const period = DAY;
+      await vesting.startVesting(
+        owner,
+        user,
+        {startTime: startTime, period: period, amount: 30, claimed: 0}
+      );
+
+      await increaseTime(period / 2);
+
+      await vesting.claim(user, 7);
+      expect(+await token.balanceOf(user)).to.equal(7);
+
+      await vesting.claim(user, 7);
+      expect(+await token.balanceOf(user)).to.equal(14);
+
+      expect(+await vesting.claimable(user)).to.be.within(1, 1.1);
+    });
+
   });
 
   describe("Transfer vesting", async () => {
