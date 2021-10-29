@@ -35,6 +35,8 @@ contract ERC20Vesting is IERC20Vesting {
 
         vestingTerms[receiver] = terms;
         token.transferFrom(wallet, address(this), terms.amount);
+
+        emit VestingAdded(receiver, terms);
     }
 
     function startVestingBatch(address[] calldata receivers, VestingTerms[] calldata terms)
@@ -59,6 +61,8 @@ contract ERC20Vesting is IERC20Vesting {
 
         vestingTerms[msg.sender].claimed += value;
         token.transfer(to, value);
+
+        emit VestingClaimed(msg.sender, to, value);
     }
 
     function transferVesting(address receiver) external override {
@@ -66,6 +70,8 @@ contract ERC20Vesting is IERC20Vesting {
         require(!isScheduleValid(vestingTerms[receiver]), "Vesting already started for receiver.");
         vestingTerms[receiver] = vestingTerms[msg.sender];
         delete vestingTerms[msg.sender];
+
+        emit VestingTransferred(msg.sender, receiver);
     }
 
     function stopVesting(address receiver) external override onlyWallet {
@@ -78,6 +84,8 @@ contract ERC20Vesting is IERC20Vesting {
         if (terms.amount > terms.claimed) {
             token.transfer(wallet, terms.amount - terms.claimed);
         }
+
+        emit VestingRemoved(receiver);
     }
 
     function claimable(address receiver) external view override returns (uint256) {

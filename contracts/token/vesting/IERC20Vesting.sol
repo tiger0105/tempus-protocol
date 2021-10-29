@@ -16,6 +16,18 @@ interface IERC20Vesting {
         uint256 claimed;
     }
 
+    /// A new vesting receiver was added.
+    event VestingAdded(address indexed receiver, VestingTerms terms);
+
+    /// An existing vesting receiver was removed.
+    event VestingRemoved(address indexed receiver);
+
+    /// An existing vesting receiver's address has changed.
+    event VestingTransferred(address indexed oldReceiver, address newReceiver);
+
+    /// Some portion of the available amount was claimed by the vesting receiver.
+    event VestingClaimed(address indexed receiver, address to, uint256 value);
+
     /// @return Address of account that starts and stops vesting for different parties
     function wallet() external view returns (address);
 
