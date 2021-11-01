@@ -45,7 +45,7 @@ contract ERC20Vesting is IERC20Vesting {
         onlyWallet
     {
         require(receivers.length > 0, "Zero receivers.");
-        require(receivers.length == terms.length, "Terms and receivers mush have same length.");
+        require(receivers.length == terms.length, "Terms and receivers must have same length.");
 
         for (uint256 i = 0; i < receivers.length; i++) {
             startVesting(receivers[i], terms[i]);
