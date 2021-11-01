@@ -144,6 +144,16 @@ describe("ERC20 Vesting", async () => {
       expect(await token.balanceOf(owner)).to.equal(270);
     });
 
+    it("Expected claimable tokens is 0 after startVesting with startTime in future", async () => {
+      await vesting.startVesting(
+        owner,
+        user,
+        {startTime: await blockTimestamp() + 60*60*24, period: DAY * 30, amount: 30, claimed: 0}
+      );
+
+      expect(await vesting.claimable(user)).to.equal(0);
+    });
+
     it("Expected state after startVestingBatch", async () => {
       const startTime = await blockTimestamp();
       const period = DAY * 30;
@@ -193,6 +203,30 @@ describe("ERC20 Vesting", async () => {
       expect(await vesting.claimable(user)).to.equal(0);
 
       expect(await token.balanceOf(owner)).to.equal(300);
+    });
+
+    it("Expected state after stopVesting called after vesting period expires and all tokens claimed", async () => {
+      const startTime = await blockTimestamp();
+      const period = DAY;
+      await vesting.startVesting(
+        owner,
+        user,
+        {startTime: startTime, period: period, amount: 30, claimed: 0}
+      );
+      await increaseTime(DAY);
+      await vesting.claim(user);
+      expect(await token.balanceOf(user)).to.equal(30);
+      
+      await vesting.stopVesting(owner, user);
+  
+      const terms:VestingTerms = await vesting.getVestingTerms(user);
+      expect(terms.amount).to.equal(0);
+      expect(terms.startTime).to.equal(0);
+      expect(terms.period).to.equal(0);
+      expect(terms.claimed).to.equal(0);
+
+      expect(await vesting.claimable(user)).to.equal(0);
+      expect(await token.balanceOf(owner)).to.equal(270);
     });
 
     it("Claiming after period finished", async () => {
