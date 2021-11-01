@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.6;
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import "./IERC20Vesting.sol";
 
 contract ERC20Vesting is IERC20Vesting {
+    using SafeERC20 for IERC20;
+
     address public immutable override wallet;
     IERC20 public immutable override token;
     mapping(address => VestingTerms) private vestingTerms;
@@ -34,7 +38,7 @@ contract ERC20Vesting is IERC20Vesting {
         require(!isScheduleValid(vestingTerms[receiver]), "Vesting already started for account.");
 
         vestingTerms[receiver] = terms;
-        token.transferFrom(wallet, address(this), terms.amount);
+        token.safeTransferFrom(wallet, address(this), terms.amount);
 
         emit VestingAdded(receiver, terms);
     }
@@ -69,7 +73,7 @@ contract ERC20Vesting is IERC20Vesting {
         }
 
         vestingTerms[msg.sender].claimed += value;
-        token.transfer(msg.sender, value);
+        token.safeTransfer(msg.sender, value);
 
         emit VestingClaimed(msg.sender, value);
     }
@@ -99,7 +103,7 @@ contract ERC20Vesting is IERC20Vesting {
 
         // Transfer the unclaimable (revoked) part.
         if (revokedTokens > 0) {
-            token.transfer(wallet, revokedTokens);
+            token.safeTransfer(wallet, revokedTokens);
         }
 
         emit VestingRemoved(receiver);
