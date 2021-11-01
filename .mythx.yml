@@ -3,7 +3,7 @@ format: json
 
 analyze:
     mode: standard
-    min-severity: low
+    min-severity: medium
     remappings:
         - "@openzeppelin/=./node_modules/@openzeppelin/"
         - "@balancer-labs/=./node_modules/@balancer-labs/"
