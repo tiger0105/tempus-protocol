@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.6;
 
-import "@openzeppelin/contracts/utils/Context.sol";
-
 /// Implements Ownable with a two step transfer of ownership
-abstract contract Ownable is Context {
+abstract contract Ownable {
     address private _owner;
     address private _proposedOwner;
 
@@ -14,7 +12,7 @@ abstract contract Ownable is Context {
      * @dev Initializes the contract setting the deployer as the initial owner.
      */
     constructor() {
-        _setOwner(_msgSender());
+        _setOwner(msg.sender);
     }
 
     /**
@@ -28,7 +26,7 @@ abstract contract Ownable is Context {
      * @dev Throws if called by any account other than the owner.
      */
     modifier onlyOwner() {
-        require(owner() == _msgSender(), "Ownable: caller is not the owner");
+        require(owner() == msg.sender, "Ownable: caller is not the owner");
         _;
     }
 
