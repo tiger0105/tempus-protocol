@@ -50,8 +50,12 @@ interface IERC20Vesting {
     /// @param terms Vesting terms for all accounts
     function startVestingBatch(address[] calldata receivers, VestingTerms[] calldata terms) external;
 
-    /// @dev Transfers tokens to a given address
+    /// @dev Transfers all vested tokens to the sender
+    function claim() external;
+
+    /// @dev Transfers a part of vested tokens to the sender
     /// @param value Number of tokens to claim
+    ///              The special value type(uint256).max will try to claim all available tokens
     function claim(uint256 value) external;
 
     /// @dev Transfers vesting schedule from `msg.sender` to new address
