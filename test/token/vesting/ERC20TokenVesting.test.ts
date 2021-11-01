@@ -104,7 +104,8 @@ describe("ERC20 Vesting", async () => {
     });
 
     it("transferVesting invalid inputs", async () => {
-      (await expectRevert(vesting.transferVesting(user,"0x0000000000000000000000000000000000000000"))).to.equal("Receiver cannot be 0.");
+      (await expectRevert(vesting.transferVesting(owner,user,"0x0000000000000000000000000000000000000000"))).to.equal("Receiver cannot be 0.");
+      (await expectRevert(vesting.transferVesting(user,user,"0x0000000000000000000000000000000000000000"))).to.equal("Only wallet is allowed to proceed");
     });
 
     it("claim reverts on input", async () => {
@@ -287,7 +288,7 @@ describe("ERC20 Vesting", async () => {
       );
       expect(await token.balanceOf(owner)).to.equal(270);
 
-      expect(await vesting.transferVesting(user, user2)).to.emit(
+      expect(await vesting.transferVesting(owner, user, user2)).to.emit(
         vesting.contract, 
         "VestingTransferred"
       ).withArgs(addressOf(user), addressOf(user2));
@@ -319,7 +320,7 @@ describe("ERC20 Vesting", async () => {
       await vesting.claim(user, await vesting.claimable(user));
       expect(+await token.balanceOf(user)).to.be.within(15, 15.1);
 
-      await vesting.transferVesting(user, user2);
+      await vesting.transferVesting(owner, user, user2);
 
       await increaseTime(period / 2);
       await vesting.claim(user2, await vesting.claimable(user2));
@@ -353,7 +354,7 @@ describe("ERC20 Vesting", async () => {
       );
       expect(await token.balanceOf(owner)).to.equal(260);
 
-      (await expectRevert(vesting.transferVesting(user,user2))).to.equal("Vesting already started for receiver.");
+      (await expectRevert(vesting.transferVesting(owner, user, user2))).to.equal("Vesting already started for receiver.");
 
       const terms1:VestingTerms = await vesting.getVestingTerms(user);
       expect(terms1.amount).to.equal(30);

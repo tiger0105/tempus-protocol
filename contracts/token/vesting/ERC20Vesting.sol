@@ -74,13 +74,13 @@ contract ERC20Vesting is IERC20Vesting {
         emit VestingClaimed(msg.sender, value);
     }
 
-    function transferVesting(address receiver) external override {
-        require(receiver != address(0), "Receiver cannot be 0.");
-        require(!isScheduleValid(vestingTerms[receiver]), "Vesting already started for receiver.");
-        vestingTerms[receiver] = vestingTerms[msg.sender];
-        delete vestingTerms[msg.sender];
+    function transferVesting(address oldAddress, address newAddress) external override onlyWallet {
+        require(newAddress != address(0), "Receiver cannot be 0.");
+        require(!isScheduleValid(vestingTerms[newAddress]), "Vesting already started for receiver.");
+        vestingTerms[newAddress] = vestingTerms[oldAddress];
+        delete vestingTerms[oldAddress];
 
-        emit VestingTransferred(msg.sender, receiver);
+        emit VestingTransferred(oldAddress, newAddress);
     }
 
     function stopVesting(address receiver) external override onlyWallet {
