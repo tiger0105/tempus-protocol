@@ -2,6 +2,7 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import { addressOf, Signer } from "../../utils/ContractBase";
 import { blockTimestamp, expectRevert, increaseTime, setEvmTime } from "../../utils/Utils";
+import { ERC20 } from "../../utils/ERC20";
 import { ERC20OwnerMintable } from "../../utils/ERC20OwnerMintable";
 import { ERC20Vesting, VestingTerms } from "../../utils/ERC20Vesting";
 
@@ -26,6 +27,18 @@ describe("ERC20 Vesting", async () => {
   });
 
   describe("Invalid inputs", async () => {
+    it("Constructor reverts on input", async () => {
+      const fakeToken = await ERC20.attach("ERC20OwnerMintableToken", "0x0000000000000000000000000000000000000000", 18);
+      (await expectRevert(ERC20Vesting.create(
+        fakeToken,
+        owner
+      ))).to.equal("Token cannot be 0.");
+      (await expectRevert(ERC20Vesting.create(
+        token,
+        "0x0000000000000000000000000000000000000000"
+      ))).to.equal("Wallet cannot be 0.");
+    });
+
     it("startVesting reverts on input", async () => {
       const startTime = await blockTimestamp();
       const period = DAY * 30;

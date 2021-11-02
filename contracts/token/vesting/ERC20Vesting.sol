@@ -20,6 +20,9 @@ contract ERC20Vesting is IERC20Vesting {
     /// @param _token Address of ERC20 token associated with this vesting contract
     /// @param _wallet Address of account that starts and stops vesting for different parties
     constructor(IERC20 _token, address _wallet) {
+        require(address(_token) != address(0), "Token cannot be 0.");
+        require(address(_wallet) != address(0), "Wallet cannot be 0.");
+
         token = _token;
         wallet = _wallet;
     }
