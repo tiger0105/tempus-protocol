@@ -6,6 +6,18 @@ abstract contract Ownable {
     address private _owner;
     address private _proposedOwner;
 
+    /**
+     * @dev Change of ownership proposed.
+     * @param currentOwner The current owner.
+     * @param proposedOwner The proposed owner.
+     */
+    event OwnershipProposed(address indexed currentOwner, address indexed proposedOwner);
+
+    /**
+     * @dev Ownership transferred.
+     * @param previousOwner The previous owner.
+     * @param newOwner The new owner.
+     */
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     /**
@@ -37,6 +49,7 @@ abstract contract Ownable {
     function transferOwnership(address newOwner) public virtual onlyOwner {
         require(newOwner != address(0), "Ownable: new owner is the zero address");
         _proposedOwner = newOwner;
+        emit OwnershipProposed(_owner, _proposedOwner);
     }
 
     /**
