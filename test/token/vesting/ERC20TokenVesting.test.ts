@@ -85,13 +85,13 @@ describe("ERC20 Vesting", async () => {
         owner,
         [user],
         [{startTime: 1, period: 1, amount: 30, claimed: 0}, {startTime: 1, period: 1, amount: 30, claimed: 0}]
-      ))).to.equal("Terms and receivers mush have same length.");
+      ))).to.equal("Terms and receivers must have same length.");
 
       (await expectRevert(vesting.startVestingBatch(
         owner,
         [user, user2],
         [{startTime: 1, period: 1, amount: 30, claimed: 0}]
-      ))).to.equal("Terms and receivers mush have same length.");
+      ))).to.equal("Terms and receivers must have same length.");
     });
 
     it("stopVesting only callable by wallet", async () => {
