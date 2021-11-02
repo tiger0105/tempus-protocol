@@ -63,7 +63,7 @@
     "mythx-install": "pip install mythx-cli",
     "mythx-amm": "mythx --ci --yes analyze --wait --solc-version 0.7.6 contracts/amm/TempusAMM.sol contracts/amm/TempusAMMFactory.sol contracts/amm/TempusAMMUserDataHelpers.sol",
     "mythx-pool": "mythx --ci --yes analyze --wait --solc-version 0.8.6 contracts/pools/AaveTempusPool.sol contracts/pools/CompoundTempusPool.sol contracts/pools/LidoTempusPool.sol",
-    "mythx-misc": "mythx --ci --yes analyze --wait --solc-version 0.8.6 contracts/token/TempusToken.sol contracts/token/vesting/ERC20Vesting.sol",
+    "mythx-misc": "mythx --ci --yes analyze --wait --solc-version 0.8.6 contracts/stats/Stats.sol contracts/token/TempusToken.sol contracts/token/vesting/ERC20Vesting.sol",
     "slither": "rm -rf contracts/amm contracts/TempusController.sol && slither ."
   },
   "dependencies": {
