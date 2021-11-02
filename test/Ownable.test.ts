@@ -33,7 +33,10 @@ describe("Ownable", async () => {
   });
 
   it("transferOwnership successful flow", async () => {
-    await ownable.connect(owner).transferOwnership(user.address);
+    expect(await ownable.connect(owner).transferOwnership(user.address)).to.emit(
+      ownable,
+      "OwnershipProposed"
+    ).withArgs(owner.address, user.address);
     expect(await ownable.owner()).to.equal(owner.address);
     expect(await ownable.connect(user).acceptOwnership()).to.emit(
       ownable, 
