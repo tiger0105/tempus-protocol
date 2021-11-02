@@ -1,7 +1,8 @@
 import { PoolTestFixture, TempusAMMParams } from "./PoolTestFixture";
-import { ContractBase, Signer, SignerOrAddress } from "../utils/ContractBase";
+import { ContractBase, Signer } from "../utils/ContractBase";
 import { TempusPool, PoolType } from "../utils/TempusPool";
 import { TokenInfo } from "./TokenInfo";
+import { ethers } from "hardhat";
 import { Comptroller } from "../utils/Comptroller";
 
 // Compound CErc20
@@ -9,8 +10,8 @@ export class CompoundTestPool extends PoolTestFixture {
   compound:Comptroller;
   ASSET_TOKEN:TokenInfo;
   YIELD_TOKEN:TokenInfo;
-  constructor(ASSET_TOKEN:TokenInfo, YIELD_TOKEN:TokenInfo) {
-    super(PoolType.Compound, /*yieldPeggedToAsset:*/false);
+  constructor(ASSET_TOKEN:TokenInfo, YIELD_TOKEN:TokenInfo, integration:boolean) {
+    super(PoolType.Compound, /*yieldPeggedToAsset:*/false, integration);
     this.ASSET_TOKEN = ASSET_TOKEN;
     this.YIELD_TOKEN = YIELD_TOKEN;
   }
@@ -19,6 +20,14 @@ export class CompoundTestPool extends PoolTestFixture {
   }
   async forceFailNextDepositOrRedeem(): Promise<void> {
     await this.compound.contract.setFailNextDepositOrRedeem(true);
+  }
+  async getSigners(): Promise<[Signer,Signer,Signer]> {
+    if (this.integration) {
+      // TODO: implement for integration tests
+    } else {
+      const [owner,user,user2] = await ethers.getSigners();
+      return [owner,user,user2];
+    }
   }
   async deposit(user:Signer, amount:number): Promise<void> {
     await this.compound.enterMarkets(user);
