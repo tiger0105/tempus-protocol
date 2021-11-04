@@ -192,10 +192,14 @@ export class TempusPool extends ContractBase {
         controller.address,
         maturityTime,
         parseDecimal(estimatedYield, exchangeRatePrec),
-        shareNames.principalName,
-        shareNames.principalSymbol,
-        shareNames.yieldName,
-        shareNames.yieldSymbol,
+        /*principalsData*/{
+          name: shareNames.principalName, 
+          symbol: shareNames.principalSymbol
+        },
+        /*yieldsData*/{
+          name: shareNames.yieldName, 
+          symbol: shareNames.yieldSymbol
+        },
         /*maxFeeSetup:*/{
           depositPercent:      yieldToken.toBigNum(0.5), // fees are stored in YBT
           earlyRedeemPercent:  yieldToken.toBigNum(1.0),
@@ -212,10 +216,14 @@ export class TempusPool extends ContractBase {
         controller.address,
         maturityTime,
         parseDecimal(estimatedYield, exchangeRatePrec),
-        shareNames.principalName,
-        shareNames.principalSymbol,
-        shareNames.yieldName,
-        shareNames.yieldSymbol,
+        /*principalsData*/{
+          name: shareNames.principalName, 
+          symbol: shareNames.principalSymbol
+        },
+        /*yieldsData*/{
+          name: shareNames.yieldName, 
+          symbol: shareNames.yieldSymbol
+        },
         /*maxFeeSetup:*/{
           depositPercent:      yieldToken.toBigNum(0.5), // fees are stored in YBT
           earlyRedeemPercent:  yieldToken.toBigNum(1.0),
@@ -233,10 +241,14 @@ export class TempusPool extends ContractBase {
         maturityTime,
         parseDecimal(1.0, exchangeRatePrec),
         parseDecimal(estimatedYield, exchangeRatePrec),
-        shareNames.principalName,
-        shareNames.principalSymbol,
-        shareNames.yieldName,
-        shareNames.yieldSymbol,
+        /*principalsData*/{
+          name: shareNames.principalName, 
+          symbol: shareNames.principalSymbol
+        },
+        /*yieldsData*/{
+          name: shareNames.yieldName, 
+          symbol: shareNames.yieldSymbol
+        },
         /*maxFeeSetup:*/{
           depositPercent:      yieldToken.toBigNum(0.5), // fees are stored in YBT
           earlyRedeemPercent:  yieldToken.toBigNum(1.0),
@@ -252,10 +264,14 @@ export class TempusPool extends ContractBase {
         controller.address,
         maturityTime,
         parseDecimal(estimatedYield, exchangeRatePrec),
-        shareNames.principalName,
-        shareNames.principalSymbol,
-        shareNames.yieldName,
-        shareNames.yieldSymbol,
+        /*principalsData*/{
+          name: shareNames.principalName, 
+          symbol: shareNames.principalSymbol
+        },
+        /*yieldsData*/{
+          name: shareNames.yieldName, 
+          symbol: shareNames.yieldSymbol
+        },
         /*maxFeeSetup:*/{
           depositPercent:      yieldToken.toBigNum(0.5), // fees are stored in YBT
           earlyRedeemPercent:  yieldToken.toBigNum(1.0),
