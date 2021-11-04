@@ -7,8 +7,13 @@ import { CompoundTestPool } from "./CompoundTestPool";
 import { PoolType } from "../utils/TempusPool";
 import { Suite } from "mocha";
 import { 
-  ONLY_RUN_POOL, ONLY_YIELD_TOKEN, ALL_POOLS, MOCK_TOKENS, RUN_INTEGRATION_TESTS
+  isIntegrationTestsEnabled, getOnlyRunPool, getOnlyRunToken, getTokens, ALL_POOLS
 } from "../Config";
+
+const integration = isIntegrationTestsEnabled();
+const onlyRun = getOnlyRunPool();
+const onlyToken = getOnlyRunToken();
+const tokens = getTokens(integration);
 
 function _describeForEachPoolType(title:string, poolTypes:PoolType[], only:boolean, fn:(pool:PoolTestFixture) => void)
 {
@@ -16,15 +21,15 @@ function _describeForEachPoolType(title:string, poolTypes:PoolType[], only:boole
 
   for (let type of poolTypes)
   {
-    if (ONLY_RUN_POOL && ONLY_RUN_POOL !== type) {
+    if (onlyRun && onlyRun !== type) {
       continue;
     }
 
-    for (let pair of MOCK_TOKENS[type]) {
-      let ASSET_TOKEN:TokenInfo = pair[0];
-      let YIELD_TOKEN:TokenInfo = pair[1];
+    for (let pair of tokens[type]) {
+      let asset:TokenInfo = pair[0];
+      let yieldToken:TokenInfo = pair[1];
 
-      if (ONLY_YIELD_TOKEN && ONLY_YIELD_TOKEN !== YIELD_TOKEN.symbol) {
+      if (onlyToken && onlyToken !== yieldToken.symbol) {
         continue;
       }
 
@@ -47,17 +52,17 @@ function _describeForEachPoolType(title:string, poolTypes:PoolType[], only:boole
   
         let pool:PoolTestFixture;
         switch (type) {
-          case PoolType.Aave:     pool = new AaveTestPool(ASSET_TOKEN, YIELD_TOKEN, RUN_INTEGRATION_TESTS); break;
-          case PoolType.Lido:     pool = new LidoTestPool(ASSET_TOKEN, YIELD_TOKEN, RUN_INTEGRATION_TESTS); break;
-          case PoolType.Compound: pool = new CompoundTestPool(ASSET_TOKEN, YIELD_TOKEN, RUN_INTEGRATION_TESTS); break;
-          case PoolType.Yearn:    pool = new YearnTestPool(ASSET_TOKEN, YIELD_TOKEN, RUN_INTEGRATION_TESTS); break;
+          case PoolType.Aave:     pool = new AaveTestPool(asset, yieldToken, integration); break;
+          case PoolType.Lido:     pool = new LidoTestPool(asset, yieldToken, integration); break;
+          case PoolType.Compound: pool = new CompoundTestPool(asset, yieldToken, integration); break;
+          case PoolType.Yearn:    pool = new YearnTestPool(asset, yieldToken, integration); break;
         }
         fn(pool);
       };
   
       // we want to describe suites by underlying pool type Prefix
       // this means tests are grouped and run by pool type, making fixtures faster
-      const suiteTitle = type.toString() + " " + YIELD_TOKEN.symbol + " <> " + title;
+      const suiteTitle = type.toString() + " " + yieldToken.symbol + " <> " + title;
       let suite:Suite = only ? describe.only(suiteTitle, describeTestBody) : describe(suiteTitle, describeTestBody);
       parent = suite.parent;
     }

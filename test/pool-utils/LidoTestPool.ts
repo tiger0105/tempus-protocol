@@ -2,7 +2,7 @@ import { PoolTestFixture, TempusAMMParams } from "./PoolTestFixture";
 import { ContractBase, Signer } from "../utils/ContractBase";
 import { TempusPool, PoolType } from "../utils/TempusPool";
 import { TokenInfo } from "./TokenInfo";
-import { ethers } from "hardhat";
+import { ethers, getUnnamedAccounts } from "hardhat";
 import { Lido } from "../utils/Lido";
 import { Transaction } from "ethers";
 
@@ -23,7 +23,14 @@ export class LidoTestPool extends PoolTestFixture {
   }
   async getSigners(): Promise<[Signer,Signer,Signer]> {
     if (this.integration) {
-      // TODO: implement for integration tests
+      // TODO: implement `owner` for Lido integration tests
+      const [owner] = await ethers.getSigners();
+      const [account1,account2] = await getUnnamedAccounts();
+      return [
+        owner,
+        await ethers.getSigner(account1),
+        await ethers.getSigner(account2)
+      ]
     } else {
       const [owner,user,user2] = await ethers.getSigners();
       return [owner,user,user2];
