@@ -354,7 +354,7 @@ export abstract class PoolTestFixture {
 
         // initialize new tempus pool with the controller, TempusPool is auto-registered
         const tempus = await TempusPool.deploy(
-          this.type, owner, controller, asset, ybt, maturityTime, p.yieldEst, names
+          this.type, owner, owner, controller, asset, ybt, maturityTime, p.yieldEst, names
         );
 
         // new AMM instance and register the AMM with the controller

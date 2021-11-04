@@ -218,6 +218,7 @@ class DeployLocalForked {
   private async deployPool(params: DeployPoolParams) {
     const pool = await params.deploy(
       params.owner,
+      params.owner,
       params.bt,
       params.ybt,
       this.controller,

@@ -20,8 +20,9 @@ contract AaveTempusPool is TempusPool {
     uint private immutable exchangeRateToBackingPrecision;
 
     constructor(
-        IAToken token,
         address controller,
+        address owner,
+        IAToken token,
         uint256 maturity,
         uint256 estYield,
         TokenData memory principalsData,
@@ -30,9 +31,10 @@ contract AaveTempusPool is TempusPool {
         uint16 referrerCode
     )
         TempusPool(
+            controller,
+            owner,
             address(token),
             token.UNDERLYING_ASSET_ADDRESS(),
-            controller,
             maturity,
             getInitialInterestRate(token),
             1e18,

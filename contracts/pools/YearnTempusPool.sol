@@ -19,8 +19,9 @@ contract YearnTempusPool is TempusPool {
     bytes32 public immutable override protocolName = "Yearn";
 
     constructor(
-        IYearnVaultV2 vault,
         address controller,
+        address owner,
+        IYearnVaultV2 vault,
         uint256 maturity,
         uint256 estYield,
         TokenData memory principalsData,
@@ -28,9 +29,10 @@ contract YearnTempusPool is TempusPool {
         FeesConfig memory maxFeeSetup
     )
         TempusPool(
+            controller,
+            owner,
             address(vault),
             vault.token(),
-            controller,
             maturity,
             vault.pricePerShare(),
             10**(IERC20Metadata(vault.token()).decimals()),

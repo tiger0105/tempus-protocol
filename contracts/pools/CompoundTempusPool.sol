@@ -18,8 +18,9 @@ contract CompoundTempusPool is TempusPool {
     bytes32 public constant override protocolName = "Compound";
 
     constructor(
-        ICErc20 token,
         address controller,
+        address owner,
+        ICErc20 token,
         uint256 maturity,
         uint256 exchangeRateOne,
         uint256 estYield,
@@ -28,9 +29,10 @@ contract CompoundTempusPool is TempusPool {
         FeesConfig memory maxFeeSetup
     )
         TempusPool(
+            controller,
+            owner,
             address(token),
             token.underlying(),
-            controller,
             maturity,
             token.exchangeRateCurrent(),
             exchangeRateOne,

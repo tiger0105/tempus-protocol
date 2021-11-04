@@ -88,6 +88,7 @@ export class TempusPool extends ContractBase {
    * @param tempusShareNames Symbol names for TPS+TYS
    */
   static async deployAave(
+    deployer:Signer,
     owner:Signer,
     asset:IERC20,
     yieldToken:ERC20,
@@ -97,13 +98,14 @@ export class TempusPool extends ContractBase {
     tempusShareNames:TempusSharesNames
   ): Promise<TempusPool> {
     return TempusPool.deploy(
-      PoolType.Aave, owner, controller, asset, yieldToken, maturityTime, estimatedYield, tempusShareNames
+      PoolType.Aave, deployer, owner, controller, asset, yieldToken, maturityTime, estimatedYield, tempusShareNames
     );
   }
 
   /**
    * Deploys CompoundTempusPool
-   * @param owner Owner who deploys TempusPool and also deployed Controller
+   * @param deployer Deployer of TempusPool and TempusController
+   * @param owner Owner of the deployed TempusPool
    * @param yieldToken The yield bearing token, such as cDai
    * @param controller The Tempus Controller address to bind to the TempusPool
    * @param maturityTime Maturity time of the pool
@@ -111,6 +113,7 @@ export class TempusPool extends ContractBase {
    * @param tempusShareNames Symbol names for TPS+TYS
    */
   static async deployCompound(
+    deployer: Signer,
     owner:Signer,
     asset:IERC20,
     yieldToken:ERC20,
@@ -120,7 +123,7 @@ export class TempusPool extends ContractBase {
     tempusShareNames:TempusSharesNames
   ): Promise<TempusPool> {
     return TempusPool.deploy(
-      PoolType.Compound, owner, controller, asset, yieldToken, maturityTime, estimatedYield, tempusShareNames
+      PoolType.Compound, deployer, owner, controller, asset, yieldToken, maturityTime, estimatedYield, tempusShareNames
     );
   }
 
@@ -134,6 +137,7 @@ export class TempusPool extends ContractBase {
    * @param tempusShareNames Symbol names for TPS+TYS
    */
   static async deployLido(
+    deployer:Signer,
     owner:Signer,
     asset:IERC20,
     yieldToken:ERC20,
@@ -143,7 +147,7 @@ export class TempusPool extends ContractBase {
     tempusShareNames:TempusSharesNames
   ): Promise<TempusPool> {
     return TempusPool.deploy(
-      PoolType.Lido, owner, controller, asset, yieldToken, maturityTime, estimatedYield, tempusShareNames
+      PoolType.Lido, deployer, owner, controller, asset, yieldToken, maturityTime, estimatedYield, tempusShareNames
     );
   }
 
@@ -157,6 +161,7 @@ export class TempusPool extends ContractBase {
    * @param tempusShareNames Symbol names for TPS+TYS
    */
    static async deployYearn(
+     deployer: Signer,
      owner:Signer,
      asset:ERC20,
      yieldToken:ERC20,
@@ -166,12 +171,13 @@ export class TempusPool extends ContractBase {
      tempusShareNames:TempusSharesNames
   ): Promise<TempusPool> {
     return TempusPool.deploy(
-      PoolType.Yearn, owner, controller, asset, yieldToken, maturityTime, estimatedYield, tempusShareNames
+      PoolType.Yearn, deployer,owner, controller, asset, yieldToken, maturityTime, estimatedYield, tempusShareNames
     );
   }
 
   static async deploy(
     type:PoolType,
+    deployer: Signer,
     owner:Signer,
     controller:TempusController,
     asset:IERC20,
@@ -187,9 +193,10 @@ export class TempusPool extends ContractBase {
       exchangeRatePrec = 18; // AaveTempusPool converts 1e27 LiquidityIndex to 1e18 interestRate
       pool = await ContractBase.deployContractBy(
         type + "TempusPool",
-        owner,
-        yieldToken.address,
+        deployer,
         controller.address,
+        owner.address,
+        yieldToken.address,
         maturityTime,
         parseDecimal(estimatedYield, exchangeRatePrec),
         /*principalsData*/{
@@ -211,9 +218,10 @@ export class TempusPool extends ContractBase {
       exchangeRatePrec = 18; // Lido is always 1e18 thanks to ETH
       pool = await ContractBase.deployContractBy(
         type + "TempusPool",
-        owner,
-        yieldToken.address,
+        deployer,
         controller.address,
+        owner.address,
+        yieldToken.address,
         maturityTime,
         parseDecimal(estimatedYield, exchangeRatePrec),
         /*principalsData*/{
@@ -235,9 +243,10 @@ export class TempusPool extends ContractBase {
       exchangeRatePrec = (10 + asset.decimals); // exchange rate precision = 18 - 8 + Underlying Token Decimals
       pool = await ContractBase.deployContractBy(
         type + "TempusPool",
-        owner,
-        yieldToken.address,
+        deployer,
         controller.address,
+        owner.address,
+        yieldToken.address,
         maturityTime,
         parseDecimal(1.0, exchangeRatePrec),
         parseDecimal(estimatedYield, exchangeRatePrec),
@@ -259,9 +268,10 @@ export class TempusPool extends ContractBase {
       exchangeRatePrec = asset.decimals; // exchange rate precision = Underlying Token Decimals
       pool = await ContractBase.deployContractBy(
         type + "TempusPool",
-        owner,
-        yieldToken.address,
+        deployer,
         controller.address,
+        owner.address,
+        yieldToken.address,
         maturityTime,
         parseDecimal(estimatedYield, exchangeRatePrec),
         /*principalsData*/{

@@ -10,8 +10,9 @@ contract LidoTempusPool is TempusPool {
     address private immutable referrer;
 
     constructor(
-        ILido token,
         address controller,
+        address owner,
+        ILido token,
         uint256 maturity,
         uint256 estYield,
         TokenData memory principalsData,
@@ -20,9 +21,10 @@ contract LidoTempusPool is TempusPool {
         address referrerAddress
     )
         TempusPool(
+            controller,
+            owner,
             address(token),
             address(0),
-            controller,
             maturity,
             token.getPooledEthByShares(1e18),
             1e18,

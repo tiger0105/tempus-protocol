@@ -25,7 +25,7 @@ async function deployATokenTempusPool(aave: Aave, poolDurationSeconds: number) {
 
   const controller = await TempusController.deploy(owner);
   const pool = await TempusPool.deployAave(
-    owner, aave.asset, aave.yieldToken, controller, maturityTime, yieldEst, names
+    owner, owner, aave.asset, aave.yieldToken, controller, maturityTime, yieldEst, names
   );
 
   console.log('AToken TempusPool deployed with length %i sec to: %s', poolDurationSeconds, pool.address);

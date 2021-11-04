@@ -57,9 +57,10 @@ abstract contract TempusPool is ITempusPool {
     uint256 public override totalFees;
 
     /// Constructs Pool with underlying token, start and maturity date
+    /// @param ctrl The authorized TempusController of the pool
+    /// @param _owner The authorized owner of the pool
     /// @param _yieldBearingToken Yield Bearing Token, such as cDAI or aUSDC
     /// @param _backingToken backing token (or zero address if ETH)
-    /// @param ctrl The authorized TempusController of the pool
     /// @param maturity maturity time of this pool
     /// @param initInterestRate initial interest rate of the pool
     /// @param exchangeRateOne 1.0 expressed in exchange rate decimal precision
@@ -69,9 +70,10 @@ abstract contract TempusPool is ITempusPool {
     /// @param maxFeeSetup Maximum fee percentages that this pool can have,
     ///                    values in Yield Bearing Token precision
     constructor(
+        address ctrl,
+        address _owner,
         address _yieldBearingToken,
         address _backingToken,
-        address ctrl,
         uint256 maturity,
         uint256 initInterestRate,
         uint256 exchangeRateOne,
@@ -82,13 +84,15 @@ abstract contract TempusPool is ITempusPool {
     ) {
         require(maturity > block.timestamp, "maturityTime is after startTime");
         require(ctrl != address(0), "controller can not be zero");
+        require(_owner != address(0), "owner can not be zero");
+        require(_owner.balance > 0, "owner balance can not be zero");
         require(initInterestRate > 0, "initInterestRate can not be zero");
         require(estimatedFinalYield > 0, "estimatedFinalYield can not be zero");
 
         yieldBearingToken = _yieldBearingToken;
         backingToken = _backingToken;
         controller = ctrl;
-        owner = msg.sender;
+        owner = _owner;
         startTime = block.timestamp;
         maturityTime = maturity;
         initialInterestRate = initInterestRate;
