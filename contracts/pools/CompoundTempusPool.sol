@@ -23,10 +23,8 @@ contract CompoundTempusPool is TempusPool {
         uint256 maturity,
         uint256 exchangeRateOne,
         uint256 estYield,
-        string memory principalName,
-        string memory principalSymbol,
-        string memory yieldName,
-        string memory yieldSymbol,
+        TokenData memory principalsData,
+        TokenData memory yieldsData,
         FeesConfig memory maxFeeSetup
     )
         TempusPool(
@@ -37,10 +35,8 @@ contract CompoundTempusPool is TempusPool {
             token.exchangeRateCurrent(),
             exchangeRateOne,
             estYield,
-            principalName,
-            principalSymbol,
-            yieldName,
-            yieldSymbol,
+            principalsData,
+            yieldsData,
             maxFeeSetup
         )
     {

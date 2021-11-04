@@ -11,6 +11,12 @@ import "./token/YieldShare.sol";
 import "./math/Fixed256xVar.sol";
 import "./utils/UntrustedERC20.sol";
 
+/// @dev helper struct to store name and symbol for the token
+struct TokenData {
+    string name;
+    string symbol;
+}
+
 /// @author The tempus.finance team
 /// @title Implementation of Tempus Pool
 abstract contract TempusPool is ITempusPool {
@@ -58,10 +64,8 @@ abstract contract TempusPool is ITempusPool {
     /// @param initInterestRate initial interest rate of the pool
     /// @param exchangeRateOne 1.0 expressed in exchange rate decimal precision
     /// @param estimatedFinalYield estimated yield for the whole lifetime of the pool
-    /// @param principalName name of Tempus Principal Share
-    /// @param principalSymbol symbol of Tempus Principal Share
-    /// @param yieldName name of Tempus Yield Share
-    /// @param yieldSymbol symbol of Tempus Yield Share
+    /// @param principalsData Tempus Principals name and symbol
+    /// @param yieldsData Tempus Yields name and symbol
     /// @param maxFeeSetup Maximum fee percentages that this pool can have,
     ///                    values in Yield Bearing Token precision
     constructor(
@@ -72,10 +76,8 @@ abstract contract TempusPool is ITempusPool {
         uint256 initInterestRate,
         uint256 exchangeRateOne,
         uint256 estimatedFinalYield,
-        string memory principalName,
-        string memory principalSymbol,
-        string memory yieldName,
-        string memory yieldSymbol,
+        TokenData memory principalsData,
+        TokenData memory yieldsData,
         FeesConfig memory maxFeeSetup
     ) {
         require(maturity > block.timestamp, "maturityTime is after startTime");
@@ -100,8 +102,8 @@ abstract contract TempusPool is ITempusPool {
 
         uint8 backingDecimals = _backingToken != address(0) ? IERC20Metadata(_backingToken).decimals() : 18;
         backingTokenONE = 10**backingDecimals;
-        principalShare = new PrincipalShare(this, principalName, principalSymbol, backingDecimals);
-        yieldShare = new YieldShare(this, yieldName, yieldSymbol, backingDecimals);
+        principalShare = new PrincipalShare(this, principalsData.name, principalsData.symbol, backingDecimals);
+        yieldShare = new YieldShare(this, yieldsData.name, yieldsData.symbol, backingDecimals);
     }
 
     modifier onlyController() {
