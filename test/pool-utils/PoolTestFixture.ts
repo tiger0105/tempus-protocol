@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { BigNumber, Transaction } from "ethers";
-import { ethers, deployments } from "hardhat";
-import { ContractBase, Signer, SignerOrAddress } from "../utils/ContractBase";
+import { deployments } from "hardhat";
+import { ContractBase, Signer } from "../utils/ContractBase";
 import { TempusPool, PoolType, TempusSharesNames, generateTempusSharesNames } from "../utils/TempusPool";
 import { blockTimestamp, setEvmTime, setNextBlockTimestamp } from "../utils/Utils";
 import { ERC20 } from "../utils/ERC20";
@@ -87,6 +87,9 @@ export abstract class PoolTestFixture {
   // ex false: deposit(100) with rate 1.2 will yield 120 TPS and TYS
   yieldPeggedToAsset:boolean;
 
+  // is this an integration test fixture?
+  integration:boolean;
+
   // initialized by initPool()
   tempus:TempusPool;
   controller:TempusController;
@@ -115,9 +118,10 @@ export abstract class PoolTestFixture {
   /** Tempus Yield Share */
   yields:PoolShare; 
 
-  constructor(type:PoolType, yieldPeggedToAsset:boolean) { 
+  constructor(type:PoolType, yieldPeggedToAsset:boolean, integration:boolean) { 
     this.type = type;
     this.yieldPeggedToAsset = yieldPeggedToAsset;
+    this.integration = integration;
   }
 
   /**
@@ -146,14 +150,19 @@ export abstract class PoolTestFixture {
   abstract setInterestRate(rate:number): Promise<void>;
 
   /**
-   * Deposit BackingTokens into the UNDERLYING pool and receive YBT
-   */
-  abstract deposit(user:Signer, amount:number): Promise<void>;
-
-  /**
    * Sets force fail on next deposit or redeem call
    */
   abstract forceFailNextDepositOrRedeem(): Promise<void>;
+
+  /**
+   * Gets the owner, user and user2 for testing
+   */
+  abstract getSigners(): Promise<[Signer,Signer,Signer]>;
+
+  /**
+   * Deposit BackingTokens into the UNDERLYING pool and receive YBT
+   */
+   abstract deposit(user:Signer, amount:number): Promise<void>;
 
   /**
    * Deposit YieldBearingTokens into TempusPool
@@ -335,7 +344,7 @@ export abstract class PoolTestFixture {
 
         await deployments.fixture(undefined, { keepExistingDeployments: true, });
         // Note: for fixtures, all contracts must be initialized inside this callback
-        const [owner,user,user2] = await ethers.getSigners();
+        const [owner,user,user2] = await this.getSigners();
         const pool = await newPool(); // calls Aave.create
         const asset = (pool as any).asset;
         const ybt = (pool as any).yieldToken;

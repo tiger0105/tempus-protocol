@@ -1,15 +1,16 @@
 import { PoolTestFixture, TempusAMMParams } from "./PoolTestFixture";
-import { ContractBase, Signer, SignerOrAddress } from "../utils/ContractBase";
+import { ContractBase, Signer } from "../utils/ContractBase";
 import { TempusPool, PoolType } from "../utils/TempusPool";
 import { TokenInfo } from "./TokenInfo";
+import { ethers } from "hardhat";
 import { YearnVault } from "../utils/YearnVault";
 
 export class YearnTestPool extends PoolTestFixture {
   yearn:YearnVault;
   ASSET_TOKEN:TokenInfo;
   YIELD_TOKEN:TokenInfo;
-  constructor(ASSET_TOKEN:TokenInfo, YIELD_TOKEN:TokenInfo) {
-    super(PoolType.Yearn, /*yieldPeggedToAsset:*/false);
+  constructor(ASSET_TOKEN:TokenInfo, YIELD_TOKEN:TokenInfo, integration:boolean) {
+    super(PoolType.Yearn, /*yieldPeggedToAsset:*/false, integration);
     this.ASSET_TOKEN = ASSET_TOKEN;
     this.YIELD_TOKEN = YIELD_TOKEN;
   }
@@ -18,6 +19,14 @@ export class YearnTestPool extends PoolTestFixture {
   }
   async forceFailNextDepositOrRedeem(): Promise<void> {
     await this.yearn.contract.setFailNextDepositOrRedeem(true);
+  }
+  async getSigners(): Promise<[Signer,Signer,Signer]> {
+    if (this.integration) {
+      // TODO: implement for integration tests
+    } else {
+      const [owner,user,user2] = await ethers.getSigners();
+      return [owner,user,user2];
+    }
   }
   async deposit(user:Signer, amount:number): Promise<void> {
     await this.yearn.deposit(user, amount);
