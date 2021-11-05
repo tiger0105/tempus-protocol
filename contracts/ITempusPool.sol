@@ -77,7 +77,16 @@ interface ITempusPool is ITempusFees {
     /// @return Maturity time of the pool.
     function maturityTime() external view returns (uint256);
 
+    /// @return Time of exceptional halting of the pool.
+    /// In case the pool is still in operation, this must return type(uint256).max.
+    function exceptionalHaltTime() external view returns (uint256);
+
+    /// @return The maximum allowed time (in seconds) to pass with negative yield.
+    function maximumNegativeYieldDuration() external view returns (uint256);
+
     /// @return True if maturity has been reached and the pool was finalized.
+    ///         This also includes the case when maturity was triggered due to
+    ///         exceptional conditions (negative yield periods).
     function matured() external view returns (bool);
 
     /// Finalizes the pool. This can only happen on or after `maturityTime`.
