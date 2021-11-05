@@ -133,6 +133,10 @@ describe("ERC20 Vesting", async () => {
 
       (await expectRevert(vesting.claim(user, 100))).to.equal("Claiming amount exceeds allowed tokens.");
     });
+
+    it("claimable for non-existent account", async () => {
+      (await expectRevert(vesting.claimable("0x1234000000000000000000000000000000000000"))).to.equal("No vesting data for receiver.");
+    });
   });
 
   describe("Check vesting", async () => {
