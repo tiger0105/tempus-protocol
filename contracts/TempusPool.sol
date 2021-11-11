@@ -135,6 +135,7 @@ abstract contract TempusPool is ITempusPool {
         require(newFeesConfig.depositPercent <= maxDepositFee, "Deposit fee percent > max");
         require(newFeesConfig.earlyRedeemPercent <= maxEarlyRedeemFee, "Early redeem fee percent > max");
         require(newFeesConfig.matureRedeemPercent <= maxMatureRedeemFee, "Mature redeem fee percent > max");
+        require(newFeesConfig.tempusDiscountPercent < yieldBearingONE, "Tempus discount must be < 1");
         feesConfig = newFeesConfig;
     }
 
@@ -203,7 +204,7 @@ abstract contract TempusPool is ITempusPool {
         uint256 tokenAmount = yieldTokenAmount;
         uint256 depositFees = feesConfig.depositPercent;
         if (depositFees != 0) {
-            fee = tokenAmount.mulfV(depositFees, yieldBearingONE);
+            fee = _getDepositFees(tokenAmount, depositFees);
             tokenAmount -= fee;
             totalFees += fee;
         }
@@ -322,25 +323,44 @@ abstract contract TempusPool is ITempusPool {
 
             // after maturity, all additional yield is being collected as fee
             if (matured() && currentRate > interestRate) {
-                uint256 additionalYieldRate = currentRate - interestRate;
-                uint256 feeBackingAmount = yieldAmount.mulfV(
-                    additionalYieldRate.mulfV(initialInterestRate, exchangeRateONE),
-                    exchangeRateONE
-                );
-                redeemFeeAmount = numYieldTokensPerAsset(feeBackingAmount, currentRate);
+                redeemFeeAmount = _getAfterMaturityFees(yieldAmount, currentRate, interestRate);
             }
         }
 
         redeemableYieldTokens = numYieldTokensPerAsset(redeemableBackingTokens, currentRate);
 
-        uint256 redeemFeePercent = matured() ? feesConfig.matureRedeemPercent : feesConfig.earlyRedeemPercent;
-        if (redeemFeePercent != 0) {
-            uint256 regularRedeemFee = redeemableYieldTokens.mulfV(redeemFeePercent, yieldBearingONE);
-            redeemableYieldTokens -= regularRedeemFee;
-            redeemFeeAmount += regularRedeemFee;
+        uint256 regularRedeemFee = _getRedeemFees(redeemableYieldTokens);
+        redeemableYieldTokens -= regularRedeemFee;
+        redeemFeeAmount += regularRedeemFee;
+        redeemableBackingTokens = numAssetsPerYieldToken(redeemableYieldTokens, currentRate);
+    }
 
-            redeemableBackingTokens = numAssetsPerYieldToken(redeemableYieldTokens, currentRate);
+    // fees applied during deposit (if enabled)
+    function _getDepositFees(uint256 yieldBearingAmount, uint256 depositFees) private view returns (uint256) {
+        return yieldBearingAmount.mulfV(depositFees, yieldBearingONE);
+    }
+
+    // fees applied during redeem (if enabled)
+    function _getRedeemFees(uint256 redeemableYieldTokens) private view returns (uint256) {
+        bool mature = matured();
+        uint256 redeemFeePercent = mature ? feesConfig.matureRedeemPercent : feesConfig.earlyRedeemPercent;
+        if (redeemFeePercent != 0) {
+            return redeemableYieldTokens.mulfV(redeemFeePercent, yieldBearingONE);
         }
+        return 0;
+    }
+
+    // fees which are collected after maturity, from excess yield
+    function _getAfterMaturityFees(
+        uint256 yieldShareAmount,
+        uint256 currentRate,
+        uint256 interestRate
+    ) private view returns (uint256) {
+        uint256 additionalYieldRate = currentRate - interestRate;
+        uint256 feeBackingAmount = yieldShareAmount.mulfV(
+            additionalYieldRate.mulfV(initialInterestRate, exchangeRateONE), exchangeRateONE
+        );
+        return numYieldTokensPerAsset(feeBackingAmount, currentRate);
     }
 
     function effectiveRate(uint256 currentRate) private view returns (uint256) {

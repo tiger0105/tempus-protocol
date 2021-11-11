@@ -10,6 +10,8 @@ interface ITempusFees {
         uint256 depositPercent;
         uint256 earlyRedeemPercent;
         uint256 matureRedeemPercent;
+        // discount when using $TEMP token to pay fees
+        uint256 tempusDiscountPercent;
     }
 
     /// Returns the current fee configuration.
