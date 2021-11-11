@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { PoolType } from "./utils/TempusPool";
 import { PoolTestFixture } from "./pool-utils/PoolTestFixture";
-import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
+import { describeForEachPool, integrationExclusiveIt as it } from "./pool-utils/MultiPoolTestSuite";
 import { expectRevert } from "./utils/Utils";
 
 describeForEachPool.type("TempusPool Redeem", [PoolType.Aave, PoolType.Compound], (pool:PoolTestFixture) =>

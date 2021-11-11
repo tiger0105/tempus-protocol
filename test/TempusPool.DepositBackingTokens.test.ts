@@ -1,11 +1,11 @@
 import { expect } from "chai";
 import { PoolTestFixture } from "./pool-utils/PoolTestFixture";
-import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
+import { describeForEachPool, integrationExclusiveIt as it } from "./pool-utils/MultiPoolTestSuite";
 import { expectRevert } from "./utils/Utils";
 
 describeForEachPool("TempusPool DepositBackingTokens", (pool:PoolTestFixture) =>
 {
-  it("Should issue appropriate shares after depositing Backing Tokens", async () =>
+  it.includeIntegration("Should issue appropriate shares after depositing Backing Tokens", async () =>
   {
     const depositAmount = 100;
     await pool.createDefault();
@@ -19,7 +19,7 @@ describeForEachPool("TempusPool DepositBackingTokens", (pool:PoolTestFixture) =>
     (await pool.userState(user)).expect(depositAmount, depositAmount, /*yieldBearing:*/500);
   });
 
-  it("Should issue appropriate shares after depositing Backing Tokens after changing rate to 2.0", async () =>
+  it.includeIntegration("Should issue appropriate shares after depositing Backing Tokens after changing rate to 2.0", async () =>
   {
     await pool.createDefault();
     let [owner, user] = pool.signers;
@@ -40,7 +40,7 @@ describeForEachPool("TempusPool DepositBackingTokens", (pool:PoolTestFixture) =>
     expect(await pool.tempus.currentInterestRate()).to.equal(2.0);
   });
 
-  it("Should revert when trying to deposit BT directly into the TempusPool (not via the TempusController)", async () => 
+  it.includeIntegration("Should revert when trying to deposit BT directly into the TempusPool (not via the TempusController)", async () => 
   {
     await pool.createDefault();
     let [owner, user] = pool.signers;

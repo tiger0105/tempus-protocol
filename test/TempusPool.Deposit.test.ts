@@ -1,26 +1,18 @@
-import { ethers } from "hardhat";
 import { expect } from "chai";
 import { PoolTestFixture } from "./pool-utils/PoolTestFixture";
-import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
+import { describeForEachPool, integrationExclusiveIt as it } from "./pool-utils/MultiPoolTestSuite";
 
-import { Signer } from "./utils/ContractBase";
 import { expectRevert } from "./utils/Utils";
 
 describeForEachPool("TempusPool Deposit", (pool:PoolTestFixture) =>
 {
-  let owner:Signer, user:Signer, user2:Signer;
-
-  beforeEach(async () =>
-  {
-    [owner, user, user2] = await ethers.getSigners();
-  });
-
   // NOTE: keeping this separate because of rate=1.25 causing expensive fixture switch
-  it("Should get different yield tokens when depositing 100 (initialRate=1.25)", async () =>
+  it.includeIntegration("Should get different yield tokens when depositing 100 (initialRate=1.25)", async () =>
   {
     await pool.create({ initialRate:1.25, poolDuration:60*60, yieldEst:0.1 });
+    const [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 100]]);
-
+    
     (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/100);
     (await pool.expectDepositYBT(user, 100)).to.equal('success');
 
@@ -34,9 +26,10 @@ describeForEachPool("TempusPool Deposit", (pool:PoolTestFixture) =>
     }
   });
 
-  it("Should emit correct event on deposit", async () =>
+  it.includeIntegration("Should emit correct event on deposit", async () =>
   {
     await pool.createDefault();
+    const [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 100]]);
     await expect(pool.depositYBT(user, 100)).to.emit(pool.tempus.controller.contract, 'Deposited').withArgs(
       pool.tempus.address, /*pool*/
@@ -50,24 +43,27 @@ describeForEachPool("TempusPool Deposit", (pool:PoolTestFixture) =>
     );
   });
 
-  it("Should revert on deposit 0", async () =>
+  it.includeIntegration("Should revert on deposit 0", async () =>
   {
     await pool.createDefault();
+    const [owner] = pool.signers;
     (await pool.expectDepositBT(owner, 0)).to.not.be.equal('success');
   });
 
   it("Should revert on random failure from backing pool", async () =>
   {
     await pool.createDefault();
+    const [owner] = pool.signers;
     await pool.forceFailNextDepositOrRedeem();
 
     await pool.asset.approve(owner, pool.tempus.controller.address, 100);
     (await pool.expectDepositBT(owner, 100)).to.not.equal('success');
   });
 
-  it("Should allow depositing 100 (initialRate=1.0)", async () =>
+  it.includeIntegration("Should allow depositing 100 (initialRate=1.0)", async () =>
   {
     await pool.createDefault();
+    const [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 500]]);
     (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/500);
 
@@ -75,9 +71,10 @@ describeForEachPool("TempusPool Deposit", (pool:PoolTestFixture) =>
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/400, "deposit: YBT reduce by 100");
   });
 
-  it("Should allow depositing 100 again (initialRate=1.0)", async () =>
+  it.includeIntegration("Should allow depositing 100 again (initialRate=1.0)", async () =>
   {
     await pool.createDefault();
+    const [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 500]]);
 
     (await pool.expectDepositYBT(user, 100)).to.equal('success');
@@ -87,26 +84,29 @@ describeForEachPool("TempusPool Deposit", (pool:PoolTestFixture) =>
     (await pool.userState(user)).expect(200, 200, /*yieldBearing:*/300, "deposit: YBT reduce by 100");
   });
 
-  it("Should revert on negative yield during deposit", async () => 
+  it.includeIntegration("Should revert on negative yield during deposit", async () => 
   {
     await pool.createDefault();
+    const [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 500]]);
     await pool.setInterestRate(0.8);
 
     (await pool.expectDepositYBT(user, 100)).to.equal('Negative yield!');
   });
 
-  it("Should revert when trying to deposit directly into the TempusPool (not via the TempusController)", async () => 
+  it.includeIntegration("Should revert when trying to deposit directly into the TempusPool (not via the TempusController)", async () => 
   {
     await pool.createDefault();
+    const [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 500]]);
     
     (await expectRevert(pool.tempus.onDepositYieldBearing(user, 1, user))).to.equal("Only callable by TempusController");
   });
 
-  it("Should increase YBT 2x after changing rate to 2.0", async () =>
+  it.includeIntegration("Should increase YBT 2x after changing rate to 2.0", async () =>
   {
     await pool.createDefault();
+    const [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 200]]);
 
     (await pool.expectDepositYBT(user, 100)).to.equal('success');
@@ -131,9 +131,10 @@ describeForEachPool("TempusPool Deposit", (pool:PoolTestFixture) =>
     expect(await pool.tempus.currentInterestRate()).to.equal(2.0);
   });
 
-  it("Should allow depositing with different recipient", async () =>
+  it.includeIntegration("Should allow depositing with different recipient", async () =>
   {
     await pool.createDefault();
+    const [owner, user, user2] = pool.signers;
     await pool.setupAccounts(owner, [[user, 100]]);
 
     (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/100);
@@ -144,18 +145,20 @@ describeForEachPool("TempusPool Deposit", (pool:PoolTestFixture) =>
     (await pool.userState(user2)).expect(100, 100, /*yieldBearing:*/0);
   });
 
-  it("Should not allow depositing after finalization", async () =>
+  it.includeIntegration("Should not allow depositing after finalization", async () =>
   {
     await pool.createDefault();
+    const [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 500]]);
 
     await pool.fastForwardToMaturity();
     (await pool.expectDepositYBT(user, 100)).to.equal('Maturity reached.');
   });
 
-  it("Should allow depositing from multiple users", async () =>
+  it.includeIntegration("Should allow depositing from multiple users", async () =>
   {
     await pool.createDefault();
+    const [owner, user, user2] = pool.signers;
     await pool.setupAccounts(owner, [[user, 500],[user2, 500]]);
 
     (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/500);
@@ -170,9 +173,10 @@ describeForEachPool("TempusPool Deposit", (pool:PoolTestFixture) =>
     (await pool.userState(user2)).expect(200, 200, /*yieldBearing:*/300);
   });
 
-  it("Should allow depositing from multiple users with different rates", async () =>
+  it.includeIntegration("Should allow depositing from multiple users with different rates", async () =>
   {
     await pool.createDefault();
+    const [owner, user, user2] = pool.signers;
     await pool.setupAccounts(owner, [[user, 500],[user2, 500]]);
 
     (await pool.expectDepositYBT(user, 100)).to.equal('success');

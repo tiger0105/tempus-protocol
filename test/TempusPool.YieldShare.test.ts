@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { PoolTestFixture } from "./pool-utils/PoolTestFixture";
-import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
+import { describeForEachPool, integrationExclusiveIt as it } from "./pool-utils/MultiPoolTestSuite";
 
 describeForEachPool("TempusPool YieldShare", (pool:PoolTestFixture) =>
 {

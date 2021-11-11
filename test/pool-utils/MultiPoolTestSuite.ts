@@ -5,7 +5,7 @@ import { YearnTestPool } from "./YearnTestPool";
 import { TokenInfo } from "./TokenInfo";
 import { CompoundTestPool } from "./CompoundTestPool";
 import { PoolType } from "../utils/TempusPool";
-import { Suite } from "mocha";
+import { Suite, TestFunction, Func, Test } from "mocha";
 import { 
   isIntegrationTestsEnabled, getOnlyRunPool, getOnlyRunToken, getTokens, ALL_POOLS
 } from "../Config";
@@ -90,6 +90,10 @@ interface MultiPoolSuiteFunction {
   only: (title:string, fn:(pool:PoolTestFixture) => void) => void;
 }
 
+interface IntegrationExclusiveTestFunction extends TestFunction {
+  includeIntegration: (title: string, fn?: Func) => Test;
+}
+
 function createDescribeForEachPool(): MultiPoolSuiteFunction {
   const f:MultiPoolSuiteFunction = (title:string, fn:(pool:PoolTestFixture) => void) => {
     _describeForEachPoolType(title, ALL_POOLS, /*only*/false, fn);
@@ -107,3 +111,19 @@ function createDescribeForEachPool(): MultiPoolSuiteFunction {
  * Batch describes unit test block for all PoolTypes
  */
 export const describeForEachPool:MultiPoolSuiteFunction = createDescribeForEachPool();
+
+
+/**
+ * Extends Mocha's it()'s functionality with a includeIntegration which marks a
+ * unit test to be ran as integration test as well
+ */
+//  export const integrationExclusiveIt = originalIt;
+export const integrationExclusiveIt: IntegrationExclusiveTestFunction = (function (name: string, impl: Func) {
+  return integration ? it.skip(name, impl) : it(name, impl);
+}) as IntegrationExclusiveTestFunction
+integrationExclusiveIt.only = it.only;
+integrationExclusiveIt.retries = it.retries;
+integrationExclusiveIt.skip = it.skip;
+integrationExclusiveIt.includeIntegration = function (name: string, impl: Func) {
+  return it(name, impl);
+};
