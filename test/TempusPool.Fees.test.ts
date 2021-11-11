@@ -5,6 +5,9 @@ import { describeForEachPool, integrationExclusiveIt as it } from "./pool-utils/
 
 import { Signer } from "./utils/ContractBase";
 import { expectRevert } from "./utils/Utils";
+import { TempusFeesConfig } from "./utils/TempusPool";
+
+type Fees = TempusFeesConfig;
 
 describeForEachPool("TempusPool Fees", (pool:PoolTestFixture) =>
 {
@@ -22,38 +25,51 @@ describeForEachPool("TempusPool Fees", (pool:PoolTestFixture) =>
     expect(feesConfig.depositPercent).to.equal(0);
     expect(feesConfig.earlyRedeemPercent).to.equal(0);
     expect(feesConfig.matureRedeemPercent).to.equal(0);
+    expect(feesConfig.tempusDiscountPercent).to.equal(0);
   });
 
   it("Fee configuration should be changeable", async () =>
   {
-    await pool.tempus.setFeesConfig(owner, { depositPercent: 0.15, earlyRedeemPercent: 0.05, matureRedeemPercent: 0.02 });
+    const fees:Fees = { depositPercent: 0.15, earlyRedeemPercent: 0.05, matureRedeemPercent: 0.02, tempusDiscountPercent:0.25 };
+    await pool.tempus.setFeesConfig(owner, fees);
 
     let feesConfig = await pool.tempus.getFeesConfig();
     expect(feesConfig.depositPercent).to.equal(0.15);
     expect(feesConfig.earlyRedeemPercent).to.equal(0.05);
     expect(feesConfig.matureRedeemPercent).to.equal(0.02);
+    expect(feesConfig.tempusDiscountPercent).to.equal(0.25);
   });
 
   it("Fee configuration should revert if deposit percent > max", async () =>
   {
-    (await expectRevert(pool.tempus.setFeesConfig(owner, { depositPercent: 0.6, earlyRedeemPercent: 0.0, matureRedeemPercent: 0.0 }))).to.be.equal("Deposit fee percent > max");
+    const fees:Fees = { depositPercent: 0.6, earlyRedeemPercent: 0, matureRedeemPercent: 0, tempusDiscountPercent:0.25 };
+    (await expectRevert(pool.tempus.setFeesConfig(owner, fees))).to.be.equal("Deposit fee percent > max");
   });
 
   it("Fee configuration should revert if early redeem percent > max", async () =>
   {
-    (await expectRevert(pool.tempus.setFeesConfig(owner, { depositPercent: 0.0, earlyRedeemPercent: 1.1, matureRedeemPercent: 0.0 }))).to.be.equal("Early redeem fee percent > max");
+    const fees:Fees = { depositPercent: 0, earlyRedeemPercent: 1.1, matureRedeemPercent: 0, tempusDiscountPercent:0.25 };
+    (await expectRevert(pool.tempus.setFeesConfig(owner, fees))).to.be.equal("Early redeem fee percent > max");
   });
 
   it("Fee configuration should revert if mature redeem percent > max", async () =>
   {
-    (await expectRevert(pool.tempus.setFeesConfig(owner, { depositPercent: 0.0, earlyRedeemPercent: 0.0, matureRedeemPercent: 0.6 }))).to.be.equal("Mature redeem fee percent > max");
+    const fees:Fees = { depositPercent: 0, earlyRedeemPercent: 0, matureRedeemPercent: 0.6, tempusDiscountPercent:0.25 };
+    (await expectRevert(pool.tempus.setFeesConfig(owner, fees))).to.be.equal("Mature redeem fee percent > max");
+  });
+
+  it("Fee configuration should revert if TEMPUS discount percent >= 1", async () =>
+  {
+    const fees:Fees = { depositPercent: 0, earlyRedeemPercent: 0, matureRedeemPercent: 0, tempusDiscountPercent:1.0 };
+    (await expectRevert(pool.tempus.setFeesConfig(owner, fees))).to.be.equal("Tempus discount must be < 1");
   });
 
   it("Should collect tokens as fees during deposit() if fees != 0", async () =>
   {
     await pool.setupAccounts(owner, [[user, 500]]);
 
-    await pool.tempus.setFeesConfig(owner, { depositPercent: 0.01, earlyRedeemPercent: 0.0, matureRedeemPercent: 0.0 });
+    const fees:Fees = { depositPercent: 0.01, earlyRedeemPercent: 0, matureRedeemPercent: 0, tempusDiscountPercent:0.25 };
+    await pool.tempus.setFeesConfig(owner, fees);
     await pool.depositYBT(user, 100);
     expect(await pool.tempus.contractBalance()).to.equal(100); // all 100 in the pool
     // but user receives 99
@@ -65,7 +81,8 @@ describeForEachPool("TempusPool Fees", (pool:PoolTestFixture) =>
   {
     await pool.setupAccounts(owner, [[user, 500]]);
 
-    await pool.tempus.setFeesConfig(owner, { depositPercent: 0.0, earlyRedeemPercent: 0.01, matureRedeemPercent: 0.0 });
+    const fees:Fees = { depositPercent: 0, earlyRedeemPercent: 0.01, matureRedeemPercent: 0, tempusDiscountPercent:0.25 };
+    await pool.tempus.setFeesConfig(owner, fees);
     await pool.depositYBT(user, 100);
     expect(await pool.tempus.contractBalance()).to.equal(100); // all 100 in the pool
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/400);
@@ -80,7 +97,8 @@ describeForEachPool("TempusPool Fees", (pool:PoolTestFixture) =>
   {
     await pool.setupAccounts(owner, [[user, 500]]);
 
-    await pool.tempus.setFeesConfig(owner, { depositPercent: 0.0, earlyRedeemPercent: 0.0, matureRedeemPercent: 0.02 });
+    const fees:Fees = { depositPercent: 0, earlyRedeemPercent: 0, matureRedeemPercent: 0.02, tempusDiscountPercent:0.25 };
+    await pool.tempus.setFeesConfig(owner, fees);
     await pool.depositYBT(user, 100);
     expect(await pool.tempus.contractBalance()).to.equal(100); // all 100 in the pool
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/400);
@@ -117,7 +135,8 @@ describeForEachPool("TempusPool Fees", (pool:PoolTestFixture) =>
   {
     await pool.setupAccounts(owner, [[user, 500]]);
 
-    await pool.tempus.setFeesConfig(owner, { depositPercent: 0.0, earlyRedeemPercent: 0.0, matureRedeemPercent: 0.01 });
+    const fees:Fees = { depositPercent: 0, earlyRedeemPercent: 0, matureRedeemPercent: 0.01, tempusDiscountPercent:0.25 };
+    await pool.tempus.setFeesConfig(owner, fees);
     await pool.depositYBT(user, 100);
     expect(await pool.tempus.contractBalance()).to.equal(100); // all 100 in the pool
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/400);
@@ -137,7 +156,8 @@ describeForEachPool("TempusPool Fees", (pool:PoolTestFixture) =>
   {
     await pool.setupAccounts(owner, [[user, 500]]);
 
-    await pool.tempus.setFeesConfig(owner, { depositPercent: 0.10, earlyRedeemPercent: 0.0, matureRedeemPercent: 0.0 });
+    const fees = { depositPercent: 0.10, earlyRedeemPercent: 0, matureRedeemPercent: 0, tempusDiscountPercent:0.25 };
+    await pool.tempus.setFeesConfig(owner, fees);
     await pool.depositYBT(user, 100, /*recipient:*/user);
     expect(await pool.tempus.contractBalance()).to.equal(100);
 

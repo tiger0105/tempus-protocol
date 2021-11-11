@@ -24,6 +24,7 @@ export interface TempusFeesConfig {
   depositPercent: NumberOrString;
   earlyRedeemPercent: NumberOrString;
   matureRedeemPercent: NumberOrString;
+  tempusDiscountPercent: NumberOrString;
 }
 
 export function generateTempusSharesNames(ybtName:string, ybtSymbol:string, maturityTime:number): TempusSharesNames {
@@ -183,6 +184,21 @@ export class TempusPool extends ContractBase {
     let exchangeRatePrec:number;
     let pool:Contract = null;
 
+    const principalsData = {
+      name: shareNames.principalName, 
+      symbol: shareNames.principalSymbol
+    };
+    const yieldsData = {
+      name: shareNames.yieldName, 
+      symbol: shareNames.yieldSymbol
+    };
+    const maxFeeSetup = {
+      depositPercent:      yieldToken.toBigNum(0.5), // fees are stored in YBT
+      earlyRedeemPercent:  yieldToken.toBigNum(1.0),
+      matureRedeemPercent: yieldToken.toBigNum(0.5),
+      tempusDiscountPercent: yieldToken.toBigNum(0.25), 
+    };
+
     if (type === PoolType.Aave) {
       exchangeRatePrec = 18; // AaveTempusPool converts 1e27 LiquidityIndex to 1e18 interestRate
       pool = await ContractBase.deployContractBy(
@@ -192,19 +208,9 @@ export class TempusPool extends ContractBase {
         controller.address,
         maturityTime,
         parseDecimal(estimatedYield, exchangeRatePrec),
-        /*principalsData*/{
-          name: shareNames.principalName, 
-          symbol: shareNames.principalSymbol
-        },
-        /*yieldsData*/{
-          name: shareNames.yieldName, 
-          symbol: shareNames.yieldSymbol
-        },
-        /*maxFeeSetup:*/{
-          depositPercent:      yieldToken.toBigNum(0.5), // fees are stored in YBT
-          earlyRedeemPercent:  yieldToken.toBigNum(1.0),
-          matureRedeemPercent: yieldToken.toBigNum(0.5)
-        },
+        principalsData,
+        yieldsData,
+        maxFeeSetup,
         "0x00000" /* hardcoded referral code */
       );
     } else if (type === PoolType.Lido) {
@@ -216,19 +222,9 @@ export class TempusPool extends ContractBase {
         controller.address,
         maturityTime,
         parseDecimal(estimatedYield, exchangeRatePrec),
-        /*principalsData*/{
-          name: shareNames.principalName, 
-          symbol: shareNames.principalSymbol
-        },
-        /*yieldsData*/{
-          name: shareNames.yieldName, 
-          symbol: shareNames.yieldSymbol
-        },
-        /*maxFeeSetup:*/{
-          depositPercent:      yieldToken.toBigNum(0.5), // fees are stored in YBT
-          earlyRedeemPercent:  yieldToken.toBigNum(1.0),
-          matureRedeemPercent: yieldToken.toBigNum(0.5)
-        },
+        principalsData,
+        yieldsData,
+        maxFeeSetup,
         "0x0000000000000000000000000000000000000000" /* hardcoded referrer */
       );
     } else if (type === PoolType.Compound) {
@@ -241,19 +237,9 @@ export class TempusPool extends ContractBase {
         maturityTime,
         parseDecimal(1.0, exchangeRatePrec),
         parseDecimal(estimatedYield, exchangeRatePrec),
-        /*principalsData*/{
-          name: shareNames.principalName, 
-          symbol: shareNames.principalSymbol
-        },
-        /*yieldsData*/{
-          name: shareNames.yieldName, 
-          symbol: shareNames.yieldSymbol
-        },
-        /*maxFeeSetup:*/{
-          depositPercent:      yieldToken.toBigNum(0.5), // fees are stored in YBT
-          earlyRedeemPercent:  yieldToken.toBigNum(1.0),
-          matureRedeemPercent: yieldToken.toBigNum(0.5)
-        }
+        principalsData,
+        yieldsData,
+        maxFeeSetup
       );
     } else if (type === PoolType.Yearn) {
       exchangeRatePrec = asset.decimals; // exchange rate precision = Underlying Token Decimals
@@ -264,19 +250,9 @@ export class TempusPool extends ContractBase {
         controller.address,
         maturityTime,
         parseDecimal(estimatedYield, exchangeRatePrec),
-        /*principalsData*/{
-          name: shareNames.principalName, 
-          symbol: shareNames.principalSymbol
-        },
-        /*yieldsData*/{
-          name: shareNames.yieldName, 
-          symbol: shareNames.yieldSymbol
-        },
-        /*maxFeeSetup:*/{
-          depositPercent:      yieldToken.toBigNum(0.5), // fees are stored in YBT
-          earlyRedeemPercent:  yieldToken.toBigNum(1.0),
-          matureRedeemPercent: yieldToken.toBigNum(0.5)
-        }
+        principalsData,
+        yieldsData,
+        maxFeeSetup
       );
     } else {
       throw new Error("Unsupported PoolType "+type+" TempusPool.deploy failed");
@@ -462,7 +438,8 @@ export class TempusPool extends ContractBase {
     return {
       depositPercent:      this.yieldBearing.fromBigNum(feesConfig.depositPercent),
       earlyRedeemPercent:  this.yieldBearing.fromBigNum(feesConfig.earlyRedeemPercent),
-      matureRedeemPercent: this.yieldBearing.fromBigNum(feesConfig.matureRedeemPercent)
+      matureRedeemPercent: this.yieldBearing.fromBigNum(feesConfig.matureRedeemPercent),
+      tempusDiscountPercent: this.yieldBearing.fromBigNum(feesConfig.tempusDiscountPercent),
     }
   }
 
@@ -476,7 +453,8 @@ export class TempusPool extends ContractBase {
     await this.contract.connect(owner).setFeesConfig({
       depositPercent:      this.yieldBearing.toBigNum(feesConfig.depositPercent),
       earlyRedeemPercent:  this.yieldBearing.toBigNum(feesConfig.earlyRedeemPercent),
-      matureRedeemPercent: this.yieldBearing.toBigNum(feesConfig.matureRedeemPercent)
+      matureRedeemPercent: this.yieldBearing.toBigNum(feesConfig.matureRedeemPercent),
+      tempusDiscountPercent: this.yieldBearing.toBigNum(feesConfig.tempusDiscountPercent),
     });
   }
 }
