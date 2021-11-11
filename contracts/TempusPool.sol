@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./ITempusPool.sol";
 import "./token/PrincipalShare.sol";
 import "./token/YieldShare.sol";
+import "./token/TempusToken.sol";
 import "./math/Fixed256xVar.sol";
 import "./utils/UntrustedERC20.sol";
 
@@ -221,7 +222,8 @@ abstract contract TempusPool is ITempusPool {
         address from,
         uint256 principalAmount,
         uint256 yieldAmount,
-        address recipient
+        address recipient,
+        bool feesInTempToken
     )
         external
         payable
@@ -231,10 +233,11 @@ abstract contract TempusPool is ITempusPool {
             uint256 redeemedYieldTokens,
             uint256 redeemedBackingTokens,
             uint256 fee,
+            uint256 tempFee,
             uint256 rate
         )
     {
-        (redeemedYieldTokens, fee, rate) = burnShares(from, principalAmount, yieldAmount);
+        (redeemedYieldTokens, fee, tempFee, rate) = burnShares(from, principalAmount, yieldAmount, feesInTempToken);
 
         redeemedBackingTokens = withdrawFromUnderlyingProtocol(redeemedYieldTokens, recipient);
     }
@@ -243,7 +246,8 @@ abstract contract TempusPool is ITempusPool {
         address from,
         uint256 principalAmount,
         uint256 yieldAmount,
-        address recipient
+        address recipient,
+        bool feesInTempToken
     )
         external
         override
@@ -251,10 +255,11 @@ abstract contract TempusPool is ITempusPool {
         returns (
             uint256 redeemedYieldTokens,
             uint256 fee,
+            uint256 tempFee,
             uint256 rate
         )
     {
-        (redeemedYieldTokens, fee, rate) = burnShares(from, principalAmount, yieldAmount);
+        (redeemedYieldTokens, fee, tempFee, rate) = burnShares(from, principalAmount, yieldAmount, feesInTempToken);
 
         redeemedYieldTokens = IERC20(yieldBearingToken).untrustedTransfer(recipient, redeemedYieldTokens);
     }
@@ -268,12 +273,14 @@ abstract contract TempusPool is ITempusPool {
     function burnShares(
         address from,
         uint256 principalAmount,
-        uint256 yieldAmount
+        uint256 yieldAmount,
+        bool feesInTempToken
     )
         internal
         returns (
             uint256 redeemedYieldTokens,
             uint256 fee,
+            uint256 tempFee,
             uint256 interestRate
         )
     {
@@ -291,14 +298,21 @@ abstract contract TempusPool is ITempusPool {
         YieldShare(address(yieldShare)).burnFrom(from, yieldAmount);
 
         uint256 currentRate = updateInterestRate();
-        (redeemedYieldTokens, , fee, interestRate) = getRedemptionAmounts(principalAmount, yieldAmount, currentRate);
+        (redeemedYieldTokens, , fee, tempFee, interestRate) = getRedemptionAmounts(
+            principalAmount,
+            yieldAmount,
+            currentRate,
+            feesInTempToken
+        );
+
         totalFees += fee;
     }
 
     function getRedemptionAmounts(
         uint256 principalAmount,
         uint256 yieldAmount,
-        uint256 currentRate
+        uint256 currentRate,
+        bool feesInTempToken
     )
         private
         view
@@ -306,6 +320,7 @@ abstract contract TempusPool is ITempusPool {
             uint256 redeemableYieldTokens,
             uint256 redeemableBackingTokens,
             uint256 redeemFeeAmount,
+            uint256 tempusFeeAmount,
             uint256 interestRate
         )
     {
@@ -329,9 +344,10 @@ abstract contract TempusPool is ITempusPool {
 
         redeemableYieldTokens = numYieldTokensPerAsset(redeemableBackingTokens, currentRate);
 
-        uint256 regularRedeemFee = _getRedeemFees(redeemableYieldTokens);
-        redeemableYieldTokens -= regularRedeemFee;
-        redeemFeeAmount += regularRedeemFee;
+        (uint256 fee, uint256 tempusFee) = _getRedeemFees(redeemableYieldTokens, feesInTempToken);
+        redeemableYieldTokens -= fee;
+        redeemFeeAmount += fee;
+        tempusFeeAmount = tempusFee;
         redeemableBackingTokens = numAssetsPerYieldToken(redeemableYieldTokens, currentRate);
     }
 
@@ -341,13 +357,19 @@ abstract contract TempusPool is ITempusPool {
     }
 
     // fees applied during redeem (if enabled)
-    function _getRedeemFees(uint256 redeemableYieldTokens) private view returns (uint256) {
+    function _getRedeemFees(
+        uint256 redeemableYieldTokens,
+        bool feesInTempToken
+    ) private view returns (uint256 fee, uint256 tempusFee) {
         bool mature = matured();
         uint256 redeemFeePercent = mature ? feesConfig.matureRedeemPercent : feesConfig.earlyRedeemPercent;
         if (redeemFeePercent != 0) {
-            return redeemableYieldTokens.mulfV(redeemFeePercent, yieldBearingONE);
+            fee = redeemableYieldTokens.mulfV(redeemFeePercent, yieldBearingONE);
+            if (feesInTempToken) {
+                tempusFee = fee.mulfV(feesConfig.tempusDiscountPercent, yieldBearingONE);
+                fee -= tempusFee;
+            }
         }
-        return 0;
     }
 
     // fees which are collected after maturity, from excess yield
@@ -465,12 +487,19 @@ abstract contract TempusPool is ITempusPool {
     }
 
     function estimatedRedeem(
+        address from,
         uint256 principals,
         uint256 yields,
-        bool toBackingToken
+        bool toBackingToken,
+        bool feesInTempToken
     ) external view override returns (uint256) {
         uint256 currentRate = currentInterestRate();
-        (uint256 yieldTokens, uint256 backingTokens, , ) = getRedemptionAmounts(principals, yields, currentRate);
+        (uint256 yieldTokens, uint256 backingTokens, , , ) = getRedemptionAmounts(
+            principals,
+            yields,
+            currentRate,
+            feesInTempToken
+        );
         return toBackingToken ? backingTokens : yieldTokens;
     }
 
