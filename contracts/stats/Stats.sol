@@ -77,16 +77,14 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
     /// @param principals Amount of Principals (TPS)
     /// @param yields Amount of Yields (TYS)
     /// @param toBackingToken If true, redeem amount is estimated in BackingTokens instead of YieldBearingTokens
-    /// @param feesInTempToken If true, TEMP token balance is used for fees discount
     /// @return Amount of YieldBearingTokens or BackingTokens in YBT/BT decimal precision
     function estimatedRedeem(
         ITempusPool pool,
         uint256 principals,
         uint256 yields,
-        bool toBackingToken,
-        bool feesInTempToken
+        bool toBackingToken
     ) public view returns (uint256) {
-        return pool.estimatedRedeem(principals, yields, toBackingToken, feesInTempToken);
+        return pool.estimatedRedeem(principals, yields, toBackingToken);
     }
 
     /// Gets the estimated amount of Shares and Lp token amounts
@@ -145,7 +143,6 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
     /// @param yields Amount of yields to query redeem
     /// @param threshold Maximum amount of Principals or Yields to be left in case of early exit
     /// @param toBackingToken If exit is to backing or yield bearing token
-    /// @param feesInTempToken If true, TEMP token balance is used for fees discount
     /// @return tokenAmount Amount of yield bearing or backing token user can get
     /// @return principalsStaked Amount of Principals that can be redeemed for `lpTokens`
     /// @return yieldsStaked Amount of Yields that can be redeemed for `lpTokens`
@@ -157,8 +154,7 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
         uint256 principals,
         uint256 yields,
         uint256 threshold,
-        bool toBackingToken,
-        bool feesInTempToken
+        bool toBackingToken
     )
         public
         view
@@ -203,7 +199,7 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
             }
         }
 
-        tokenAmount = estimatedRedeem(tempusAMM.tempusPool(), principals, yields, toBackingToken, feesInTempToken);
+        tokenAmount = estimatedRedeem(tempusAMM.tempusPool(), principals, yields, toBackingToken);
     }
 
     /// @dev Get estimated amount of Backing or Yield bearing tokens for exiting pool and redeeming shares,
@@ -215,7 +211,6 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
     /// @param principalsStaked Amount of staked principals to query redeem
     /// @param yieldsStaked Amount of staked yields to query redeem
     /// @param toBackingToken If exit is to backing or yield bearing token
-    /// @param feesInTempToken If true, TEMP token balance is used for fees discount
     /// @return tokenAmount Amount of yield bearing or backing token user can get,
     ///                     in Yield Bearing or Backing Token precision, depending on `toBackingToken`
     /// @return lpTokensRedeemed Amount of LP tokens that are redeemed to get `principalsStaked` and `yieldsStaked`,
@@ -226,8 +221,7 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
         uint256 yields,
         uint256 principalsStaked,
         uint256 yieldsStaked,
-        bool toBackingToken,
-        bool feesInTempToken
+        bool toBackingToken
     ) public view returns (uint256 tokenAmount, uint256 lpTokensRedeemed) {
         require(!tempusAMM.tempusPool().matured(), "Pool already finalized!");
 
@@ -237,6 +231,6 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed {
             yields += yieldsStaked;
         }
 
-        tokenAmount = estimatedRedeem(tempusAMM.tempusPool(), principals, yields, toBackingToken, feesInTempToken);
+        tokenAmount = estimatedRedeem(tempusAMM.tempusPool(), principals, yields, toBackingToken);
     }
 }

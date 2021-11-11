@@ -97,7 +97,6 @@ interface ITempusPool is ITempusFees {
     /// @return mintedShares Amount of TPS and TYS minted to `recipient`
     /// @return depositedBT The YBT value deposited, denominated as Backing Tokens
     /// @return fee The fee which was deducted (in terms of YBT)
-    /// @return tempFee Fees which will be burned (in terms of TEMP token)
     /// @return rate The interest rate at the time of the deposit
     function onDepositYieldBearing(uint256 yieldTokenAmount, address recipient)
         external
@@ -105,7 +104,6 @@ interface ITempusPool is ITempusFees {
             uint256 mintedShares,
             uint256 depositedBT,
             uint256 fee,
-            uint256 tempFee,
             uint256 rate
         );
 
@@ -137,23 +135,19 @@ interface ITempusPool is ITempusFees {
     /// @param principalAmount Amount of Tempus Principal Shares (TPS) to redeem for YBT in PrincipalShare decimal precision
     /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem for YBT in YieldShare decimal precision
     /// @param recipient Address to which redeemed YBT will be sent
-    /// @param feesInTempToken If true, TEMP token balance is used for fees discount
     /// @return redeemableYieldTokens Amount of Yield Bearing Tokens redeemed to `recipient`
     /// @return fee The fee which was deducted (in terms of YBT)
-    /// @return tempFee Fees which will be burned (in terms of TEMP token)
     /// @return rate The interest rate at the time of the redemption
     function redeem(
         address from,
         uint256 principalAmount,
         uint256 yieldAmount,
-        address recipient,
-        bool feesInTempToken
+        address recipient
     )
         external
         returns (
             uint256 redeemableYieldTokens,
             uint256 fee,
-            uint256 tempFee,
             uint256 rate
         );
 
@@ -166,18 +160,15 @@ interface ITempusPool is ITempusFees {
     /// @param principalAmount Amount of Tempus Principal Shares (TPS) to redeem in PrincipalShare decimal precision
     /// @param yieldAmount Amount of Tempus Yield Shares (TYS) to redeem in YieldShare decimal precision
     /// @param recipient Address to which redeemed BT will be sent
-    /// @param feesInTempToken If true, TEMP token balance is used for fees discount
     /// @return redeemableYieldTokens Amount of Backing Tokens redeemed to `recipient`, denominated in YBT
     /// @return redeemableBackingTokens Amount of Backing Tokens redeemed to `recipient`
     /// @return fee The fee which was deducted (in terms of YBT)
-    /// @return tempFee Fees which will be burned (in terms of TEMP token)
     /// @return rate The interest rate at the time of the redemption
     function redeemToBacking(
         address from,
         uint256 principalAmount,
         uint256 yieldAmount,
-        address recipient,
-        bool feesInTempToken
+        address recipient
     )
         external
         payable
@@ -185,7 +176,6 @@ interface ITempusPool is ITempusFees {
             uint256 redeemableYieldTokens,
             uint256 redeemableBackingTokens,
             uint256 fee,
-            uint256 tempFee,
             uint256 rate
         );
 
@@ -200,13 +190,11 @@ interface ITempusPool is ITempusFees {
     /// @param principals Amount of Principals (TPS) in PrincipalShare decimal precision
     /// @param yields Amount of Yields (TYS) in YieldShare decimal precision
     /// @param toBackingToken If true, redeem amount is estimated in BackingTokens instead of YieldBearingTokens
-    /// @param feesInTempToken If true, TEMP token balance is used for fees discount
     /// @return Amount of YieldBearingTokens or BackingTokens in YBT/BT decimal precision
     function estimatedRedeem(
         uint256 principals,
         uint256 yields,
-        bool toBackingToken,
-        bool feesInTempToken
+        bool toBackingToken
     ) external view returns (uint256);
 
     /// @dev This returns the stored Interest Rate of the YBT (Yield Bearing Token) pool

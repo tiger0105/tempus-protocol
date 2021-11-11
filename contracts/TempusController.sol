@@ -454,7 +454,7 @@ contract TempusController is ReentrancyGuard, Ownable {
             yieldTokenAmount
         );
 
-        (uint mintedShares, uint depositedBT, uint fee, uint tempFee, uint rate) = targetPool.onDepositYieldBearing(
+        (uint mintedShares, uint depositedBT, uint fee, uint rate) = targetPool.onDepositYieldBearing(
             transferredYBT,
             recipient
         );
@@ -519,7 +519,7 @@ contract TempusController is ReentrancyGuard, Ownable {
     ) private {
         require((principals > 0) || (yields > 0), "principalAmount and yieldAmount cannot both be 0");
 
-        (uint redeemedYBT, uint fee, uint tempFee, uint interestRate) = targetPool.redeem(sender, principals, yields, recipient);
+        (uint redeemedYBT, uint fee, uint interestRate) = targetPool.redeem(sender, principals, yields, recipient);
 
         uint redeemedBT = targetPool.numAssetsPerYieldToken(redeemedYBT, targetPool.currentInterestRate());
         bool earlyRedeem = !targetPool.matured();
@@ -542,17 +542,15 @@ contract TempusController is ReentrancyGuard, Ownable {
         address sender,
         uint256 principals,
         uint256 yields,
-        address recipient,
-        bool feesInTempToken
+        address recipient
     ) private {
         require((principals > 0) || (yields > 0), "principalAmount and yieldAmount cannot both be 0");
 
-        (uint redeemedYBT, uint redeemedBT, uint fee, uint tempFee, uint rate) = targetPool.redeemToBacking(
+        (uint redeemedYBT, uint redeemedBT, uint fee, uint rate) = targetPool.redeemToBacking(
             sender,
             principals,
             yields,
-            recipient,
-            feesInTempToken
+            recipient
         );
 
         bool earlyRedeem = !targetPool.matured();
