@@ -4,7 +4,7 @@ import { TempusAMM, TempusAMMJoinKind } from "./utils/TempusAMM";
 import { expectRevert } from "./utils/Utils";
 import { PoolType, TempusPool } from "./utils/TempusPool";
 import { TempusController } from "./utils/TempusController";
-import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
+import { describeForEachPool, integrationExclusiveIt as it } from "./pool-utils/MultiPoolTestSuite";
 import { PoolTestFixture } from "./pool-utils/PoolTestFixture";
 import { BigNumber } from "@ethersproject/bignumber";
 

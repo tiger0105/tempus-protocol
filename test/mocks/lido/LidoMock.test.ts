@@ -1,15 +1,15 @@
 import { expect } from "chai";
-import { Lido } from "../../utils/Lido";
+import { LidoMock } from "../../utils/LidoMock";
 import { Signer } from "../../utils/ContractBase";
 import { expectRevert } from "../../utils/Utils";
 import { PoolType } from "../../utils/TempusPool";
 import { PoolTestFixture } from "../../pool-utils/PoolTestFixture";
-import { describeForEachPool } from "../../pool-utils/MultiPoolTestSuite";
+import { describeForEachPool, integrationExclusiveIt as it } from "../../pool-utils/MultiPoolTestSuite";
 
 describeForEachPool.type("Lido Mock", [PoolType.Lido], (testPool:PoolTestFixture) =>
 {
   let owner:Signer, user:Signer;
-  let lido:Lido;
+  let lido:LidoMock;
 
   beforeEach(async () =>
   {

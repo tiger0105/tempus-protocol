@@ -65,7 +65,7 @@ const INTEGRATION_TOKENS: { [type:string]: TokenInfo[][]; } = {
   "Lido": [
     [
       { decimals:18, name:"ETH Mock", symbol:"ETH", totalSupply:TOTAL_SUPPLY },
-      { decimals:18, name:"Liquid staked Ether 2.0", symbol:"stETH" }
+      { decimals:18, name:"Liquid staked Ether 2.0", symbol:"stETH", deploymentName:"Lido" }
     ]
   ]
 }

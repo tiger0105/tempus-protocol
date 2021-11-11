@@ -1,11 +1,11 @@
 import { expect } from "chai";
 import { PoolTestFixture } from "./pool-utils/PoolTestFixture";
-import { describeForEachPool } from "./pool-utils/MultiPoolTestSuite";
+import { describeForEachPool, integrationExclusiveIt as it } from "./pool-utils/MultiPoolTestSuite";
 import { expectRevert } from "./utils/Utils";
 
 describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
 {
-  it("Should emit correct event on redemption", async () =>
+  it.includeIntegration("Should emit correct event on redemption", async () =>
   {
     await pool.createDefault();
     let [owner, user] = pool.signers;
@@ -26,7 +26,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     );
   });
 
-  it("Should revert on redeem with no balance", async () =>
+  it.includeIntegration("Should revert on redeem with no balance", async () =>
   {
     await pool.createDefault();
     let [owner] = pool.signers;
@@ -44,7 +44,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     (await pool.expectRedeemBT(user, 100, 100)).to.not.equal('success');
   });
 
-  it("Should redeem exactly equal to deposit if no yield and no fees", async () =>
+  it.includeIntegration("Should redeem exactly equal to deposit if no yield and no fees", async () =>
   {
     await pool.createDefault();
     let [owner, user] = pool.signers;
@@ -57,7 +57,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/100, "redeem amount should be equal to original deposit");
   });
 
-  it("Should fail with insufficient share balances", async () =>
+  it.includeIntegration("Should fail with insufficient share balances", async () =>
   {
     await pool.createDefault();
     let [owner, user] = pool.signers;
@@ -72,7 +72,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     (await pool.expectRedeemYBT(user, 150, 150)).to.equal("Insufficient principals.");
   });
 
-  it("Should fail before maturity with unequal shares", async () =>
+  it.includeIntegration("Should fail before maturity with unequal shares", async () =>
   {
     await pool.createDefault();
     let [owner, user] = pool.signers;
@@ -84,7 +84,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     (await pool.expectRedeemYBT(user, 50, 100)).to.equal("Inequal redemption not allowed before maturity.");
   });
 
-  it("Should work before maturity with equal shares, without yield", async () =>
+  it.includeIntegration("Should work before maturity with equal shares, without yield", async () =>
   {
     await pool.createDefault();
     let [owner, user] = pool.signers;
@@ -97,7 +97,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/200);
   });
 
-  it("Should work before maturity with equal shares, with yield", async () =>
+  it.includeIntegration("Should work before maturity with equal shares, with yield", async () =>
   {
     await pool.createDefault();
     let [owner, user] = pool.signers;
@@ -119,7 +119,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     }
   });
 
-  it("Should work after maturity with negative yield", async () =>
+  it.includeIntegration("Should work after maturity with negative yield", async () =>
   {
     await pool.createDefault();
     let [owner, user] = pool.signers;
@@ -146,7 +146,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     }
   });
 
-  it("Should work after maturity with negative yield between maturity and redemption", async () =>
+  it.includeIntegration("Should work after maturity with negative yield between maturity and redemption", async () =>
   {
     await pool.createDefault();
     let [owner, user] = pool.signers;
@@ -173,7 +173,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     }
   });
 
-  it("Should work after maturity with unequal shares, without yield", async () =>
+  it.includeIntegration("Should work after maturity with unequal shares, without yield", async () =>
   {
     await pool.createDefault();
     let [owner, user] = pool.signers;
@@ -186,7 +186,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     (await pool.userState(user)).expect(50, 0, /*yieldBearing:*/150);
   });
 
-  it("Should work after maturity with unequal shares, with yield", async () =>
+  it.includeIntegration("Should work after maturity with unequal shares, with yield", async () =>
   {
     await pool.createDefault();
     let [owner, user] = pool.signers;
@@ -212,7 +212,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     }
   });
 
-  it("Should work after maturity with additional yield after maturity", async () =>
+  it.includeIntegration("Should work after maturity with additional yield after maturity", async () =>
   {
     await pool.createDefault();
     let [owner, user] = pool.signers;
@@ -246,7 +246,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     }
   });
 
-  it("Should redeem correct amount of tokens with multiple users depositing", async () =>
+  it.includeIntegration("Should redeem correct amount of tokens with multiple users depositing", async () =>
   {
     await pool.createDefault();
     let [owner, user, user2] = pool.signers;
@@ -316,7 +316,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
         (await pool.userState(user2)).expect(0, 0, /*yieldBearing:*/500);
     }
   });
-  it("Should revert when trying to call redeem directly on TempusPool (not via the TempusController)", async () => 
+  it.includeIntegration("Should revert when trying to call redeem directly on TempusPool (not via the TempusController)", async () => 
   {
     await pool.createDefault();
     let [owner, user] = pool.signers;

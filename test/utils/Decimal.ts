@@ -38,7 +38,7 @@ export function parseDecimal(decimal:NumberOrString, decimalBase:number): BigNum
 }
 
 /**
- * Formats
+ * Formats a big decimal into a Number or String which is representable in TypeScript
  * @param bigDecimal BigNumber in contract decimal base
  * @param decimalBase Base precision of the decimal, for wei=18, for ray=27
  * @returns Number for simple decimals like 2.5, string for long decimals "0.00000000000001"

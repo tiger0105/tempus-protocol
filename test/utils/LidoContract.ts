@@ -1,37 +1,18 @@
 import { ethers } from "hardhat";
 import { BigNumber, Contract } from "ethers";
-import { NumberOrString } from "./Decimal";
-import { ContractBase, SignerOrAddress, Signer, addressOf } from "./ContractBase";
+import { formatDecimal, NumberOrString, parseDecimal } from "./Decimal";
+import { SignerOrAddress, Signer, addressOf } from "./ContractBase";
 import { ERC20 } from "./ERC20";
 import { ERC20Ether } from "./ERC20Ether";
-import { TokenInfo } from "../pool-utils/TokenInfo";
 
-export class Lido extends ERC20 {
-  // asset is ETH
+export abstract class LidoContract extends ERC20 {
   asset:ERC20Ether; // ERC20 Ether Wrapper (not WETH!)
   yieldToken:ERC20; // StETH
 
-  constructor(pool:Contract, asset:ERC20Ether) {
-    super("LidoMock", asset.decimals, pool);
+  constructor(contractName:string, pool:Contract, asset:ERC20Ether) {
+    super(contractName, asset.decimals, pool);
     this.asset = asset;
     this.yieldToken = this; // for Lido, the pool itself is the Yield Token
-  }
-
-  /**
-   * @param ASSET ASSET token info (IGNORED)
-   * @param YIELD YIELD token info
-   * @param initialRate Initial interest rate
-   */
-  static async create(ASSET:TokenInfo, YIELD:TokenInfo, initialRate:Number): Promise<Lido> {
-    const asset = new ERC20Ether();
-    const pool = await ContractBase.deployContract(
-      "LidoMock", YIELD.decimals, YIELD.name, YIELD.symbol
-    );
-    const lido = new Lido(pool, asset);
-    if (initialRate != 1.0) {
-      await lido.setInterestRate(initialRate);
-    }
-    return lido;
   }
 
   /** @return stETH balance of an user */
@@ -59,48 +40,39 @@ export class Lido extends ERC20 {
     return this.fromBigNum(await this.contract.totalSupply());
   }
 
+  // Interest rate as 1e18 BigNumber
+  async interestRateBigNum(): Promise<BigNumber> {
+    // using higher sharesAmount for increased precision
+    const byShares = parseDecimal("1000000.0", 18);
+    const shares:BigNumber = await this.contract.getPooledEthByShares(byShares);
+    return shares.div(BigNumber.from(1000000)); // convert to 1e18
+  }
+
   /** @return Stored Interest Rate */
   async interestRate(): Promise<NumberOrString> {
-    return this.fromBigNum(await this.contract._getInterestRate());
+    return this.fromBigNum(await this.interestRateBigNum());
   }
 
   /**
    * Sets the pool Interest Rate
    * @param interestRate New synthetic Interest Rate
    */
-  async setInterestRate(interestRate:NumberOrString): Promise<void> {
-    let totalETHSupply:BigNumber = await this.contract.totalSupply();
-    // total ETH is 0, so we must actually deposit something, otherwise we can't manipulate the rate
-    if (totalETHSupply.isZero()) {
-      totalETHSupply = this.toBigNum(1000);
-      await this.contract._setSharesAndEthBalance(this.toBigNum(1000), totalETHSupply); // 1.0 rate
-    }
-
-    // figure out if newRate requires a change of stETH
-    const totalShares:BigNumber = await this.contract.getTotalShares();
-    const curRate = await this.contract._getInterestRate();
-    const newRate = this.toBigNum(interestRate);
-    const ONE = this.toBigNum(1.0);
-    const difference = newRate.mul(ONE).div(curRate).sub(ONE);
-    if (difference.isZero())
-      return;
-
-    const change = totalETHSupply.mul(difference).div(ONE);
-    const newETHSupply = totalETHSupply.add(change);
-    await this.contract._setSharesAndEthBalance(totalShares, newETHSupply);
-  }
+  abstract setInterestRate(interestRate:NumberOrString): Promise<void>;
 
   async submit(signer:SignerOrAddress, amount:NumberOrString): Promise<NumberOrString> {
     const val = this.toBigNum(amount); // payable call, set value:
     return await this.connect(signer).submit(addressOf(signer), {value: val})
   }
+
   async depositBufferedEther(): Promise<void> {
     // ethers.js does not resolve overloads, so need to call the function by string lookup
     await this.contract["depositBufferedEther()"]();
   }
+
   async depositBufferedEther2(maxDeposits:number): Promise<void> {
     await this.contract["depositBufferedEther(uint256)"](maxDeposits);
   }
+
   /**
    * Updates the contract with information from ETH2 orcale
    * Calculates rewards using formulae:  rewards = balance - 32*validators
@@ -111,17 +83,20 @@ export class Lido extends ERC20 {
   async pushBeacon(owner:Signer, validators:number, balance:number): Promise<void> {
     await this.connect(owner).pushBeacon(validators, this.toBigNum(balance));
   }
+
   // pushes balance to achieve certain amount of `totalRewards`
   async pushBeaconRewards(owner:Signer, validators:number, rewards:number): Promise<void> {
     // push X eth reward, rewards = balance - 32*validators
     const balance = rewards + 32*validators;
     await this.pushBeacon(owner, validators, balance);
   }
+
   async withdraw(signer:Signer, shareAmount:Number): Promise<void> {
     // We ignore the pubKeyHash.
     const hash = ethers.utils.formatBytes32String("");
     await this.connect(signer).withdraw(this.toBigNum(shareAmount), hash);
   }
+
   async printState(title: string, owner: string, user: string) {
     console.log("State:", title);
     console.log("  totalSupply:", await this.totalSupply());

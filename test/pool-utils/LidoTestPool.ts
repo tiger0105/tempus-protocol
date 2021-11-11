@@ -3,11 +3,13 @@ import { ContractBase, Signer } from "../utils/ContractBase";
 import { TempusPool, PoolType } from "../utils/TempusPool";
 import { TokenInfo } from "./TokenInfo";
 import { ethers, getUnnamedAccounts } from "hardhat";
-import { Lido } from "../utils/Lido";
+import { LidoContract } from "../utils/LidoContract";
+import { LidoMock } from "../utils/LidoMock";
+import { LidoFork } from "../utils/LidoFork";
 import { Transaction } from "ethers";
 
 export class LidoTestPool extends PoolTestFixture {
-  lido:Lido;
+  lido:LidoContract;
   ASSET_TOKEN:TokenInfo;
   YIELD_TOKEN:TokenInfo;
   constructor(ASSET_TOKEN:TokenInfo, YIELD_TOKEN:TokenInfo, integration:boolean) {
@@ -45,9 +47,13 @@ export class LidoTestPool extends PoolTestFixture {
   }
   async createWithAMM(params:TempusAMMParams): Promise<TempusPool> {
     return await this.initPool(params, this.YIELD_TOKEN.name, this.YIELD_TOKEN.symbol, async () => {
-      return await Lido.create(this.ASSET_TOKEN, this.YIELD_TOKEN, this.initialRate);
+      if (this.integration) {
+        return await LidoFork.create(this.ASSET_TOKEN, this.YIELD_TOKEN, this.initialRate);
+      } else {
+        return await LidoMock.create(this.ASSET_TOKEN, this.YIELD_TOKEN, this.initialRate);
+      }
     }, (pool:ContractBase) => {
-      this.lido = <Lido>pool;
+      this.lido = <LidoContract>pool;
       this.asset = this.lido.asset;
       this.ybt = this.lido.yieldToken;
     });
