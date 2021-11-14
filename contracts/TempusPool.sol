@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./ITempusPool.sol";
+import "./RateEMAOracle.sol";
 import "./token/PrincipalShare.sol";
 import "./token/YieldShare.sol";
 import "./math/Fixed256xVar.sol";
@@ -19,7 +20,7 @@ struct TokenData {
 
 /// @author The tempus.finance team
 /// @title Implementation of Tempus Pool
-abstract contract TempusPool is ITempusPool {
+abstract contract TempusPool is RateEMAOracle, ITempusPool {
     using SafeERC20 for IERC20;
     using UntrustedERC20 for IERC20;
     using Fixed256xVar for uint256;
@@ -79,7 +80,7 @@ abstract contract TempusPool is ITempusPool {
         TokenData memory principalsData,
         TokenData memory yieldsData,
         FeesConfig memory maxFeeSetup
-    ) {
+    ) RateEMAOracle(initInterestRate) {
         require(maturity > block.timestamp, "maturityTime is after startTime");
         require(ctrl != address(0), "controller can not be zero");
         require(initInterestRate > 0, "initInterestRate can not be zero");
@@ -195,7 +196,7 @@ abstract contract TempusPool is ITempusPool {
         )
     {
         require(!matured(), "Maturity reached.");
-        rate = updateInterestRate();
+        rate = updateAndValidateInterestRate();
         require(rate >= initialInterestRate, "Negative yield!");
 
         // Collect fees if they are set, reducing the number of tokens for the sender
@@ -289,7 +290,7 @@ abstract contract TempusPool is ITempusPool {
         PrincipalShare(address(principalShare)).burnFrom(from, principalAmount);
         YieldShare(address(yieldShare)).burnFrom(from, yieldAmount);
 
-        uint256 currentRate = updateInterestRate();
+        uint256 currentRate = updateAndValidateInterestRate();
         (redeemedYieldTokens, , fee, interestRate) = getRedemptionAmounts(principalAmount, yieldAmount, currentRate);
         totalFees += fee;
     }
@@ -343,6 +344,14 @@ abstract contract TempusPool is ITempusPool {
         }
     }
 
+    function updateAndValidateInterestRate() private returns (uint256) {
+        uint256 latestRate = updateInterestRate();
+        /// Sanity check the interest rate doesn't deviate too much from the EMA normalized rate
+        /// (due to some bug in an underlying protocol or an interest rate manipulation attack)
+        // require(latestRate /emaValue < maxDiff)
+        updateRateEMA(latestRate);
+    }
+
     function effectiveRate(uint256 currentRate) private view returns (uint256) {
         if (matured() && maturityInterestRate != 0) {
             return (currentRate < maturityInterestRate) ? currentRate : maturityInterestRate;
@@ -360,7 +369,7 @@ abstract contract TempusPool is ITempusPool {
     }
 
     function currentYield() private returns (uint256) {
-        return currentYield(updateInterestRate());
+        return currentYield(updateAndValidateInterestRate());
     }
 
     function currentYieldStored() private view returns (uint256) {
