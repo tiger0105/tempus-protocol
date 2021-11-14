@@ -23,6 +23,7 @@ contract YearnTempusPool is TempusPool {
         address controller,
         uint256 maturity,
         uint256 estYield,
+        uint256 initialRateTrend,
         TokenData memory principalsData,
         TokenData memory yieldsData,
         FeesConfig memory maxFeeSetup
@@ -33,6 +34,7 @@ contract YearnTempusPool is TempusPool {
             controller,
             maturity,
             vault.pricePerShare(),
+            initialRateTrend,
             10**(IERC20Metadata(vault.token()).decimals()),
             estYield,
             principalsData,
@@ -79,7 +81,7 @@ contract YearnTempusPool is TempusPool {
     }
 
     /// @dev The rate precision always matches the BackingToken's precision
-    function interestRateToSharePrice(uint interestRate) internal view override returns (uint) {
+    function interestRateToSharePrice(uint interestRate) internal pure override returns (uint) {
         return interestRate;
     }
 }

@@ -3,6 +3,7 @@ pragma solidity 0.8.6;
 
 import "./math/Fixed256xVar.sol";
 
+/// Implements https://en.wikipedia.org/wiki/Exponential_smoothing#Double_exponential_smoothing
 abstract contract SmoothedRateOracle {
     using Fixed256xVar for uint256;
 
@@ -44,6 +45,7 @@ abstract contract SmoothedRateOracle {
                     HYPER_PARAMS_DENOMINATOR - LEVEL_SMOOTHING_MULTIPLIER,
                     HYPER_PARAMS_DENOMINATOR
                 );
+            
             // uint256 trend = (level - latestSmoothedRate).mulfV(TREND_SMOOTHING_MULTIPLIER, HYPER_PARAMS_DENOMINATOR) + 
             //     (latestTrend).mulfV(
             //         HYPER_PARAMS_DENOMINATOR - TREND_SMOOTHING_MULTIPLIER,
@@ -57,7 +59,6 @@ abstract contract SmoothedRateOracle {
                 );
 
             setSmoothedRate(level, trend); 
-            // emit SmoothedRateUpdated(ema);
         }
     }
 

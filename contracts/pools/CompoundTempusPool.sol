@@ -23,6 +23,7 @@ contract CompoundTempusPool is TempusPool {
         uint256 maturity,
         uint256 exchangeRateOne,
         uint256 estYield,
+        uint256 initialRateTrend,
         TokenData memory principalsData,
         TokenData memory yieldsData,
         FeesConfig memory maxFeeSetup
@@ -33,6 +34,7 @@ contract CompoundTempusPool is TempusPool {
             controller,
             maturity,
             token.exchangeRateCurrent(),
+            initialRateTrend,
             exchangeRateOne,
             estYield,
             principalsData,

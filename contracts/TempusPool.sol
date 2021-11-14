@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./ITempusPool.sol";
-import "./RateEMAOracle.sol";
+import "./SmoothedRateOracle.sol";
 import "./token/PrincipalShare.sol";
 import "./token/YieldShare.sol";
 import "./math/Fixed256xVar.sol";
@@ -20,12 +20,15 @@ struct TokenData {
 
 /// @author The tempus.finance team
 /// @title Implementation of Tempus Pool
-abstract contract TempusPool is RateEMAOracle, ITempusPool {
+abstract contract TempusPool is SmoothedRateOracle, ITempusPool {
     using SafeERC20 for IERC20;
     using UntrustedERC20 for IERC20;
     using Fixed256xVar for uint256;
 
     uint public constant override version = 1;
+    
+    uint256 private constant MAX_FORECASTED_RATE_DEVIATION_TOLERANCE = 1e3; /// 1%
+    uint256 private constant MAX_FORECASTED_RATE_DEVIATION_TOLERANCE_DENOMINATOR = 1e5;
 
     address public immutable override yieldBearingToken;
     address public immutable override backingToken;
@@ -63,6 +66,7 @@ abstract contract TempusPool is RateEMAOracle, ITempusPool {
     /// @param ctrl The authorized TempusController of the pool
     /// @param maturity maturity time of this pool
     /// @param initInterestRate initial interest rate of the pool
+    /// @param initInterestRateTrend initial interest rate increase trend (should be calculated offchain)
     /// @param exchangeRateOne 1.0 expressed in exchange rate decimal precision
     /// @param estimatedFinalYield estimated yield for the whole lifetime of the pool
     /// @param principalsData Tempus Principals name and symbol
@@ -75,12 +79,13 @@ abstract contract TempusPool is RateEMAOracle, ITempusPool {
         address ctrl,
         uint256 maturity,
         uint256 initInterestRate,
+        uint256 initInterestRateTrend,
         uint256 exchangeRateOne,
         uint256 estimatedFinalYield,
         TokenData memory principalsData,
         TokenData memory yieldsData,
         FeesConfig memory maxFeeSetup
-    ) RateEMAOracle(initInterestRate) {
+    ) SmoothedRateOracle(initInterestRate, initInterestRateTrend) {
         require(maturity > block.timestamp, "maturityTime is after startTime");
         require(ctrl != address(0), "controller can not be zero");
         require(initInterestRate > 0, "initInterestRate can not be zero");
@@ -347,9 +352,23 @@ abstract contract TempusPool is RateEMAOracle, ITempusPool {
     function updateAndValidateInterestRate() private returns (uint256) {
         uint256 latestRate = updateInterestRate();
         /// Sanity check the interest rate doesn't deviate too much from the EMA normalized rate
-        /// (due to some bug in an underlying protocol or an interest rate manipulation attack)
+        /// (due to some kind of interest rate manipulation attack)
         // require(latestRate /emaValue < maxDiff)
-        updateRateEMA(latestRate);
+        uint256 forecastedCurrentInterestRate = forecastInterestAtTimestamp(block.timestamp);
+        uint256 forecastedRateDiff = latestRate > forecastedCurrentInterestRate ? (latestRate - forecastedCurrentInterestRate) : (forecastedCurrentInterestRate - latestRate); 
+        
+        uint256 forecastedRateDeviation = forecastedRateDiff.divfV(forecastedCurrentInterestRate, MAX_FORECASTED_RATE_DEVIATION_TOLERANCE_DENOMINATOR);
+        
+        /// TODO: IMPORTANT - maybe add logic that remove ignores this condition in case the forecasted rate
+        /// deviates from the forecasted one several times in a row, in different block, without any successful
+        /// rate updates in between. The reasoning for this is that if the require statement reverts several
+        /// times in a row in a large enough timeframe it means that it's most likely not a flash loan hack,
+        /// but probably an internal implementation issue with SmoothedRateOracle so it's better to just drop this
+        /// safety mechanism entirely so that users' funds are not locked forever.
+        require(forecastedRateDeviation <= MAX_FORECASTED_RATE_DEVIATION_TOLERANCE, "interest rate too high/low");
+        updateSmoothedRate(latestRate);
+
+        return latestRate;
     }
 
     function effectiveRate(uint256 currentRate) private view returns (uint256) {
