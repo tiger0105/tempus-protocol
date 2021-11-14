@@ -30,42 +30,38 @@ abstract contract SmoothedRateOracle {
     function updateSmoothedRate(uint256 latestRate) internal {
         uint256 timeElapsedSinceLastSample = block.timestamp - latestSmoothedRateSampleTimestamp;
         if (timeElapsedSinceLastSample >= EMA_SAMPLE_PERIOD) {
-
             /// TODO: IMPORTANT is this necessary? I don't think so ser
             /// ADJUSTED = m * LEVEL_SMOOTHING_MULTIPLIER
-            /// OR ADJUSTED = LEVEL_SMOOTHING_MULTIPLIER ** m 
+            /// OR ADJUSTED = LEVEL_SMOOTHING_MULTIPLIER ** m
             // uint256 adjustedLevelSmoothingMultiplier = LEVEL_SMOOTHING_MULTIPLIER +
             //     LEVEL_SMOOTHING_MULTIPLIER.mulfV(timeElapsedSinceLastSample, EMA_SAMPLE_PERIOD); /// TODO: IMPORTANT Should this normalization be done ?
             // uint256 adjustedTrendSmoothingMultiplier = TREND_SMOOTHING_MULTIPLIER +
             //     TREND_SMOOTHING_MULTIPLIER.mulfV(timeElapsedSinceLastSample, EMA_SAMPLE_PERIOD);
-            
-            uint256 level =
-                latestSmoothedRate.mulfV(LEVEL_SMOOTHING_MULTIPLIER, HYPER_PARAMS_DENOMINATOR) +
+
+            uint256 level = latestSmoothedRate.mulfV(LEVEL_SMOOTHING_MULTIPLIER, HYPER_PARAMS_DENOMINATOR) +
                 (latestRate + latestTrend).mulfV(
                     HYPER_PARAMS_DENOMINATOR - LEVEL_SMOOTHING_MULTIPLIER,
                     HYPER_PARAMS_DENOMINATOR
                 );
-            
-            // uint256 trend = (level - latestSmoothedRate).mulfV(TREND_SMOOTHING_MULTIPLIER, HYPER_PARAMS_DENOMINATOR) + 
+
+            // uint256 trend = (level - latestSmoothedRate).mulfV(TREND_SMOOTHING_MULTIPLIER, HYPER_PARAMS_DENOMINATOR) +
             //     (latestTrend).mulfV(
             //         HYPER_PARAMS_DENOMINATOR - TREND_SMOOTHING_MULTIPLIER,
             //         HYPER_PARAMS_DENOMINATOR
             //     );
-            uint256 trend = (level - latestSmoothedRate).mulfV(EMA_SAMPLE_PERIOD, timeElapsedSinceLastSample)
-                .mulfV(TREND_SMOOTHING_MULTIPLIER, HYPER_PARAMS_DENOMINATOR) + 
-                (latestTrend).mulfV(
-                    HYPER_PARAMS_DENOMINATOR - TREND_SMOOTHING_MULTIPLIER,
-                    HYPER_PARAMS_DENOMINATOR
-                );
+            uint256 trend = (level - latestSmoothedRate).mulfV(EMA_SAMPLE_PERIOD, timeElapsedSinceLastSample).mulfV(
+                TREND_SMOOTHING_MULTIPLIER,
+                HYPER_PARAMS_DENOMINATOR
+            ) + (latestTrend).mulfV(HYPER_PARAMS_DENOMINATOR - TREND_SMOOTHING_MULTIPLIER, HYPER_PARAMS_DENOMINATOR);
 
-            setSmoothedRate(level, trend); 
+            setSmoothedRate(level, trend);
         }
     }
 
     /// F[t+m] = S[t] + m * B(t)
     function forecastInterestAtTimestamp(uint256 timestamp) internal view returns (uint256) {
-        return latestSmoothedRate +
-            (timestamp - latestSmoothedRateSampleTimestamp).mulfV(latestTrend, EMA_SAMPLE_PERIOD);
+        return
+            latestSmoothedRate + (timestamp - latestSmoothedRateSampleTimestamp).mulfV(latestTrend, EMA_SAMPLE_PERIOD);
     }
 
     function setSmoothedRate(uint256 smoothedRate, uint256 trend) private {

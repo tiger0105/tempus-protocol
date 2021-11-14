@@ -26,7 +26,7 @@ abstract contract TempusPool is SmoothedRateOracle, ITempusPool {
     using Fixed256xVar for uint256;
 
     uint public constant override version = 1;
-    
+
     uint256 private constant MAX_FORECASTED_RATE_DEVIATION_TOLERANCE = 1e3; /// 1%
     uint256 private constant MAX_FORECASTED_RATE_DEVIATION_TOLERANCE_DENOMINATOR = 1e5;
 
@@ -355,10 +355,15 @@ abstract contract TempusPool is SmoothedRateOracle, ITempusPool {
         /// (due to some kind of interest rate manipulation attack)
         // require(latestRate /emaValue < maxDiff)
         uint256 forecastedCurrentInterestRate = forecastInterestAtTimestamp(block.timestamp);
-        uint256 forecastedRateDiff = latestRate > forecastedCurrentInterestRate ? (latestRate - forecastedCurrentInterestRate) : (forecastedCurrentInterestRate - latestRate); 
-        
-        uint256 forecastedRateDeviation = forecastedRateDiff.divfV(forecastedCurrentInterestRate, MAX_FORECASTED_RATE_DEVIATION_TOLERANCE_DENOMINATOR);
-        
+        uint256 forecastedRateDiff = latestRate > forecastedCurrentInterestRate
+            ? (latestRate - forecastedCurrentInterestRate)
+            : (forecastedCurrentInterestRate - latestRate);
+
+        uint256 forecastedRateDeviation = forecastedRateDiff.divfV(
+            forecastedCurrentInterestRate,
+            MAX_FORECASTED_RATE_DEVIATION_TOLERANCE_DENOMINATOR
+        );
+
         /// TODO: IMPORTANT - maybe add logic that remove ignores this condition in case the forecasted rate
         /// deviates from the forecasted one several times in a row, in different block, without any successful
         /// rate updates in between. The reasoning for this is that if the require statement reverts several
