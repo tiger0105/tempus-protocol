@@ -119,6 +119,28 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     }
   });
 
+  it.includeIntegration("Should work before maturity with equal shares, with negative yield", async () =>
+  {
+    await pool.createDefault();
+    let [owner, user] = pool.signers;
+    await pool.setupAccounts(owner, [[user, 200]]);
+
+    await pool.depositYBT(user, 100, /*recipient:*/user);
+    (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/100);
+
+    await pool.setInterestRate(0.9);
+    await pool.redeemToYBT(user, 100, 100);
+
+    if (pool.yieldPeggedToAsset)
+    {
+        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/180);
+    }
+    else
+    {
+        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/200);
+    }
+  });
+
   it.includeIntegration("Should work after maturity with negative yield", async () =>
   {
     await pool.createDefault();
