@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.6;
+pragma solidity 0.8.10;
 
 // Based on https://github.com/compound-finance/compound-protocol/blob/v2.8.1/contracts/ComptrollerInterface.sol
 // and documentation at https://compound.finance/docs/comptroller

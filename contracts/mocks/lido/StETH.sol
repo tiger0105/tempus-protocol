@@ -4,7 +4,7 @@
 
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.6;
+pragma solidity 0.8.10;
 
 import "../../protocols/lido/ILido.sol";
 
