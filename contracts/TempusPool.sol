@@ -347,17 +347,17 @@ abstract contract TempusPool is ITempusPool {
         }
     }
 
-    function sanityChecks() view private {
+    function sanityChecks() private view {
         /// TODO: maybe do some validations using pricePerShareStored before calling updateInterestRate ?
         uint256 totalPrincipals = IERC20Metadata(address(principalShare)).totalSupply();
         uint256 totalYields = IERC20Metadata(address(yieldShare)).totalSupply();
 
         uint256 totalYieldBearingBalance = IERC20(yieldBearingToken).balanceOf(address(this));
         uint256 totalBackingTokensInControl = numAssetsPerYieldToken(totalYieldBearingBalance, currentInterestRate());
-        
+
         uint256 totalYieldsValue = pricePerYieldShareStored().mulfV(totalYields, backingTokenONE);
         uint256 totalPrincipalsValue = pricePerPrincipalShareStored().mulfV(totalPrincipals, backingTokenONE);
-        
+
         assert(totalBackingTokensInControl >= (totalYieldsValue + totalPrincipalsValue));
     }
 
