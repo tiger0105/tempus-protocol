@@ -9,6 +9,7 @@ import "./ITempusPool.sol";
 import "./token/PrincipalShare.sol";
 import "./token/YieldShare.sol";
 import "./math/Fixed256xVar.sol";
+import "./debug/Debug.sol";/// TODO: IMPORTANT
 import "./utils/UntrustedERC20.sol";
 
 /// @dev helper struct to store name and symbol for the token
@@ -165,6 +166,7 @@ abstract contract TempusPool is ITempusPool {
         assert(depositedYBT > 0);
 
         (mintedShares, , fee, rate) = _mintShares(depositedYBT, recipient);
+        sanityChecks();
     }
 
     function onDepositYieldBearing(uint256 yieldTokenAmount, address recipient)
@@ -181,6 +183,7 @@ abstract contract TempusPool is ITempusPool {
         require(yieldTokenAmount > 0, "yieldTokenAmount must be greater than 0");
 
         (mintedShares, depositedBT, fee, rate) = _mintShares(yieldTokenAmount, recipient);
+        sanityChecks();
     }
 
     /// @param yieldTokenAmount YBT amount in YBT decimal precision
@@ -236,6 +239,7 @@ abstract contract TempusPool is ITempusPool {
         (redeemedYieldTokens, fee, rate) = burnShares(from, principalAmount, yieldAmount);
 
         redeemedBackingTokens = withdrawFromUnderlyingProtocol(redeemedYieldTokens, recipient);
+        sanityChecks();
     }
 
     function redeem(
@@ -256,6 +260,7 @@ abstract contract TempusPool is ITempusPool {
         (redeemedYieldTokens, fee, rate) = burnShares(from, principalAmount, yieldAmount);
 
         redeemedYieldTokens = IERC20(yieldBearingToken).untrustedTransfer(recipient, redeemedYieldTokens);
+        sanityChecks();
     }
 
     function finalize() public override {
@@ -343,6 +348,20 @@ abstract contract TempusPool is ITempusPool {
         }
     }
 
+    function sanityChecks() view private {
+        /// TODO: maybe do some validations using pricePerShareStored before calling updateInterestRate ?
+        uint256 totalPrincipals = IERC20Metadata(address(principalShare)).totalSupply();
+        uint256 totalYields = IERC20Metadata(address(yieldShare)).totalSupply();
+
+        uint256 totalYieldBearingBalance = IERC20(yieldBearingToken).balanceOf(address(this));
+        uint256 totalBackingTokensInControl = numAssetsPerYieldToken(totalYieldBearingBalance, currentInterestRate());
+        
+        uint256 totalYieldsValue = pricePerYieldShareStored().mulfV(totalYields, backingTokenONE);
+        uint256 totalPrincipalsValue = pricePerPrincipalShareStored().mulfV(totalPrincipals, backingTokenONE);
+        
+        assert(totalBackingTokensInControl >= (totalYieldsValue + totalPrincipalsValue));
+    }
+
     function effectiveRate(uint256 currentRate) private view returns (uint256) {
         if (matured() && maturityInterestRate != 0) {
             return (currentRate < maturityInterestRate) ? currentRate : maturityInterestRate;
@@ -422,7 +441,7 @@ abstract contract TempusPool is ITempusPool {
         return pricePerYieldShare(currentYield(), estimatedYield());
     }
 
-    function pricePerYieldShareStored() external view override returns (uint256) {
+    function pricePerYieldShareStored() public view override returns (uint256) {
         return pricePerYieldShare(currentYieldStored(), estimatedYieldStored());
     }
 
@@ -430,7 +449,7 @@ abstract contract TempusPool is ITempusPool {
         return pricePerPrincipalShare(currentYield(), estimatedYield());
     }
 
-    function pricePerPrincipalShareStored() external view override returns (uint256) {
+    function pricePerPrincipalShareStored() public view override returns (uint256) {
         return pricePerPrincipalShare(currentYieldStored(), estimatedYieldStored());
     }
 
