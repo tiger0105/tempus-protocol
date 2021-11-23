@@ -11,6 +11,7 @@ import { getRevertMessage } from "../utils/Utils";
 import { TempusController } from "../utils/TempusController";
 import { TempusAMM } from "../utils/TempusAMM";
 import { PoolShare } from "../utils/PoolShare";
+import { strict as assert } from 'assert';
 
 export class UserState {
   principalShares:Number;
@@ -271,6 +272,7 @@ export abstract class PoolTestFixture {
    * Fast forwards time to certain point in time
    */
   async setTimeRelativeToPoolStart(percentDuration: number): Promise<void> {
+    assert.ok(percentDuration >= 0.0 && percentDuration <= 1.0);
     const startTime:number = +await this.tempus.startTime();
     const duration:number = +await this.tempus.maturityTime() - startTime;
     await setEvmTime(startTime + percentDuration * duration);
@@ -280,6 +282,7 @@ export abstract class PoolTestFixture {
    * Sets the next block timestamp relative to the pool's duration (without mining a block)
    */
   async setNextBlockTimestampRelativeToPoolStart(percentDuration: number): Promise<void> {
+    assert.ok(percentDuration >= 0.0 && percentDuration <= 1.0);
     const startTime:number = +await this.tempus.startTime();
     const duration:number = +await this.tempus.maturityTime() - startTime;
     await setNextBlockTimestamp(startTime + percentDuration * duration);
