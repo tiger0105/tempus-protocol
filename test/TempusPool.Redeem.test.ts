@@ -179,10 +179,23 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.setTimeRelativeToPoolStart(0.876); // 87.6% of the time, i.e. 14+ days
     await pool.setInterestRate(0.2);
 
-    await pool.redeemToYBT(user, 80, 80);
+    await pool.redeemToYBT(user, 10, 10);
     if (pool.yieldPeggedToAsset)
     {
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/40);
+        (await pool.userState(user)).expect(70, 70, /*yieldBearing:*/26);
+    }
+    else
+    {
+        (await pool.userState(user)).expect(70, 70, /*yieldBearing:*/130);
+    }
+
+    await pool.setTimeRelativeToPoolStart(0.95); // 95% of the time, i.e. 15+ days
+    await pool.setInterestRate(0.1);
+
+    await pool.redeemToYBT(user, 70, 70);
+    if (pool.yieldPeggedToAsset)
+    {
+        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/20);
     }
     else
     {
