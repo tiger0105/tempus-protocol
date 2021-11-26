@@ -41,7 +41,7 @@ interface ITempusFees is IOwnable {
     function transferFees(address recipient) external;
 }
 
-/// All state chaging operations are restricted to the controller.
+/// All state changing operations are restricted to the controller.
 interface ITempusPool is ITempusFees {
     /// @return The version of the pool.
     function version() external view returns (uint);
