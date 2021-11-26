@@ -1,24 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.10;
 
+import "./IOwnable.sol";
+
 /// Implements Ownable with a two step transfer of ownership
-abstract contract Ownable {
+abstract contract Ownable is IOwnable {
     address private _owner;
     address private _proposedOwner;
-
-    /**
-     * @dev Change of ownership proposed.
-     * @param currentOwner The current owner.
-     * @param proposedOwner The proposed owner.
-     */
-    event OwnershipProposed(address indexed currentOwner, address indexed proposedOwner);
-
-    /**
-     * @dev Ownership transferred.
-     * @param previousOwner The previous owner.
-     * @param newOwner The new owner.
-     */
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
@@ -30,7 +18,7 @@ abstract contract Ownable {
     /**
      * @dev Returns the address of the current owner.
      */
-    function owner() public view virtual returns (address) {
+    function owner() public view virtual override returns (address) {
         return _owner;
     }
 
@@ -46,7 +34,7 @@ abstract contract Ownable {
      * @dev Proposes a transfer of ownership of the contract to a new account (`newOwner`).
      * Can only be called by the current owner.
      */
-    function transferOwnership(address newOwner) public virtual onlyOwner {
+    function transferOwnership(address newOwner) public virtual override onlyOwner {
         require(newOwner != address(0), "Ownable: new owner is the zero address");
         _proposedOwner = newOwner;
         emit OwnershipProposed(_owner, _proposedOwner);
@@ -56,7 +44,7 @@ abstract contract Ownable {
      * @dev Accepts ownership of the contract by a proposed account.
      * Can only be called by the proposed owner.
      */
-    function acceptOwnership() public virtual {
+    function acceptOwnership() public virtual override {
         require(msg.sender == _proposedOwner, "Ownable: Only proposed owner can accept ownership");
         _setOwner(_proposedOwner);
         _proposedOwner = address(0);
