@@ -1,5 +1,4 @@
 import { task } from 'hardhat/config';
-
 import 'solidity-coverage';
 import 'hardhat-gas-reporter';
 import 'hardhat-deploy';
@@ -7,6 +6,7 @@ import 'hardhat-abi-exporter';
 import "@typechain/hardhat";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-ethers";
+import "@nomiclabs/hardhat-etherscan";
 import 'dotenv/config';
 
 if (process.env.HARDHAT_FORK) {
@@ -97,6 +97,12 @@ module.exports = {
           }
         : undefined,
       accounts: TEST_ACCOUNTS_KEYS.map(privateKey => ({ privateKey, balance: "10000000000000000000000000" }))
+    },
+    goerli: {
+      url: 'https://rpc.goerli.mudit.blog/'
+    },
+    mainnet: {
+      url: process.env.ETH_NODE_URI_MAINNET ?? 'https://main-light.eth.linkpool.io'
     }
   },
   namedAccounts: {
@@ -111,5 +117,8 @@ module.exports = {
     lidoOracleMember2: '0x1d0813bf088BE3047d827D98524fBf779Bc25F00',
     lidoOracleMember3: '0x404335BcE530400a5814375E7Ec1FB55fAff3eA2',
     usdcHolder: "0x700fb29Ec8AC5B7f4Ff981B700b47B57E8350ccE"
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY
   }
 };

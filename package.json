@@ -15,6 +15,7 @@
   "homepage": "https://github.com/tempus-finance/tempus-protocol#readme",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.10",
+    "@nomiclabs/hardhat-etherscan": "^2.1.6",
     "@nomiclabs/hardhat-waffle": "2.0.1",
     "@typechain/ethers-v5": "^7.0.1",
     "@typechain/hardhat": "^2.2.0",
@@ -22,6 +23,7 @@
     "@types/mocha": "^8.2.2",
     "@types/node": "^15.0.1",
     "chai": "^4.3.4",
+    "chalk": "^4.1.2",
     "coveralls": "^3.1.0",
     "cross-env": "^7.0.3",
     "decimal.js": "^10.3.1",
@@ -35,6 +37,8 @@
     "hardhat-gas-reporter": "^1.0.4",
     "prettier": "^2.2.1",
     "prettier-plugin-solidity": "^1.0.0-beta.10",
+    "prompt": "^1.2.0",
+    "prompts": "^2.4.2",
     "solhint": "^3.3.4",
     "solhint-plugin-prettier": "^0.0.5",
     "solidity-coverage": "^0.7.16",
@@ -60,6 +64,10 @@
     "deploy-ci:fork:mainnet": "cross-env HARDHAT_FORK=mainnet npx hardhat run scripts/deploy.local.fork.ts",
     "deploy-local": "npx hardhat run scripts/deploy.local.ts --network localhost",
     "deploy-ci": "npx hardhat run scripts/deploy.local.ts",
+    "deploy:controller": "npx hardhat run scripts/deploy.controller.ts",
+    "deploy:stats": "npx hardhat run scripts/deploy.stats.ts",
+    "deploy:pool:lido": "npx hardhat run scripts/deploy.pool.lido.ts",
+    "verify:pool:lido": "npx hardhat run scripts/verify.pool.lido.ts",
     "increase-time": "npx hardhat run scripts/increaseTime.local.ts --network localhost",
     "mythx-install": "pip install mythx-cli",
     "mythx-amm": "mythx --ci --yes analyze --wait --solc-version 0.7.6 contracts/amm/TempusAMM.sol contracts/amm/TempusAMMFactory.sol contracts/amm/TempusAMMUserDataHelpers.sol",
@@ -69,10 +77,10 @@
   },
   "dependencies": {
     "@balancer-labs/v2-asset-manager-utils": "https://gitpkg.now.sh/balancer-labs/balancer-v2-monorepo/pkg/asset-manager-utils?ccb2d594a893cd4b7ce79698e373cb100b28aaa2",
+    "@balancer-labs/v2-pool-stable": "https://gitpkg.now.sh/balancer-labs/balancer-v2-monorepo/pkg/pool-stable?ccb2d594a893cd4b7ce79698e373cb100b28aaa2",
     "@balancer-labs/v2-pool-utils": "https://gitpkg.now.sh/balancer-labs/balancer-v2-monorepo/pkg/pool-utils?ccb2d594a893cd4b7ce79698e373cb100b28aaa2",
     "@balancer-labs/v2-solidity-utils": "https://gitpkg.now.sh/balancer-labs/balancer-v2-monorepo/pkg/solidity-utils?ccb2d594a893cd4b7ce79698e373cb100b28aaa2",
     "@balancer-labs/v2-vault": "https://gitpkg.now.sh/balancer-labs/balancer-v2-monorepo/pkg/vault?ccb2d594a893cd4b7ce79698e373cb100b28aaa2",
-    "@balancer-labs/v2-pool-stable": "https://gitpkg.now.sh/balancer-labs/balancer-v2-monorepo/pkg/pool-stable?ccb2d594a893cd4b7ce79698e373cb100b28aaa2",
     "@openzeppelin/contracts": "^4.1.0"
   }
 }
