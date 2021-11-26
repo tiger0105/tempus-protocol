@@ -43,6 +43,21 @@ export function generateTempusSharesNames(ybtName:string, ybtSymbol:string, matu
   };
 }
 
+export function generateTempusAMMLPNameAndSymbol(ybtName:string, ybtSymbol:string, maturityTime:number):{name:string, symbol:string} {
+  const date:Date = new Date(maturityTime * 1000);
+  
+  const year:number = date.getFullYear();
+  const month:number = date.getMonth();
+  const day:number = date.getDate();
+
+  const nameSuffix:string = "-" + day + "-" + month + "-" + year;
+
+  return {
+    name: "TLP-" + ybtName + nameSuffix,
+    symbol: "TLP-" + ybtSymbol + nameSuffix
+  };
+}
+
 /**
  * Wrapper around TempusPool
  */
