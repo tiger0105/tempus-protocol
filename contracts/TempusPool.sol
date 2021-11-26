@@ -188,8 +188,9 @@ abstract contract TempusPool is ITempusPool, Ownable {
             uint256 rate
         )
     {
-        require(!matured(), "Maturity reached.");
         rate = updateInterestRate();
+
+        require(!matured(), "Maturity reached.");
         require(rate >= initialInterestRate, "Negative yield!");
 
         // Collect fees if they are set, reducing the number of tokens for the sender
@@ -254,7 +255,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
 
     function finalize() public override {
         if (matured() && maturityInterestRate == 0) {
-            maturityInterestRate = currentInterestRate();
+            maturityInterestRate = updateInterestRate();
         }
     }
 
@@ -273,6 +274,8 @@ abstract contract TempusPool is ITempusPool, Ownable {
         require(IERC20(address(principalShare)).balanceOf(from) >= principalAmount, "Insufficient principals.");
         require(IERC20(address(yieldShare)).balanceOf(from) >= yieldAmount, "Insufficient yields.");
 
+        uint256 currentRate = updateInterestRate();
+
         if (matured()) {
             finalize();
         } else {
@@ -283,7 +286,6 @@ abstract contract TempusPool is ITempusPool, Ownable {
         PrincipalShare(address(principalShare)).burnFrom(from, principalAmount);
         YieldShare(address(yieldShare)).burnFrom(from, yieldAmount);
 
-        uint256 currentRate = updateInterestRate();
         (redeemedYieldTokens, , fee, interestRate) = getRedemptionAmounts(principalAmount, yieldAmount, currentRate);
         totalFees += fee;
     }
