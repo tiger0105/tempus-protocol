@@ -19,6 +19,7 @@ interface ITempusFees is IOwnable {
 
     /// Replace the current fee configuration with a new one.
     /// By default all the fees are expected to be set to zero.
+    /// @notice This function can only be called by the owner.
     function setFeesConfig(FeesConfig calldata newFeesConfig) external;
 
     /// @return Maximum possible fee percentage that can be set for deposit
@@ -35,9 +36,9 @@ interface ITempusFees is IOwnable {
 
     /// Transfers accumulated Yield Bearing Token (YBT) fees
     /// from this pool contract to `recipient`.
-    /// @param authorizer Authorizer of the transfer
     /// @param recipient Address which will receive the specified amount of YBT
-    function transferFees(address authorizer, address recipient) external;
+    /// @notice This function can only be called by the owner.
+    function transferFees(address recipient) external;
 }
 
 /// All state chaging operations are restricted to the controller.

@@ -66,7 +66,7 @@ describeForEachPool("TempusPool Deploy", (testPool:PoolTestFixture) =>
   it("Should not revert on collecting fees as there is no fees", async () =>
   {
     let [owner] = testPool.signers;
-    await pool.controller.transferFees(testPool, owner, owner);
+    await pool.transferFees(owner, owner);
     expect(await pool.yieldBearing.balanceOf(owner)).to.equal(0);
     expect(await pool.totalFees()).to.equal(0);
   });

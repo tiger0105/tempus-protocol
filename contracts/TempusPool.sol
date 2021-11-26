@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.10;
 
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -20,7 +21,7 @@ struct TokenData {
 
 /// @author The tempus.finance team
 /// @title Implementation of Tempus Pool
-abstract contract TempusPool is ITempusPool, Ownable {
+abstract contract TempusPool is ITempusPool, ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
     using UntrustedERC20 for IERC20;
     using Fixed256xVar for uint256;
@@ -132,8 +133,7 @@ abstract contract TempusPool is ITempusPool, Ownable {
         feesConfig = newFeesConfig;
     }
 
-    function transferFees(address authorizer, address recipient) external override onlyController {
-        require(authorizer == owner(), "Only owner can transfer fees.");
+    function transferFees(address recipient) external override nonReentrant onlyOwner {
         uint256 amount = totalFees;
         totalFees = 0;
 

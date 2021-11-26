@@ -251,11 +251,4 @@ export class TempusController extends ContractBase {
       parseInt((deadline.getTime() / 1000).toFixed(0))
     );
   }
-
-  /**
-   * Transfers fees from contract to recipient
-   */
-  async transferFees(pool:PoolTestFixture, owner:SignerOrAddress, recipient:SignerOrAddress) {
-    await this.connect(owner).transferFees(pool.tempus.address, addressOf(recipient));
-  }
 }

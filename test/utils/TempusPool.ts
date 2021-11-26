@@ -494,4 +494,11 @@ export class TempusPool extends ContractBase {
       matureRedeemPercent: this.yieldBearing.toBigNum(feesConfig.matureRedeemPercent)
     });
   }
+
+  /**
+   * Transfers fees to the recipient. Caller must be owner.
+   */
+  async transferFees(owner:SignerOrAddress, recipient:SignerOrAddress): Promise<void> {
+    await this.contract.connect(owner).transferFees(addressOf(recipient));
+  }
 }
