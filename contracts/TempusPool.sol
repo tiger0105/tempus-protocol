@@ -9,6 +9,7 @@ import "./ITempusPool.sol";
 import "./token/PrincipalShare.sol";
 import "./token/YieldShare.sol";
 import "./math/Fixed256xVar.sol";
+import "./utils/Ownable.sol";
 import "./utils/UntrustedERC20.sol";
 
 /// @dev helper struct to store name and symbol for the token
@@ -19,12 +20,12 @@ struct TokenData {
 
 /// @author The tempus.finance team
 /// @title Implementation of Tempus Pool
-abstract contract TempusPool is ITempusPool {
+abstract contract TempusPool is ITempusPool, Ownable {
     using SafeERC20 for IERC20;
     using UntrustedERC20 for IERC20;
     using Fixed256xVar for uint256;
 
-    uint public constant override version = 1;
+    uint256 public constant override version = 1;
 
     address public immutable override yieldBearingToken;
     address public immutable override backingToken;
@@ -43,11 +44,10 @@ abstract contract TempusPool is ITempusPool {
     IPoolShare public immutable override yieldShare;
 
     address public immutable override controller;
-    address public immutable override owner;
 
     uint256 private immutable initialEstimatedYield;
 
-    FeesConfig feesConfig;
+    FeesConfig private feesConfig;
 
     uint256 public immutable override maxDepositFee;
     uint256 public immutable override maxEarlyRedeemFee;
@@ -88,7 +88,6 @@ abstract contract TempusPool is ITempusPool {
         yieldBearingToken = _yieldBearingToken;
         backingToken = _backingToken;
         controller = ctrl;
-        owner = msg.sender;
         startTime = block.timestamp;
         maturityTime = maturity;
         initialInterestRate = initInterestRate;
@@ -108,11 +107,6 @@ abstract contract TempusPool is ITempusPool {
 
     modifier onlyController() {
         require(msg.sender == controller, "Only callable by TempusController");
-        _;
-    }
-
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Caller is not the owner");
         _;
     }
 
@@ -139,7 +133,7 @@ abstract contract TempusPool is ITempusPool {
     }
 
     function transferFees(address authorizer, address recipient) external override onlyController {
-        require(authorizer == owner, "Only owner can transfer fees.");
+        require(authorizer == owner(), "Only owner can transfer fees.");
         uint256 amount = totalFees;
         totalFees = 0;
 
