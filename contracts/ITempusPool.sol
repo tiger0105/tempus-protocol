@@ -3,9 +3,11 @@ pragma solidity >=0.7.6 <0.9.0;
 pragma abicoder v2;
 
 import "./token/IPoolShare.sol";
+import "./utils/IOwnable.sol";
 
-interface ITempusFees {
-    // The fees are in terms of yield bearing token (YBT).
+/// Setting and transferring of fees are restricted to the owner.
+interface ITempusFees is IOwnable {
+    /// The fees are in terms of yield bearing token (YBT).
     struct FeesConfig {
         uint256 depositPercent;
         uint256 earlyRedeemPercent;
@@ -38,6 +40,7 @@ interface ITempusFees {
     function transferFees(address authorizer, address recipient) external;
 }
 
+/// All state chaging operations are restricted to the controller.
 interface ITempusPool is ITempusFees {
     /// @return The version of the pool.
     function version() external view returns (uint);
@@ -66,9 +69,6 @@ interface ITempusPool is ITempusFees {
 
     /// @return The TempusController address that is authorized to perform restricted actions
     function controller() external view returns (address);
-
-    /// @return Owner that is authorized to perform restricted actions
-    function owner() external view returns (address);
 
     /// @return Start time of the pool.
     function startTime() external view returns (uint256);
