@@ -261,7 +261,7 @@ abstract contract TempusPool is ITempusPool {
 
     function finalize() public override {
         if (matured() && maturityInterestRate == 0) {
-            maturityInterestRate = currentInterestRate();
+            maturityInterestRate = updateInterestRate();
         }
     }
 
