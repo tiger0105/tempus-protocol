@@ -79,7 +79,7 @@ contract YearnTempusPool is TempusPool {
     }
 
     /// @dev The rate precision always matches the BackingToken's precision
-    function interestRateToSharePrice(uint interestRate) internal view override returns (uint) {
+    function interestRateToSharePrice(uint interestRate) internal pure override returns (uint) {
         return interestRate;
     }
 }

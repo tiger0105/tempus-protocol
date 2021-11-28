@@ -49,12 +49,9 @@ abstract contract TempusPool is ITempusPool, ReentrancyGuard, Ownable {
     uint256 private immutable initialEstimatedYield;
 
     FeesConfig private feesConfig;
-
     uint256 public immutable override maxDepositFee;
     uint256 public immutable override maxEarlyRedeemFee;
     uint256 public immutable override maxMatureRedeemFee;
-
-    /// total amount of fees accumulated in pool
     uint256 public override totalFees;
 
     /// Constructs Pool with underlying token, start and maturity date
