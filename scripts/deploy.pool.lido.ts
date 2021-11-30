@@ -29,7 +29,8 @@ async function deploy() {
   const balancerVault = await utils.promptAddress("Enter the address of the Balancer Vault contract", (await utils.getDeployedContractAddress(network.name, 'Vault')));
   const lpName = await utils.promptInput("Enter LP token Name", `Tempus ${YBT_SYMBOL} LP Token`);
   const lpSymbol = await utils.promptInput("Enter LP token Symbol", `TLP${YBT_SYMBOL}`);
-  const amplificationFactor = await utils.promptNumber("Enter initial Amplification Factor", 5, 1, 5000);
+  const amplificationStart = await utils.promptNumber("Enter initial Amplification Factor", 5, 1, 5000);
+  const amplificationEnd = await utils.promptNumber("Enter final Amplification Factor", 95, 1, 5000);
   const swapFeePercentage = await utils.promptNumber("Enter Swap Fee percentage (e.g. - 0.02 to represent 2%)", 0.01, 0, 0.1);
   const pauseWindowDuration = await utils.promptNumber("Enter Pause Window Duration (in seconds)", 3 * MONTH, 0);
   const bufferPeriodDuration = await utils.promptNumber("Enter Buffer Period Duration (in seconds)", MONTH, 0);
@@ -79,7 +80,8 @@ async function deploy() {
     balancerVault,
     lpName,
     lpSymbol,
-    amplificationFactor,
+    amplificationStart,
+    amplificationEnd,
     swapFeePercentage: ethers.utils.parseUnits(swapFeePercentage.toString(), 18).toString(),
     pauseWindowDuration,
     bufferPeriodDuration,
@@ -98,7 +100,8 @@ async function deploy() {
     lpName,
     lpSymbol,
     tempusPoolContract.address,
-    amplificationFactor,
+    amplificationStart,
+    amplificationEnd,
     ethers.utils.parseUnits(swapFeePercentage.toString(), 18).toString(),
     pauseWindowDuration,
     bufferPeriodDuration,

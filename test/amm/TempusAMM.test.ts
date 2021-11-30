@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { NumberOrString } from "../utils/Decimal";
 import { Signer } from "../utils/ContractBase";
-import { TempusPool } from "../utils/TempusPool";
+import { PoolType, TempusPool } from "../utils/TempusPool";
 import { evmMine, evmSetAutomine, expectRevert, increaseTime } from "../utils/Utils";
 import { TempusAMM, TempusAMMJoinKind } from "../utils/TempusAMM";
 import { describeForEachPool } from "../pool-utils/MultiPoolTestSuite";
@@ -19,13 +19,13 @@ interface CreateParams {
   yieldEst:number;
   duration:number;
   amplifyStart:number;
-  amplifyEnd?:number;
+  amplifyEnd:number;
   oneAmpUpdate?:number;
   ammBalanceYield?: number;
   ammBalancePrincipal?:number;
 }
 
-describeForEachPool("TempusAMM", (testFixture:PoolTestFixture) =>
+describeForEachPool.onlyType("TempusAMM", [PoolType.Lido], (testFixture:PoolTestFixture) =>
 {
   let owner:Signer, user:Signer, user1:Signer;
   const SWAP_FEE_PERC:number = 0.02;
@@ -39,11 +39,9 @@ describeForEachPool("TempusAMM", (testFixture:PoolTestFixture) =>
   let tempusAMM:TempusAMM;
   
   async function createPools(params:CreateParams): Promise<void> {
-    const oneAmplifyUpdate = (params.oneAmpUpdate === undefined) ? ONE_AMP_UPDATE_TIME : params.oneAmpUpdate;
-    
     tempusPool = await testFixture.createWithAMM({
       initialRate:1.0, poolDuration:params.duration, yieldEst:params.yieldEst,
-      ammSwapFee:SWAP_FEE_PERC, ammAmplification: params.amplifyStart
+      ammSwapFee:SWAP_FEE_PERC, ammAmplifyStart: params.amplifyStart, ammAmplifyEnd: params.amplifyEnd
     });
 
     tempusAMM = testFixture.amm;
@@ -54,9 +52,6 @@ describeForEachPool("TempusAMM", (testFixture:PoolTestFixture) =>
     await tempusPool.controller.depositYieldBearing(owner, tempusPool, depositAmount, owner);
     if (params.ammBalanceYield != undefined && params.ammBalancePrincipal != undefined) {
       await tempusAMM.provideLiquidity(owner, params.ammBalancePrincipal, params.ammBalanceYield, TempusAMMJoinKind.INIT);
-    }
-    if (params.amplifyEnd != undefined) {
-      await tempusAMM.startAmplificationUpdate(params.amplifyEnd, oneAmplifyUpdate);
     }
   }
 
@@ -85,11 +80,11 @@ describeForEachPool("TempusAMM", (testFixture:PoolTestFixture) =>
 
   it("[getExpectedReturnGivenIn] verifies the expected amount is equivilant to actual amount returned from swapping (TYS to TPS)", async () => {
     const inputAmount = 1;
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, amplifyEnd:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
     await testFixture.setTimeRelativeToPoolStart(0.5);
     const expectedReturn = await tempusAMM.getExpectedReturnGivenIn(inputAmount, true); // TYS --> TPS
     
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, amplifyEnd:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
     await testFixture.setNextBlockTimestampRelativeToPoolStart(0.5);
     await evmSetAutomine(false);
     
@@ -104,11 +99,11 @@ describeForEachPool("TempusAMM", (testFixture:PoolTestFixture) =>
 
   it("[getExpectedReturnGivenIn] verifies the expected amount is equivilant to actual amount returned from swapping (TPS to TYS)", async () => {
     const inputAmount = 1;
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, amplifyEnd:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
     await testFixture.setTimeRelativeToPoolStart(0.5);
     const expectedReturn = await tempusAMM.getExpectedReturnGivenIn(inputAmount, true); // TYS --> TPS
     
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, amplifyEnd:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
     await testFixture.setNextBlockTimestampRelativeToPoolStart(0.5);
     await evmSetAutomine(false);
     try {
@@ -123,10 +118,10 @@ describeForEachPool("TempusAMM", (testFixture:PoolTestFixture) =>
   it("[getExpectedTokensOutGivenBPTIn] verifies the expected amount is equivilant to actual exit from TempusAMM", async () => {
     const inputAmount = 100;
     
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, amplifyEnd:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
     await testFixture.setTimeRelativeToPoolStart(0.5);
     const expectedReturn = await testFixture.amm.getExpectedTokensOutGivenBPTIn(inputAmount);
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, amplifyEnd:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
     await testFixture.setNextBlockTimestampRelativeToPoolStart(0.5);
     
     const balancePrincipalsBefore = +await testFixture.principals.balanceOf(owner);
@@ -139,10 +134,10 @@ describeForEachPool("TempusAMM", (testFixture:PoolTestFixture) =>
   });
 
   it("[getExpectedLPTokensForTokensIn] verifies the expected amount is equivilant to actual join to TempusAMM", async () => {
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, amplifyEnd:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
     await testFixture.setTimeRelativeToPoolStart(0.5);
     const expectedReturn = +await testFixture.amm.getExpectedLPTokensForTokensIn(10, 100);
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, amplifyEnd:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
     await testFixture.setNextBlockTimestampRelativeToPoolStart(0.5);
 
     await evmSetAutomine(false);
@@ -161,7 +156,7 @@ describeForEachPool("TempusAMM", (testFixture:PoolTestFixture) =>
 
   it("[getExpectedBPTInGivenTokensOut] verifies predicted exit amount matches actual exit amount", async () =>
   {
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, amplifyEnd:5, ammBalancePrincipal: 10000, ammBalanceYield: 100000});
     await testFixture.setTimeRelativeToPoolStart(0.5);
 
     const LpBefore = +await testFixture.amm.balanceOf(owner);
@@ -176,7 +171,7 @@ describeForEachPool("TempusAMM", (testFixture:PoolTestFixture) =>
 
   it("checks amplification and invariant in multiple stages", async () =>
   {
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5});
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, amplifyEnd:5});
     let ampInv = await testFixture.amm.getLastInvariant();
     expect(ampInv.invariant).to.equal(0);
     expect(ampInv.amplification).to.equal(0);
@@ -206,7 +201,7 @@ describeForEachPool("TempusAMM", (testFixture:PoolTestFixture) =>
 
   it("checks amplification update reverts with invalid args", async () =>
   {
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5});
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, amplifyEnd:5});
 
     // min amp 
     let invalidAmpUpdate = tempusAMM.startAmplificationUpdate(0, 0);
@@ -240,21 +235,21 @@ describeForEachPool("TempusAMM", (testFixture:PoolTestFixture) =>
 
   it("revert on invalid join kind", async () =>
   {
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5});
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, amplifyEnd:5});
     await tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT);
     (await expectRevert(tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INVALID)));
   });
 
   it("revert on join after maturity", async () =>
   {
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5});
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, amplifyEnd:5});
     await testFixture.fastForwardToMaturity();
     (await expectRevert(tempusAMM.provideLiquidity(owner, 100, 1000, TempusAMMJoinKind.INIT)));
   });
 
   it("checks LP exiting pool", async () =>
   {
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 100, ammBalanceYield: 1000});
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, amplifyEnd:5, ammBalancePrincipal: 100, ammBalanceYield: 1000});
     const preYieldBalance = +await tempusAMM.yieldShare.balanceOf(owner);
     const prePrincipalBalance = +await tempusAMM.principalShare.balanceOf(owner);
     expect(+await tempusAMM.balanceOf(owner)).to.be.within(181, 182);
@@ -268,7 +263,7 @@ describeForEachPool("TempusAMM", (testFixture:PoolTestFixture) =>
 
   it("checks LP exiting pool with exact tokens out", async () =>
   {
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 100, ammBalanceYield: 1000});
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, amplifyEnd:5, ammBalancePrincipal: 100, ammBalanceYield: 1000});
     const preYieldBalance = +await tempusAMM.yieldShare.balanceOf(owner);
     const prePrincipalBalance = +await tempusAMM.principalShare.balanceOf(owner);
     expect(+await tempusAMM.balanceOf(owner)).to.be.within(181, 182);
@@ -282,7 +277,7 @@ describeForEachPool("TempusAMM", (testFixture:PoolTestFixture) =>
 
   it("checks second LP's pool token balance without swaps between", async () =>
   {
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 100, ammBalanceYield: 1000});
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, amplifyEnd:5, ammBalancePrincipal: 100, ammBalanceYield: 1000});
 
     await tempusAMM.principalShare.transfer(owner, user.address, 1000);
     await tempusAMM.yieldShare.transfer(owner, user.address, 1000);
@@ -295,7 +290,7 @@ describeForEachPool("TempusAMM", (testFixture:PoolTestFixture) =>
 
   it("checks rate and second LP's pool token balance with swaps between", async () =>
   {
-    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, ammBalancePrincipal: 100, ammBalanceYield: 1000});
+    await createPools({yieldEst:0.1, duration:ONE_MONTH, amplifyStart:5, amplifyEnd:5, ammBalancePrincipal: 100, ammBalanceYield: 1000});
 
     expect(+await tempusAMM.balanceOf(owner)).to.be.within(181, 182);
     expect(+await tempusAMM.getRate()).to.be.equal(1);
