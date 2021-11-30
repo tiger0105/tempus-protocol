@@ -176,7 +176,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
         (await pool.userState(user)).expect(80, 80, /*yieldBearing:*/120);
     }
 
-    await pool.setTimeRelativeToPoolStart(0.876); // 87.6% of the time, i.e. 14+ days
+    await pool.setTimeRelativeToPoolStart(0.812); // 81.2% of the time, i.e. 13 days
     await pool.setInterestRate(0.2);
 
     await pool.redeemToYBT(user, 10, 10);
@@ -189,7 +189,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
         (await pool.userState(user)).expect(70, 70, /*yieldBearing:*/130);
     }
 
-    await pool.setTimeRelativeToPoolStart(0.95); // 95% of the time, i.e. 15+ days
+    await pool.setTimeRelativeToPoolStart(0.875); // 87.5% of the time, i.e. 14 days
     await pool.setInterestRate(0.1);
 
     await pool.redeemToYBT(user, 70, 70);
@@ -202,6 +202,82 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
         (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/200);
     }
   });
+
+  it.includeIntegration("Should work before maturity with equal shares, with fluctuating yield", async () =>
+  {
+    await pool.create({ initialRate:1.0, poolDuration:16*24*60*60, yieldEst:0.1 });
+    let [owner, user] = pool.signers;
+    await pool.setupAccounts(owner, [[user, 200]]);
+
+    await pool.depositYBT(user, 100, /*recipient:*/user);
+    (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/100);
+
+    await pool.setTimeRelativeToPoolStart(0.125); // 12.5% of the time, i.e. 1 day
+    await pool.setInterestRate(0.9);
+
+    await pool.redeemToYBT(user, 10, 10);
+    if (pool.yieldPeggedToAsset)
+    {
+        (await pool.userState(user)).expect(90, 90, /*yieldBearing:*/99);
+    }
+    else
+    {
+        (await pool.userState(user)).expect(90, 90, /*yieldBearing:*/110);
+    }
+
+    await pool.setTimeRelativeToPoolStart(0.3); // 30% of the time, i.e. ~5 days
+    await pool.setInterestRate(1);
+
+    await pool.redeemToYBT(user, 10, 10);
+    if (pool.yieldPeggedToAsset)
+    {
+        (await pool.userState(user)).expect(80, 80, /*yieldBearing:*/120);
+    }
+    else
+    {
+        (await pool.userState(user)).expect(80, 80, /*yieldBearing:*/120);
+    }
+
+    await pool.setTimeRelativeToPoolStart(0.5); // 50% of the time, i.e. 8 days
+    await pool.setInterestRate(0.6);
+
+    await pool.redeemToYBT(user, 10, 10);
+    if (pool.yieldPeggedToAsset)
+    {
+        (await pool.userState(user)).expect(70, 70, /*yieldBearing:*/78);
+    }
+    else
+    {
+        (await pool.userState(user)).expect(70, 70, /*yieldBearing:*/130);
+    }
+
+    await pool.setTimeRelativeToPoolStart(0.876); // 87.6% of the time, i.e. 14+ days
+    await pool.setInterestRate(0.2);
+
+    await pool.redeemToYBT(user, 10, 10);
+    if (pool.yieldPeggedToAsset)
+    {
+        (await pool.userState(user)).expect(60, 60, /*yieldBearing:*/28);
+    }
+    else
+    {
+        (await pool.userState(user)).expect(60, 60, /*yieldBearing:*/140);
+    }
+
+    await pool.setTimeRelativeToPoolStart(0.95); // 95% of the time, i.e. 15+ days
+    await pool.setInterestRate(1);
+
+    await pool.redeemToYBT(user, 60, 60);
+    if (pool.yieldPeggedToAsset)
+    {
+        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/200);
+    }
+    else
+    {
+        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/200);
+    }
+  });
+
 
   it.includeIntegration("Should work after maturity with negative yield", async () =>
   {
