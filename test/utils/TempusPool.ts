@@ -219,8 +219,7 @@ export class TempusPool extends ContractBase {
           depositPercent:      yieldToken.toBigNum(0.5), // fees are stored in YBT
           earlyRedeemPercent:  yieldToken.toBigNum(1.0),
           matureRedeemPercent: yieldToken.toBigNum(0.5)
-        },
-        "0x00000" /* hardcoded referral code */
+        }
       );
     } else if (type === PoolType.Lido) {
       exchangeRatePrec = 18; // Lido is always 1e18 thanks to ETH
