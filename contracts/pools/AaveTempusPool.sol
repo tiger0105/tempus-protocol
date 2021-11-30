@@ -57,7 +57,7 @@ contract AaveTempusPool is TempusPool {
 
         // Deposit to AAVE
         IERC20(backingToken).safeIncreaseAllowance(address(aavePool), amount);
-        aavePool.deposit(address(backingToken), amount, address(this), 0);
+        aavePool.deposit(address(backingToken), amount, address(this), referrer);
 
         return amount; // With Aave, the of YBT minted equals to the amount of deposited BT
     }
