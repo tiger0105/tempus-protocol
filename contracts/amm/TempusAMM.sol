@@ -95,7 +95,8 @@ contract TempusAMM is BaseMinimalSwapInfoPool, StableMath, IRateProvider {
         string memory name,
         string memory symbol,
         ITempusPool pool,
-        uint256 amplificationParameter,
+        uint256 amplificationStart,
+        uint256 amplificationEnd,
         uint256 swapFeePercentage,
         uint256 pauseWindowDuration,
         uint256 bufferPeriodDuration,
@@ -117,9 +118,6 @@ contract TempusAMM is BaseMinimalSwapInfoPool, StableMath, IRateProvider {
             owner
         )
     {
-        _require(amplificationParameter >= _MIN_AMP, Errors.MIN_AMP);
-        _require(amplificationParameter <= _MAX_AMP, Errors.MAX_AMP);
-
         IPoolShare yieldShare = pool.yieldShare();
         IPoolShare principalShare = pool.principalShare();
 
@@ -140,8 +138,7 @@ contract TempusAMM is BaseMinimalSwapInfoPool, StableMath, IRateProvider {
         _scalingFactor0 = _computeScalingFactor(IERC20(address(token0)));
         _scalingFactor1 = _computeScalingFactor(IERC20(address(token1)));
 
-        uint256 initialAmp = Math.mul(amplificationParameter, _AMP_PRECISION);
-        _setAmplificationData(initialAmp);
+        setAmplificationParameters(amplificationStart, amplificationEnd, pool.startTime(), pool.maturityTime());
     }
 
     function getLastInvariant() external view returns (uint256 lastInvariant, uint256 lastInvariantAmp) {
@@ -678,15 +675,34 @@ contract TempusAMM is BaseMinimalSwapInfoPool, StableMath, IRateProvider {
      * `getAmplificationParameter` have to be corrected to account for this when comparing to `rawEndValue`.
      */
     function startAmplificationParameterUpdate(uint256 rawEndValue, uint256 endTime) external authenticate {
+        (uint256 currentValue, bool isUpdating) = _getAmplificationParameter();
+        _require(!isUpdating, Errors.AMP_ONGOING_UPDATE);
+        uint256 rawStartValue = Math.divDown(currentValue, _AMP_PRECISION);
+        setAmplificationParameters(rawStartValue, rawEndValue, block.timestamp, endTime);
+    }
+
+    /**
+     * @dev Begins changing the amplification parameter from `rawStartValue` to `rawEndValue` over time.
+     * The value will change linearly from `startTime` until  `endTime` is reached, when it will be `rawEndValue`.
+     *
+     * NOTE: Internally, the amplification parameter is represented using higher precision. The values returned by
+     * `getAmplificationParameter` have to be corrected to account for this when comparing to `rawEndValue`.
+     */
+    function setAmplificationParameters(
+        uint256 rawStartValue,
+        uint256 rawEndValue,
+        uint256 startTime,
+        uint256 endTime
+    ) public {
+        _require(rawStartValue >= _MIN_AMP, Errors.MIN_AMP);
+        _require(rawStartValue <= _MAX_AMP, Errors.MAX_AMP);
         _require(rawEndValue >= _MIN_AMP, Errors.MIN_AMP);
         _require(rawEndValue <= _MAX_AMP, Errors.MAX_AMP);
 
-        uint256 duration = Math.sub(endTime, block.timestamp);
+        uint256 duration = Math.sub(endTime, startTime);
         _require(duration >= _MIN_UPDATE_TIME, Errors.AMP_END_TIME_TOO_CLOSE);
 
-        (uint256 currentValue, bool isUpdating) = _getAmplificationParameter();
-        _require(!isUpdating, Errors.AMP_ONGOING_UPDATE);
-
+        uint256 currentValue = Math.mul(rawStartValue, _AMP_PRECISION);
         uint256 endValue = Math.mul(rawEndValue, _AMP_PRECISION);
 
         // daily rate = (endValue / currentValue) / duration * 1 day
@@ -697,7 +713,7 @@ contract TempusAMM is BaseMinimalSwapInfoPool, StableMath, IRateProvider {
             : Math.divUp(Math.mul(1 days, currentValue), Math.mul(endValue, duration));
         _require(dailyRate <= _MAX_AMP_UPDATE_DAILY_RATE, Errors.AMP_RATE_TOO_HIGH);
 
-        _setAmplificationData(currentValue, endValue, block.timestamp, endTime);
+        _setAmplificationData(currentValue, endValue, startTime, endTime);
     }
 
     /**
