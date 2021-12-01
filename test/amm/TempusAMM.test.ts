@@ -25,7 +25,7 @@ interface CreateParams {
   ammBalancePrincipal?:number;
 }
 
-describeForEachPool.onlyType("TempusAMM", [PoolType.Lido], (testFixture:PoolTestFixture) =>
+describeForEachPool("TempusAMM", (testFixture:PoolTestFixture) =>
 {
   let owner:Signer, user:Signer, user1:Signer;
   const SWAP_FEE_PERC:number = 0.02;
@@ -41,7 +41,9 @@ describeForEachPool.onlyType("TempusAMM", [PoolType.Lido], (testFixture:PoolTest
   async function createPools(params:CreateParams): Promise<void> {
     tempusPool = await testFixture.createWithAMM({
       initialRate:1.0, poolDuration:params.duration, yieldEst:params.yieldEst,
-      ammSwapFee:SWAP_FEE_PERC, ammAmplifyStart: params.amplifyStart, ammAmplifyEnd: params.amplifyEnd
+      ammSwapFee:SWAP_FEE_PERC,
+      ammAmplifyStart: params.amplifyStart,
+      ammAmplifyEnd: params.amplifyStart /*NOTE: using Start value here to not trigger update yet */
     });
 
     tempusAMM = testFixture.amm;
@@ -52,6 +54,10 @@ describeForEachPool.onlyType("TempusAMM", [PoolType.Lido], (testFixture:PoolTest
     await tempusPool.controller.depositYieldBearing(owner, tempusPool, depositAmount, owner);
     if (params.ammBalanceYield != undefined && params.ammBalancePrincipal != undefined) {
       await tempusAMM.provideLiquidity(owner, params.ammBalancePrincipal, params.ammBalanceYield, TempusAMMJoinKind.INIT);
+    }
+    if (params.amplifyStart != params.amplifyEnd) {
+      const oneAmplifyUpdate = (params.oneAmpUpdate === undefined) ? ONE_AMP_UPDATE_TIME : params.oneAmpUpdate;
+      await tempusAMM.startAmplificationUpdate(params.amplifyEnd, oneAmplifyUpdate);
     }
   }
 
