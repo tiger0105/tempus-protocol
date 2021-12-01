@@ -73,7 +73,8 @@ export interface TempusAMMParams {
   poolDuration:number; // Pool lifetime duration in seconds
   yieldEst:number; // Estimated initial yield of the pool
   ammSwapFee:number; // Swap fee percentage for TempusAMM
-  ammAmplification:number; // Amplification parameter for TempusAMM
+  ammAmplifyStart:number; // Amplification start value for TempusAMM
+  ammAmplifyEnd:number; // Amplification end value for TempusAMM
 }
 
 // When we create TestPool fixtures with different parameters,
@@ -135,7 +136,7 @@ export abstract class PoolTestFixture {
    * Simplified overload for createPoolWithAMM, giving default parameters for AMM
    */
   public create(params:TempusParams): Promise<TempusPool> {
-    return this.createWithAMM({ ...params, ammSwapFee:0.02, ammAmplification:5 });
+    return this.createWithAMM({ ...params, ammSwapFee:0.02, ammAmplifyStart:5, ammAmplifyEnd:5 });
   }
 
   /**
@@ -333,9 +334,10 @@ export abstract class PoolTestFixture {
     this.poolDuration = p.poolDuration;
     this.yieldEst = p.yieldEst;
 
-    const sig = [this.type, ybtSymbol, p.initialRate, p.poolDuration, p.yieldEst, p.ammSwapFee, p.ammAmplification].join("|");
+    const sig = [this.type, ybtSymbol, p.initialRate, p.poolDuration,
+                 p.yieldEst, p.ammSwapFee, p.ammAmplifyStart, p.ammAmplifyEnd].join("|");
+    
     let f:FixtureState = POOL_FIXTURES[sig];
-
     if (!f) // initialize a new fixture
     {
       const controller = await TempusController.instance();
@@ -358,7 +360,7 @@ export abstract class PoolTestFixture {
         );
 
         // new AMM instance and register the AMM with the controller
-        const amm = await TempusAMM.create(owner, controller, p.ammAmplification, p.ammSwapFee, tempus);
+        const amm = await TempusAMM.create(owner, controller, p.ammAmplifyStart, p.ammAmplifyEnd, p.ammSwapFee, tempus);
 
         // always report the instantiation of new fixtures,
         // because this is a major test bottleneck

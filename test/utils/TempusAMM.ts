@@ -51,8 +51,9 @@ export class TempusAMM extends ContractBase {
   static async create(
     owner: Signer,
     controller: TempusController,
-    amplification: Number,
-    swapFeePercentage: Number, 
+    amplificationStart: number,
+    amplificationEnd: number,
+    swapFeePercentage: number, 
     tempusPool: TempusPool
   ): Promise<TempusAMM> {
     const [sender] = new MockProvider().getWallets();
@@ -68,7 +69,8 @@ export class TempusAMM extends ContractBase {
       "Tempus LP token", 
       "LP", 
       tempusPool.address,
-      amplification, 
+      amplificationStart,
+      amplificationEnd,
       toWei(swapFeePercentage),
       3 * MONTH, 
       MONTH, 

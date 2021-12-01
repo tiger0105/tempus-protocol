@@ -88,6 +88,11 @@ interface MultiPoolSuiteFunction {
    * Indicates this suite should be executed exclusively.
    */
   only: (title:string, fn:(pool:PoolTestFixture) => void) => void;
+
+  /**
+   * Combines only() and type()
+   */
+  onlyType: (title:string, poolTypes:PoolType[], fn:(Pool:PoolTestFixture) => void) => void;
 }
 
 interface IntegrationExclusiveTestFunction extends TestFunction {
@@ -104,6 +109,9 @@ function createDescribeForEachPool(): MultiPoolSuiteFunction {
   f.only = (title:string, fn:(pool:PoolTestFixture) => void) => {
     _describeForEachPoolType(title, ALL_POOLS, /*only*/true, fn);
   };
+  f.onlyType = (title:string, poolTypes:PoolType[], fn:(pool:PoolTestFixture) => void) => {
+    _describeForEachPoolType(title, poolTypes, /*only*/true, fn);
+  }
   return f;
 }
 

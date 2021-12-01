@@ -95,7 +95,8 @@ contract TempusAMM is BaseMinimalSwapInfoPool, StableMath, IRateProvider {
         string memory name,
         string memory symbol,
         ITempusPool pool,
-        uint256 amplificationParameter,
+        uint256 amplificationStart,
+        uint256 amplificationEnd,
         uint256 swapFeePercentage,
         uint256 pauseWindowDuration,
         uint256 bufferPeriodDuration,
@@ -117,8 +118,8 @@ contract TempusAMM is BaseMinimalSwapInfoPool, StableMath, IRateProvider {
             owner
         )
     {
-        _require(amplificationParameter >= _MIN_AMP, Errors.MIN_AMP);
-        _require(amplificationParameter <= _MAX_AMP, Errors.MAX_AMP);
+        _require(amplificationStart >= _MIN_AMP, Errors.MIN_AMP);
+        _require(amplificationStart <= _MAX_AMP, Errors.MAX_AMP);
 
         IPoolShare yieldShare = pool.yieldShare();
         IPoolShare principalShare = pool.principalShare();
@@ -140,8 +141,13 @@ contract TempusAMM is BaseMinimalSwapInfoPool, StableMath, IRateProvider {
         _scalingFactor0 = _computeScalingFactor(IERC20(address(token0)));
         _scalingFactor1 = _computeScalingFactor(IERC20(address(token1)));
 
-        uint256 initialAmp = Math.mul(amplificationParameter, _AMP_PRECISION);
+        uint256 initialAmp = Math.mul(amplificationStart, _AMP_PRECISION);
         _setAmplificationData(initialAmp);
+
+        if (amplificationStart != amplificationEnd) {
+            _require(amplificationStart < amplificationEnd, Errors.MIN_AMP);
+            _startAmplificationParameterUpdate(amplificationEnd, pool.maturityTime());
+        }
     }
 
     function getLastInvariant() external view returns (uint256 lastInvariant, uint256 lastInvariantAmp) {
@@ -678,6 +684,10 @@ contract TempusAMM is BaseMinimalSwapInfoPool, StableMath, IRateProvider {
      * `getAmplificationParameter` have to be corrected to account for this when comparing to `rawEndValue`.
      */
     function startAmplificationParameterUpdate(uint256 rawEndValue, uint256 endTime) external authenticate {
+        _startAmplificationParameterUpdate(rawEndValue, endTime);
+    }
+
+    function _startAmplificationParameterUpdate(uint256 rawEndValue, uint256 endTime) private {
         _require(rawEndValue >= _MIN_AMP, Errors.MIN_AMP);
         _require(rawEndValue <= _MAX_AMP, Errors.MAX_AMP);
 
