@@ -405,6 +405,7 @@ contract TempusController is ReentrancyGuard, Ownable {
         IERC20 principalShares = IERC20(address(targetPool.principalShare()));
         IERC20 yieldShares = IERC20(address(targetPool.yieldShare()));
 
+        (,, IERC20[] memory ammTokens, ) = _getAMMDetailsAndEnsureInitialized(tempusAMM);
         uint256 swapAmount = _deposit(targetPool, tokenAmount, isBackingToken);
 
         yieldShares.safeIncreaseAllowance(address(tempusAMM.getVault()), swapAmount);
@@ -420,9 +421,20 @@ contract TempusController is ReentrancyGuard, Ownable {
 
     function _deposit(
         ITempusPool targetPool,
+        IERC20[] memory ammTokens,
         uint256 tokenAmount,
         bool isBackingToken
-    ) private returns (uint256 mintedShares) {
+    ) private returns (uint256[] memory mintedShares) {
+        uint256[] memory preDepositBalances = new uint256[](2);
+        preDepositBalances[0] = ammTokens[0].balanceOf(address(this));
+        preDepositBalances[1] = ammTokens[1].balanceOf(address(this));
+        mintedShares = new uint256[](2);
+        if (isBackingToken) {
+            ammTokens[0].balanceOf(address(this));
+        }
+        else {
+            
+        }
         mintedShares = isBackingToken
             ? _depositBacking(targetPool, tokenAmount, address(this))
             : _depositYieldBearing(targetPool, tokenAmount, address(this));
