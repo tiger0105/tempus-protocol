@@ -161,19 +161,19 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.depositYBT(user, 100, /*recipient:*/user);
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/100);
 
-    await pool.setTimeRelativeToPoolStart(0.125); // 12.5% of the time, i.e. 1 day
+    await pool.setTimeDaysAfterPoolStart(1);
     await pool.setInterestRate(0.9);
     await redeemAndCheckYBT(user, { redeem: { tps: 10, tys: 10 }, balanceAfter: { tps: 90, tys: 90 }, ybtAfter: { pegged: 99, unpegged: 110 } });
 
-    await pool.setTimeRelativeToPoolStart(0.5); // 50% of the time, i.e. 8 days
+    await pool.setTimeDaysAfterPoolStart(8);
     await pool.setInterestRate(0.6);
     await redeemAndCheckYBT(user, { redeem: { tps: 10, tys: 10 }, balanceAfter: { tps: 80, tys: 80 }, ybtAfter: { pegged: 72, unpegged: 120 } });
 
-    await pool.setTimeRelativeToPoolStart(0.812); // 81.2% of the time, i.e. 13 days
+    await pool.setTimeDaysAfterPoolStart(14);
     await pool.setInterestRate(0.2);
     await redeemAndCheckYBT(user, { redeem: { tps: 10, tys: 10 }, balanceAfter: { tps: 70, tys: 70 }, ybtAfter: { pegged: 26, unpegged: 130 } });
 
-    await pool.setTimeRelativeToPoolStart(0.875); // 87.5% of the time, i.e. 14 days
+    await pool.setTimeDaysAfterPoolStart(15);
     await pool.setInterestRate(0.1);
     await redeemAndCheckYBT(user, { redeem: { tps: 70, tys: 70 }, balanceAfter: { tps: 0, tys: 0 }, ybtAfter: { pegged: 20, unpegged: 200 } });
   });
@@ -187,23 +187,23 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.depositYBT(user, 100, /*recipient:*/user);
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/100);
 
-    await pool.setTimeRelativeToPoolStart(0.125); // 12.5% of the time, i.e. 1 day
+    await pool.setTimeDaysAfterPoolStart(1);
     await pool.setInterestRate(0.9);
     await redeemAndCheckYBT(user, { redeem: { tps: 10, tys: 10 }, balanceAfter: { tps: 90, tys: 90 }, ybtAfter: { pegged: 99, unpegged: 110 } });
 
-    await pool.setTimeRelativeToPoolStart(0.3); // 30% of the time, i.e. ~5 days
+    await pool.setTimeDaysAfterPoolStart(5);
     await pool.setInterestRate(1);
     await redeemAndCheckYBT(user, { redeem: { tps: 10, tys: 10 }, balanceAfter: { tps: 80, tys: 80 }, ybtAfter: { pegged: 120, unpegged: 120 } });
 
-    await pool.setTimeRelativeToPoolStart(0.5); // 50% of the time, i.e. 8 days
+    await pool.setTimeDaysAfterPoolStart(8);
     await pool.setInterestRate(0.6);
     await redeemAndCheckYBT(user, { redeem: { tps: 10, tys: 10 }, balanceAfter: { tps: 70, tys: 70 }, ybtAfter: { pegged: 78, unpegged: 130 } });
 
-    await pool.setTimeRelativeToPoolStart(0.876); // 87.6% of the time, i.e. 14+ days
+    await pool.setTimeDaysAfterPoolStart(13);
     await pool.setInterestRate(0.2);
     await redeemAndCheckYBT(user, { redeem: { tps: 10, tys: 10 }, balanceAfter: { tps: 60, tys: 60 }, ybtAfter: { pegged: 28, unpegged: 140 } });
 
-    await pool.setTimeRelativeToPoolStart(0.95); // 95% of the time, i.e. 15+ days
+    await pool.setTimeDaysAfterPoolStart(14);
     await pool.setInterestRate(1);
     await redeemAndCheckYBT(user, { redeem: { tps: 60, tys: 60 }, balanceAfter: { tps: 0, tys: 0 }, ybtAfter: { pegged: 200, unpegged: 200 } });
   });

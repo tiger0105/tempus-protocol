@@ -272,6 +272,16 @@ export abstract class PoolTestFixture {
   /**
    * Fast forwards time to certain point in time
    */
+  async setTimeDaysAfterPoolStart(days: number): Promise<void> {
+    assert.ok(days > 0);
+    const startTime:number = +await this.tempus.startTime();
+    const desiredTime:number = startTime + (days * 24*60*60);
+    await setEvmTime(desiredTime);
+  }
+
+  /**
+   * Fast forwards time to certain point in time
+   */
   async setTimeRelativeToPoolStart(percentDuration: number): Promise<void> {
     assert.ok(percentDuration >= 0.0 && percentDuration <= 1.0);
     const startTime:number = +await this.tempus.startTime();
