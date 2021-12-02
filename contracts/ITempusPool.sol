@@ -196,6 +196,11 @@ interface ITempusPool is ITempusFees {
         bool toBackingToken
     ) external view returns (uint256);
 
+    /// @dev This updates the underlying pool's interest rate
+    ///      It should be done first thing before deposit/redeem to avoid arbitrage
+    /// @return Updated current Interest Rate, decimal precision depends on specific TempusPool implementation
+    function updateInterestRate() external returns (uint256);
+
     /// @dev This returns the stored Interest Rate of the YBT (Yield Bearing Token) pool
     ///      it is safe to call this after updateInterestRate() was called
     /// @return Stored Interest Rate, decimal precision depends on specific TempusPool implementation
