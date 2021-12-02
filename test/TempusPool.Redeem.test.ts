@@ -2,9 +2,39 @@ import { expect } from "chai";
 import { PoolTestFixture } from "./pool-utils/PoolTestFixture";
 import { describeForEachPool, integrationExclusiveIt as it } from "./pool-utils/MultiPoolTestSuite";
 import { expectRevert } from "./utils/Utils";
+import { Signer } from "./utils/ContractBase";
 
 describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
 {
+  interface ShareExpectation {
+    tps: number,
+    tys: number
+  }
+
+  interface YBTExpectation {
+    pegged: number,
+    unpegged: number
+  }
+
+  interface RedemptionExpectation {
+    redeem: ShareExpectation,
+    balanceAfter: ShareExpectation,
+    ybtAfter: YBTExpectation
+  }
+
+  async function redeemAndCheckYBT(user: Signer, expects: RedemptionExpectation, reason?: string): Promise<void>
+  {
+    await pool.redeemToYBT(user, expects.redeem.tps, expects.redeem.tys);
+    if (pool.yieldPeggedToAsset)
+    {
+        (await pool.userState(user)).expect(expects.balanceAfter.tps, expects.balanceAfter.tys, expects.ybtAfter.pegged, reason);
+    }
+    else
+    {
+        (await pool.userState(user)).expect(expects.balanceAfter.tps, expects.balanceAfter.tys, expects.ybtAfter.unpegged, reason);
+    }
+  }
+
   it.includeIntegration("Should emit correct event on redemption", async () =>
   {
     await pool.createDefault();
@@ -93,8 +123,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.depositYBT(user, 100, /*recipient:*/user);
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/100);
 
-    await pool.redeemToYBT(user, 100, 100);
-    (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/200);
+    await redeemAndCheckYBT(user, { redeem: { tps: 100, tys: 100 }, balanceAfter: { tps: 0, tys: 0 }, ybtAfter: { pegged: 200, unpegged: 200 } });
   });
 
   it.includeIntegration("Should work before maturity with equal shares, with yield", async () =>
@@ -107,16 +136,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/100);
 
     await pool.setInterestRate(2.0);
-    await pool.redeemToYBT(user, 100, 100);
-
-    if (pool.yieldPeggedToAsset)
-    {
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/400);
-    }
-    else
-    {
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/200);
-    }
+    await redeemAndCheckYBT(user, { redeem: { tps: 100, tys: 100 }, balanceAfter: { tps: 0, tys: 0 }, ybtAfter: { pegged: 400, unpegged: 200 } });
   });
 
   it.includeIntegration("Should work before maturity with equal shares, with negative yield", async () =>
@@ -129,16 +149,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/100);
 
     await pool.setInterestRate(0.9);
-    await pool.redeemToYBT(user, 100, 100);
-
-    if (pool.yieldPeggedToAsset)
-    {
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/180);
-    }
-    else
-    {
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/200);
-    }
+    await redeemAndCheckYBT(user, { redeem: { tps: 100, tys: 100 }, balanceAfter: { tps: 0, tys: 0 }, ybtAfter: { pegged: 180, unpegged: 200 } });
   });
 
   it.includeIntegration("Should work before maturity with equal shares, with long period of negative yield", async () =>
@@ -152,55 +163,19 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
 
     await pool.setTimeRelativeToPoolStart(0.125); // 12.5% of the time, i.e. 1 day
     await pool.setInterestRate(0.9);
-
-    await pool.redeemToYBT(user, 10, 10);
-    if (pool.yieldPeggedToAsset)
-    {
-        (await pool.userState(user)).expect(90, 90, /*yieldBearing:*/99);
-    }
-    else
-    {
-        (await pool.userState(user)).expect(90, 90, /*yieldBearing:*/110);
-    }
+    await redeemAndCheckYBT(user, { redeem: { tps: 10, tys: 10 }, balanceAfter: { tps: 90, tys: 90 }, ybtAfter: { pegged: 99, unpegged: 110 } });
 
     await pool.setTimeRelativeToPoolStart(0.5); // 50% of the time, i.e. 8 days
     await pool.setInterestRate(0.6);
-
-    await pool.redeemToYBT(user, 10, 10);
-    if (pool.yieldPeggedToAsset)
-    {
-        (await pool.userState(user)).expect(80, 80, /*yieldBearing:*/72);
-    }
-    else
-    {
-        (await pool.userState(user)).expect(80, 80, /*yieldBearing:*/120);
-    }
+    await redeemAndCheckYBT(user, { redeem: { tps: 10, tys: 10 }, balanceAfter: { tps: 80, tys: 80 }, ybtAfter: { pegged: 72, unpegged: 120 } });
 
     await pool.setTimeRelativeToPoolStart(0.812); // 81.2% of the time, i.e. 13 days
     await pool.setInterestRate(0.2);
-
-    await pool.redeemToYBT(user, 10, 10);
-    if (pool.yieldPeggedToAsset)
-    {
-        (await pool.userState(user)).expect(70, 70, /*yieldBearing:*/26);
-    }
-    else
-    {
-        (await pool.userState(user)).expect(70, 70, /*yieldBearing:*/130);
-    }
+    await redeemAndCheckYBT(user, { redeem: { tps: 10, tys: 10 }, balanceAfter: { tps: 70, tys: 70 }, ybtAfter: { pegged: 26, unpegged: 130 } });
 
     await pool.setTimeRelativeToPoolStart(0.875); // 87.5% of the time, i.e. 14 days
     await pool.setInterestRate(0.1);
-
-    await pool.redeemToYBT(user, 70, 70);
-    if (pool.yieldPeggedToAsset)
-    {
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/20);
-    }
-    else
-    {
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/200);
-    }
+    await redeemAndCheckYBT(user, { redeem: { tps: 70, tys: 70 }, balanceAfter: { tps: 0, tys: 0 }, ybtAfter: { pegged: 20, unpegged: 200 } });
   });
 
   it.includeIntegration("Should work before maturity with equal shares, with fluctuating yield", async () =>
@@ -214,70 +189,24 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
 
     await pool.setTimeRelativeToPoolStart(0.125); // 12.5% of the time, i.e. 1 day
     await pool.setInterestRate(0.9);
-
-    await pool.redeemToYBT(user, 10, 10);
-    if (pool.yieldPeggedToAsset)
-    {
-        (await pool.userState(user)).expect(90, 90, /*yieldBearing:*/99);
-    }
-    else
-    {
-        (await pool.userState(user)).expect(90, 90, /*yieldBearing:*/110);
-    }
+    await redeemAndCheckYBT(user, { redeem: { tps: 10, tys: 10 }, balanceAfter: { tps: 90, tys: 90 }, ybtAfter: { pegged: 99, unpegged: 110 } });
 
     await pool.setTimeRelativeToPoolStart(0.3); // 30% of the time, i.e. ~5 days
     await pool.setInterestRate(1);
-
-    await pool.redeemToYBT(user, 10, 10);
-    if (pool.yieldPeggedToAsset)
-    {
-        (await pool.userState(user)).expect(80, 80, /*yieldBearing:*/120);
-    }
-    else
-    {
-        (await pool.userState(user)).expect(80, 80, /*yieldBearing:*/120);
-    }
+    await redeemAndCheckYBT(user, { redeem: { tps: 10, tys: 10 }, balanceAfter: { tps: 80, tys: 80 }, ybtAfter: { pegged: 120, unpegged: 120 } });
 
     await pool.setTimeRelativeToPoolStart(0.5); // 50% of the time, i.e. 8 days
     await pool.setInterestRate(0.6);
-
-    await pool.redeemToYBT(user, 10, 10);
-    if (pool.yieldPeggedToAsset)
-    {
-        (await pool.userState(user)).expect(70, 70, /*yieldBearing:*/78);
-    }
-    else
-    {
-        (await pool.userState(user)).expect(70, 70, /*yieldBearing:*/130);
-    }
+    await redeemAndCheckYBT(user, { redeem: { tps: 10, tys: 10 }, balanceAfter: { tps: 70, tys: 70 }, ybtAfter: { pegged: 78, unpegged: 130 } });
 
     await pool.setTimeRelativeToPoolStart(0.876); // 87.6% of the time, i.e. 14+ days
     await pool.setInterestRate(0.2);
-
-    await pool.redeemToYBT(user, 10, 10);
-    if (pool.yieldPeggedToAsset)
-    {
-        (await pool.userState(user)).expect(60, 60, /*yieldBearing:*/28);
-    }
-    else
-    {
-        (await pool.userState(user)).expect(60, 60, /*yieldBearing:*/140);
-    }
+    await redeemAndCheckYBT(user, { redeem: { tps: 10, tys: 10 }, balanceAfter: { tps: 60, tys: 60 }, ybtAfter: { pegged: 28, unpegged: 140 } });
 
     await pool.setTimeRelativeToPoolStart(0.95); // 95% of the time, i.e. 15+ days
     await pool.setInterestRate(1);
-
-    await pool.redeemToYBT(user, 60, 60);
-    if (pool.yieldPeggedToAsset)
-    {
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/200);
-    }
-    else
-    {
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/200);
-    }
+    await redeemAndCheckYBT(user, { redeem: { tps: 60, tys: 60 }, balanceAfter: { tps: 0, tys: 0 }, ybtAfter: { pegged: 200, unpegged: 200 } });
   });
-
 
   it.includeIntegration("Should work after maturity with negative yield", async () =>
   {
@@ -289,21 +218,17 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/100);
 
     await pool.setInterestRate(0.9);
-
     if (pool.yieldPeggedToAsset)
     {
         (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/90);
-        await pool.fastForwardToMaturity();
-        await pool.redeemToYBT(user, 100, 100);
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/180);
     }
     else
     {
         (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/100);
-        await pool.fastForwardToMaturity();
-        await pool.redeemToYBT(user, 100, 100);
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/200);
     }
+
+    await pool.fastForwardToMaturity();
+    await redeemAndCheckYBT(user, { redeem: { tps: 100, tys: 100 }, balanceAfter: { tps: 0, tys: 0 }, ybtAfter: { pegged: 180, unpegged: 200 } });
   });
 
   it.includeIntegration("Should work after maturity with negative yield between maturity and redemption", async () =>
@@ -322,15 +247,13 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     if (pool.yieldPeggedToAsset)
     {
         (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/110);
-        await pool.redeemToYBT(user, 100, 100);
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/220);
     }
     else
     {
         (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/100);
-        await pool.redeemToYBT(user, 100, 100);
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/200);
     }
+
+    await redeemAndCheckYBT(user, { redeem: { tps: 100, tys: 100 }, balanceAfter: { tps: 0, tys: 0 }, ybtAfter: { pegged: 220, unpegged: 200 } });
   });
 
   it.includeIntegration("Should work after maturity with unequal shares, without yield", async () =>
@@ -342,8 +265,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.depositYBT(user, 100, /*recipient:*/user);
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/100);
     await pool.fastForwardToMaturity();
-    await pool.redeemToYBT(user, 50, 100);
-    (await pool.userState(user)).expect(50, 0, /*yieldBearing:*/150);
+    await redeemAndCheckYBT(user, { redeem: { tps: 50, tys: 100 }, balanceAfter: { tps: 50, tys: 0 }, ybtAfter: { pegged: 150, unpegged: 150 } });
   });
 
   it.includeIntegration("Should work after maturity with unequal shares, with yield", async () =>
@@ -356,20 +278,18 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/100);
 
     await pool.setInterestRate(2.0);
+
     if (pool.yieldPeggedToAsset)
     {
         (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/200);
-        await pool.fastForwardToMaturity();
-        await pool.redeemToYBT(user, 50, 100);
-        (await pool.userState(user)).expect(50, 0, /*yieldBearing:*/350);
     }
     else
     {
         (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/100);
-        await pool.fastForwardToMaturity();
-        await pool.redeemToYBT(user, 50, 100);
-        (await pool.userState(user)).expect(50, 0, /*yieldBearing:*/175);
     }
+
+    await pool.fastForwardToMaturity();
+    await redeemAndCheckYBT(user, { redeem: { tps: 50, tys: 100 }, balanceAfter: { tps: 50, tys: 0 }, ybtAfter: { pegged: 350, unpegged: 175 } });
   });
 
   it.includeIntegration("Should work after maturity with additional yield after maturity", async () =>
