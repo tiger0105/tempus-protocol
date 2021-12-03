@@ -21,6 +21,9 @@ contract TempusController is ReentrancyGuard, Ownable {
     using UntrustedERC20 for IERC20;
     using AMMBalancesHelper for uint256[];
 
+    /// @return The version of the controller.
+    uint256 public constant version = 1;
+
     /// Registry for valid pools and AMM's to avoid fake address injection
     mapping(address => bool) private registry;
 

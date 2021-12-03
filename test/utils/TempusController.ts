@@ -35,6 +35,13 @@ export class TempusController extends ContractBase {
   }
 
   /**
+   * @returns The version of the controller
+   */
+  async version(): Promise<NumberOrString> {
+    return await this.contract.version();
+  }
+
+  /**
    * Address string of the owner who deployed TempusController
    */
   async owner(): Promise<string> {
