@@ -8,6 +8,7 @@ import { ContractBase, Signer } from '../test/utils/ContractBase';
 import { TempusController } from '../test/utils/TempusController';
 import { DAY, MONTH } from '../test/utils/TempusAMM';
 import { toWei } from '../test/utils/Decimal';
+import { ERC20Ether } from '../test/utils/ERC20Ether';
 
 export interface DeployedPoolInfo {
   address: string;
@@ -86,7 +87,7 @@ interface DeployPoolParams {
   poolType: PoolType;
   owner: Signer;
   backingToken: string;
-  bt: ERC20;
+  bt: ERC20 | ERC20Ether;
   ybt: ERC20;
   maturity: number;
   ybtName: string;
@@ -126,6 +127,7 @@ class DeployLocalForked {
   public async deploy() {
     this.owner = (await ethers.getSigners())[0];
 
+    const eth = new ERC20Ether();
     const Dai = new ERC20("ERC20FixedSupply", 18, (await ethers.getContract('Dai')));
     const Weth = new ERC20("ERC20", 18, (await ethers.getContract("Weth")));
 
@@ -147,7 +149,7 @@ class DeployLocalForked {
       poolType: PoolType.Lido,
       owner: this.owner,
       backingToken: 'ETH',
-      bt: Weth,
+      bt: eth,
       ybt: stETHToken,
       maturity: maturityTimeOneMonth,
       yieldEstimate: 0.01,
@@ -211,7 +213,7 @@ class DeployLocalForked {
       yieldShareAddress: pool.yieldShare.address,
       amm: tempusAMM.address,
       backingToken: params.backingToken,
-      backingTokenAddress: '0x0000000000000000000000000000000000000000',
+      backingTokenAddress: params.bt.address,
       yieldBearingTokenAddress: params.ybt.address,
       protocol: params.poolType,
       yieldBearingToken: params.ybtSymbol,
