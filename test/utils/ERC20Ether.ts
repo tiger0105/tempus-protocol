@@ -8,6 +8,9 @@ import { IERC20 } from "./IERC20";
  * so that we can simplify tests on native ETH based pools
  */
 export class ERC20Ether extends DecimalConvertible implements IERC20 {
+  // Address of this contract - ETH is Zero address
+  address = '0x0000000000000000000000000000000000000000';
+
   constructor() {
     super(18);
   }
