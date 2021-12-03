@@ -31,9 +31,11 @@ describeForEachPool("TempusPool Deploy", (testPool:PoolTestFixture) =>
     expect(await pool.maturityTime()).to.equal(testPool.maturityTime);
   });
 
-  it("Maturity should not be set", async () =>
+  it("Maturity and halting should not be set", async () =>
   {
     expect(await pool.matured()).to.equal(false);
+    expect(await pool.exceptionalHaltTime()).to.equal(null); // Didn't occur yet.
+    expect(await pool.maximumNegativeYieldDuration()).to.equal(7 * 24 * 60 * 60);
   });
 
   it("Interest Rates should be set", async () =>
