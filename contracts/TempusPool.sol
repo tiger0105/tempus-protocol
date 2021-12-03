@@ -28,7 +28,7 @@ abstract contract TempusPool is ITempusPool, ReentrancyGuard, Ownable {
 
     uint256 public constant override version = 1;
 
-    uint256 public constant override maximumNegativeYieldDuration = 7 days;
+    uint256 public immutable override maximumNegativeYieldDuration;
 
     address public immutable override yieldBearingToken;
     address public immutable override backingToken;
@@ -68,6 +68,8 @@ abstract contract TempusPool is ITempusPool, ReentrancyGuard, Ownable {
     /// @param initInterestRate initial interest rate of the pool
     /// @param exchangeRateOne 1.0 expressed in exchange rate decimal precision
     /// @param estimatedFinalYield estimated yield for the whole lifetime of the pool
+    /// @param _maximumNegativeYieldDuration The maximum allowed duration of a continuous
+    ///                                      negative yield period
     /// @param principalsData Tempus Principals name and symbol
     /// @param yieldsData Tempus Yields name and symbol
     /// @param maxFeeSetup Maximum fee percentages that this pool can have,
@@ -80,6 +82,7 @@ abstract contract TempusPool is ITempusPool, ReentrancyGuard, Ownable {
         uint256 initInterestRate,
         uint256 exchangeRateOne,
         uint256 estimatedFinalYield,
+        uint256 _maximumNegativeYieldDuration,
         TokenData memory principalsData,
         TokenData memory yieldsData,
         FeesConfig memory maxFeeSetup
@@ -98,6 +101,7 @@ abstract contract TempusPool is ITempusPool, ReentrancyGuard, Ownable {
         exchangeRateONE = exchangeRateOne;
         yieldBearingONE = 10**ERC20(_yieldBearingToken).decimals();
         initialEstimatedYield = estimatedFinalYield;
+        maximumNegativeYieldDuration = _maximumNegativeYieldDuration;
 
         maxDepositFee = maxFeeSetup.depositPercent;
         maxEarlyRedeemFee = maxFeeSetup.earlyRedeemPercent;

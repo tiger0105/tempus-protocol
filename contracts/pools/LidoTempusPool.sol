@@ -14,6 +14,7 @@ contract LidoTempusPool is TempusPool {
         address controller,
         uint256 maturity,
         uint256 estYield,
+        uint256 maximumNegativeYieldDuration,
         TokenData memory principalsData,
         TokenData memory yieldsData,
         FeesConfig memory maxFeeSetup,
@@ -27,6 +28,7 @@ contract LidoTempusPool is TempusPool {
             token.getPooledEthByShares(1e18),
             1e18,
             estYield,
+            maximumNegativeYieldDuration,
             principalsData,
             yieldsData,
             maxFeeSetup

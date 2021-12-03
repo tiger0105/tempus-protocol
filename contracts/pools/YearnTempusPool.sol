@@ -23,6 +23,7 @@ contract YearnTempusPool is TempusPool {
         address controller,
         uint256 maturity,
         uint256 estYield,
+        uint256 maximumNegativeYieldDuration,
         TokenData memory principalsData,
         TokenData memory yieldsData,
         FeesConfig memory maxFeeSetup
@@ -35,6 +36,7 @@ contract YearnTempusPool is TempusPool {
             vault.pricePerShare(),
             10**(IERC20Metadata(vault.token()).decimals()),
             estYield,
+            maximumNegativeYieldDuration,
             principalsData,
             yieldsData,
             maxFeeSetup
