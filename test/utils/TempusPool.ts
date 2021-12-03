@@ -58,6 +58,9 @@ export function generateTempusAMMLPNameAndSymbol(ybtName:string, ybtSymbol:strin
   };
 }
 
+// TODO: make this configurable
+const maxNegativeYieldDuration:number = 7 * 24 * 60 * 60;
+
 /**
  * Wrapper around TempusPool
  */
@@ -207,6 +210,7 @@ export class TempusPool extends ContractBase {
         controller.address,
         maturityTime,
         parseDecimal(estimatedYield, exchangeRatePrec),
+        maxNegativeYieldDuration,
         /*principalsData*/{
           name: shareNames.principalName, 
           symbol: shareNames.principalSymbol
@@ -230,6 +234,7 @@ export class TempusPool extends ContractBase {
         controller.address,
         maturityTime,
         parseDecimal(estimatedYield, exchangeRatePrec),
+        maxNegativeYieldDuration,
         /*principalsData*/{
           name: shareNames.principalName, 
           symbol: shareNames.principalSymbol
@@ -255,6 +260,7 @@ export class TempusPool extends ContractBase {
         maturityTime,
         parseDecimal(1.0, exchangeRatePrec),
         parseDecimal(estimatedYield, exchangeRatePrec),
+        maxNegativeYieldDuration,
         /*principalsData*/{
           name: shareNames.principalName, 
           symbol: shareNames.principalSymbol
@@ -278,6 +284,7 @@ export class TempusPool extends ContractBase {
         controller.address,
         maturityTime,
         parseDecimal(estimatedYield, exchangeRatePrec),
+        maxNegativeYieldDuration,
         /*principalsData*/{
           name: shareNames.principalName, 
           symbol: shareNames.principalSymbol
