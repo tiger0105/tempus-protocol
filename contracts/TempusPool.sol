@@ -190,10 +190,11 @@ abstract contract TempusPool is ITempusPool, ReentrancyGuard, Ownable, Versioned
             uint256 rate
         )
     {
-        rate = updateAndValidateInterestRate();
+        rate = updateInterestRate();
+        (bool hasMatured, bool hasNegativeYield) = validateInterestRate(rate);
 
-        require(!matured(), "Maturity reached.");
-        require(rate >= initialInterestRate, "Negative yield!");
+        require(!hasMatured, "Maturity reached.");
+        require(!hasNegativeYield, "Negative yield!");
 
         // Collect fees if they are set, reducing the number of tokens for the sender
         // thus leaving more YBT in the TempusPool than there are minted TPS/TYS
@@ -276,9 +277,10 @@ abstract contract TempusPool is ITempusPool, ReentrancyGuard, Ownable, Versioned
         require(IERC20(address(principalShare)).balanceOf(from) >= principalAmount, "Insufficient principals.");
         require(IERC20(address(yieldShare)).balanceOf(from) >= yieldAmount, "Insufficient yields.");
 
-        uint256 currentRate = updateAndValidateInterestRate();
+        uint256 currentRate = updateInterestRate();
+        (bool hasMatured, ) = validateInterestRate(currentRate);
 
-        if (matured()) {
+        if (hasMatured) {
             finalize();
         } else {
             // Redeeming prior to maturity is only allowed in equal amounts.
@@ -452,31 +454,36 @@ abstract contract TempusPool is ITempusPool, ReentrancyGuard, Ownable, Versioned
         return toBackingToken ? backingTokens : yieldTokens;
     }
 
-    /// @dev This updates the underlying pool's interest rate, and also updates the internal
-    ///      tracking of negative interest periods.
-    function updateAndValidateInterestRate() internal returns (uint256 rate) {
-        rate = updateInterestRate();
-
+    /// @dev This updates the internal tracking of negative yield periods,
+    ///      and returns the current status of maturity and interest rates.
+    function validateInterestRate(uint256 rate) private returns (bool hasMatured, bool hasNegativeYield) {
         // Short circuit. No need for the below after maturity.
         if (matured()) {
-            return rate;
+            return (true, rate < initialInterestRate);
         }
 
-        if (rate < initialInterestRate) {
-            if (negativeYieldStartTime == 0) {
-                // Entering a negative yield period.
-                negativeYieldStartTime = block.timestamp;
-            } else {
-                // Already in a negative yield period, exceeding the duration.
-                if ((negativeYieldStartTime + maximumNegativeYieldDuration) <= block.timestamp) {
-                    exceptionalHaltTime = block.timestamp;
-                    assert(matured());
-                }
-            }
-        } else {
+        if (rate >= initialInterestRate) {
             // Reset period.
             negativeYieldStartTime = 0;
+            return (false, false);
         }
+
+        if (negativeYieldStartTime == 0) {
+            // Entering a negative yield period.
+            negativeYieldStartTime = block.timestamp;
+            return (false, true);
+        }
+
+        if ((negativeYieldStartTime + maximumNegativeYieldDuration) <= block.timestamp) {
+            // Already in a negative yield period, exceeding the duration.
+            exceptionalHaltTime = block.timestamp;
+            // It is considered matured now because exceptionalHaltTime is set.
+            assert(matured());
+            return (true, true);
+        }
+
+        // Already in negative yield period, but not for long enough.
+        return (false, true);
     }
 
     /// @dev This updates the underlying pool's interest rate
