@@ -373,7 +373,7 @@ export class TempusPool extends ContractBase {
   /**
    * @returns The version of the pool
    */
-  async version(): Promise<NumberOrString> {
+  async version(): Promise<{ major: number; minor: number; patch: number }> {
     return await this.contract.version();
   }
 
