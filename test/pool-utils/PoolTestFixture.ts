@@ -183,15 +183,15 @@ export abstract class PoolTestFixture {
   /**
    * Redeems TempusShares to YieldBearingTokens
    */
-  async redeemToYBT(user:Signer, principalAmount:NumberOrString, yieldAmount:NumberOrString): Promise<Transaction> {
-    return this.tempus.controller.redeemToYieldBearing(user, this.tempus, principalAmount, yieldAmount);
+  async redeemToYBT(user:Signer, principalAmount:NumberOrString, yieldAmount:NumberOrString, recipient:SignerOrAddress = user): Promise<Transaction> {
+    return this.tempus.controller.redeemToYieldBearing(user, this.tempus, principalAmount, yieldAmount, recipient);
   }
 
   /**
    * Redeems TempusShares to BackingTokens
    */
-  async redeemToBT(user:Signer, principalAmount:NumberOrString, yieldAmount:NumberOrString): Promise<Transaction> {
-    return this.tempus.controller.redeemToBacking(user, this.tempus, principalAmount, yieldAmount);
+  async redeemToBT(user:Signer, principalAmount:NumberOrString, yieldAmount:NumberOrString, recipient:SignerOrAddress = user): Promise<Transaction> {
+    return this.tempus.controller.redeemToBacking(user, this.tempus, principalAmount, yieldAmount, recipient);
   }
 
   /**
@@ -230,9 +230,9 @@ export abstract class PoolTestFixture {
    * @example (await pool.expectRedeemYBT(user, 100, 100)).to.equal('success');
    * @returns RevertMessage assertion, or 'success' assertion
    */
-  async expectRedeemYBT(user:Signer, principalShares:NumberOrString, yieldShares:NumberOrString): Promise<Chai.Assertion> {
+  async expectRedeemYBT(user:Signer, principalShares:NumberOrString, yieldShares:NumberOrString, recipient:SignerOrAddress = user): Promise<Chai.Assertion> {
     try {
-      await this.redeemToYBT(user, principalShares, yieldShares);
+      await this.redeemToYBT(user, principalShares, yieldShares, recipient);
       return expect('success');
     } catch(e) {
       return expect(getRevertMessage(e));
@@ -245,9 +245,9 @@ export abstract class PoolTestFixture {
    * @example (await pool.expectRedeemYBT(user, 100, 100)).to.equal('success');
    * @returns RevertMessage assertion, or 'success' assertion
    */
-  async expectRedeemBT(user:Signer, principalShares:NumberOrString, yieldShares:NumberOrString): Promise<Chai.Assertion> {
+  async expectRedeemBT(user:Signer, principalShares:NumberOrString, yieldShares:NumberOrString, recipient:SignerOrAddress = user): Promise<Chai.Assertion> {
     try {
-      await this.redeemToBT(user, principalShares, yieldShares);
+      await this.redeemToBT(user, principalShares, yieldShares, recipient);
       return expect('success');
     } catch(e) {
       return expect(getRevertMessage(e));
