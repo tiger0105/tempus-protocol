@@ -16,7 +16,10 @@ describeForEachPool("TempusPool Deploy", (testPool:PoolTestFixture) =>
 
   it("Version is correct", async () =>
   {
-    expect(await pool.version()).to.equal(1);
+    const { major, minor, patch } = await pool.version();
+    expect(major).to.equal(1);
+    expect(minor).to.equal(0);
+    expect(patch).to.equal(0);
   });
 
   it("Underlying protocol name is correct", async () => 

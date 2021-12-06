@@ -4,6 +4,7 @@ pragma abicoder v2;
 
 import "./token/IPoolShare.sol";
 import "./utils/IOwnable.sol";
+import "./utils/IVersioned.sol";
 
 /// Setting and transferring of fees are restricted to the owner.
 interface ITempusFees is IOwnable {
@@ -42,10 +43,7 @@ interface ITempusFees is IOwnable {
 }
 
 /// All state changing operations are restricted to the controller.
-interface ITempusPool is ITempusFees {
-    /// @return The version of the pool.
-    function version() external view returns (uint);
-
+interface ITempusPool is ITempusFees, IVersioned {
     /// @return The name of underlying protocol, for example "Aave" for Aave protocol
     function protocolName() external view returns (bytes32);
 

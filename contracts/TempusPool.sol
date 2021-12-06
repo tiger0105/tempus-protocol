@@ -12,6 +12,7 @@ import "./token/YieldShare.sol";
 import "./math/Fixed256xVar.sol";
 import "./utils/Ownable.sol";
 import "./utils/UntrustedERC20.sol";
+import "./utils/Versioned.sol";
 
 /// @dev helper struct to store name and symbol for the token
 struct TokenData {
@@ -21,12 +22,10 @@ struct TokenData {
 
 /// @author The tempus.finance team
 /// @title Implementation of Tempus Pool
-abstract contract TempusPool is ITempusPool, ReentrancyGuard, Ownable {
+abstract contract TempusPool is ITempusPool, ReentrancyGuard, Ownable, Versioned {
     using SafeERC20 for IERC20;
     using UntrustedERC20 for IERC20;
     using Fixed256xVar for uint256;
-
-    uint256 public constant override version = 1;
 
     uint256 public constant override maximumNegativeYieldDuration = 7 days;
 
@@ -83,7 +82,7 @@ abstract contract TempusPool is ITempusPool, ReentrancyGuard, Ownable {
         TokenData memory principalsData,
         TokenData memory yieldsData,
         FeesConfig memory maxFeeSetup
-    ) {
+    ) Versioned(1, 0, 0) {
         require(maturity > block.timestamp, "maturityTime is after startTime");
         require(ctrl != address(0), "controller can not be zero");
         require(initInterestRate > 0, "initInterestRate can not be zero");
