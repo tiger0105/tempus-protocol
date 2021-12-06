@@ -52,12 +52,12 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
 
   describe("deploy", async () => {
     it("Version is correct", async () =>
-  {
-    const { major, minor, patch } = await controller.version();
-    expect(major).to.equal(1);
-    expect(minor).to.equal(0);
-    expect(patch).to.equal(0);
-  });
+    {
+      const { major, minor, patch } = await controller.version();
+      expect(major).to.equal(1);
+      expect(minor).to.equal(0);
+      expect(patch).to.equal(0);
+    });
 
     it("Owner is correct", async () =>
     {
