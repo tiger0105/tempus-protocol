@@ -382,6 +382,14 @@ export class TempusPool extends ContractBase {
   }
 
   /**
+   * @returns The address of the backing token
+   *          or the zero address in case of ETH
+   */
+  async backingToken(): Promise<NumberOrString> {
+    return await this.contract.backingToken();
+  }
+
+  /**
    * @returns The start time of the pool
    */
   async startTime(): Promise<NumberOrString> {
