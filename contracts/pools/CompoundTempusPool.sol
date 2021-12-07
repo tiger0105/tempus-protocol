@@ -51,7 +51,8 @@ contract CompoundTempusPool is TempusPool {
     }
 
     function depositToUnderlying(uint256 backingAmount) internal override returns (uint256) {
-        require(msg.value == 0, "ETH deposits not supported");
+        // ETH deposits are not accepted, because it is rejected in the controller
+        assert(msg.value == 0);
 
         uint preDepositBalance = IERC20(yieldBearingToken).balanceOf(address(this));
 

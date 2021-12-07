@@ -50,7 +50,8 @@ contract AaveTempusPool is TempusPool {
     }
 
     function depositToUnderlying(uint256 amount) internal override returns (uint256) {
-        require(msg.value == 0, "ETH deposits not supported");
+        // ETH deposits are not accepted, because it is rejected in the controller
+        assert(msg.value == 0);
 
         // Deposit to AAVE
         IERC20(backingToken).safeIncreaseAllowance(address(aavePool), amount);
