@@ -65,6 +65,17 @@ describeForEachPool("TempusPool Deposit", (pool:PoolTestFixture) =>
     (await pool.expectDepositYBT(owner, 100, '0x0000000000000000000000000000000000000000')).to.be.equal('recipient can not be 0x0');
   });
 
+  it("Should revert on Eth transfer as BT when not accepted", async () =>
+  {
+    await pool.createDefault();
+    const [owner] = pool.signers;
+
+    // If the backing token is not the zero address, then Ether transfers are not allowed
+    if ((await pool.tempus.backingToken()) !== '0x0000000000000000000000000000000000000000') {
+      (await expectRevert(pool.tempus.controller.depositBacking(owner, pool.tempus, 100, owner, /* ethValue */ 1))).to.equal('given TempusPool\'s Backing Token is not ETH');
+    }
+  });
+
   it("Should revert on random failure from backing pool", async () =>
   {
     await pool.createDefault();
