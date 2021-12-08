@@ -185,22 +185,34 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.setInterestRate(0.9);
     await redeemAndCheckYBT(user, { redeem: { tps: 10, tys: 10 }, balanceAfter: { tps: 90, tys: 90 }, ybtAfter: { pegged: 99, unpegged: 110 } });
 
-    await pool.setTimeDaysAfterPoolStart(8);
+    // This is only 6 days in negative yield, so should not trigger a halt.
+    await pool.setTimeDaysAfterPoolStart(7);
     await pool.setInterestRate(0.6);
     await redeemAndCheckYBT(user, { redeem: { tps: 10, tys: 10 }, balanceAfter: { tps: 80, tys: 80 }, ybtAfter: { pegged: 72, unpegged: 120 } });
+    expect(await pool.tempus.matured()).to.equal(false);
 
-    await pool.setTimeDaysAfterPoolStart(14);
-    await pool.setInterestRate(0.2);
-    await redeemAndCheckYBT(user, { redeem: { tps: 10, tys: 10 }, balanceAfter: { tps: 70, tys: 70 }, ybtAfter: { pegged: 26, unpegged: 130 } });
-
-    await pool.setTimeDaysAfterPoolStart(15);
-    await pool.setInterestRate(0.1);
-    await redeemAndCheckYBT(user, { redeem: { tps: 70, tys: 70 }, balanceAfter: { tps: 0, tys: 0 }, ybtAfter: { pegged: 20, unpegged: 200 } });
+    // This is the 7th day of negative yield.
+    await pool.setTimeDaysAfterPoolStart(8.1);
+    // This transaction will trigger the halting, and will work as redemption after maturity.
+    // This means redeeming in unequal shares is possible.
+    await redeemAndCheckYBT(user, { redeem: { tps: 20, tys: 10 }, balanceAfter: { tps: 60, tys: 70 }, ybtAfter: { pegged: 84, unpegged: 140 } });
+    // Try the unequal redemption with more TYS too.
+    await redeemAndCheckYBT(user, { redeem: { tps: 10, tys: 20 }, balanceAfter: { tps: 50, tys: 50 }, ybtAfter: { pegged: 90, unpegged: 150 } });
 
     // Check that the pool HAS matured/halted yet.
     expect(await pool.tempus.matured()).to.equal(true);
     // TODO: extract expected timestamp from the helpers above
     expect(await pool.tempus.exceptionalHaltTime()).to.not.equal(null);
+
+    await pool.setTimeDaysAfterPoolStart(14);
+    await pool.setInterestRate(0.2);
+    await redeemAndCheckYBT(user, { redeem: { tps: 25, tys: 25 }, balanceAfter: { tps: 25, tys: 25 }, ybtAfter: { pegged: 35, unpegged: 175 } });
+
+    // Move past the duration and ensure a lower rate is used.
+    await pool.setTimeDaysAfterPoolStart(17);
+    await pool.setInterestRate(0.1);
+    // Redemeem the remainder.
+    await redeemAndCheckYBT(user, { redeem: { tps: 25, tys: 25 }, balanceAfter: { tps: 0, tys: 0 }, ybtAfter: { pegged: 20, unpegged: 200 } });
   });
 
   it.includeIntegration("Should work before maturity with equal shares, with fluctuating yield", async () =>
