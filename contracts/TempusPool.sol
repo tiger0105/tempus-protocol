@@ -155,7 +155,8 @@ abstract contract TempusPool is ITempusPool, ReentrancyGuard, Ownable, Versioned
             uint256 rate
         )
     {
-        require(backingTokenAmount > 0, "backingTokenAmount must be greater than 0");
+        // Enforced by the controller.
+        assert(backingTokenAmount > 0);
 
         depositedYBT = depositToUnderlying(backingTokenAmount);
         assert(depositedYBT > 0);
@@ -174,7 +175,8 @@ abstract contract TempusPool is ITempusPool, ReentrancyGuard, Ownable, Versioned
             uint256 rate
         )
     {
-        require(yieldTokenAmount > 0, "yieldTokenAmount must be greater than 0");
+        // Enforced by the controller.
+        assert(yieldTokenAmount > 0);
 
         (mintedShares, depositedBT, fee, rate) = _mintShares(yieldTokenAmount, recipient);
     }
