@@ -76,6 +76,20 @@ describeForEachPool("TempusPool Deposit", (pool:PoolTestFixture) =>
     }
   });
 
+  it("Should revert on mismatched Eth transfer as BT when it is accepted", async () =>
+  {
+    await pool.createDefault();
+    const [owner] = pool.signers;
+
+    // If the backing token is the zero address, then Ether transfers are allowed
+    if ((await pool.tempus.backingToken()) === '0x0000000000000000000000000000000000000000') {
+      // These two amounts are expected to be equal, but in this case they are deliberately different.
+      const depositAmount = 100;
+      const ethValue = 1;
+      (await expectRevert(pool.tempus.controller.depositBacking(owner, pool.tempus, depositAmount, owner, ethValue))).to.equal('ETH value does not match provided amount');
+    }
+  });
+
   it("Should revert on random failure from backing pool", async () =>
   {
     await pool.createDefault();
