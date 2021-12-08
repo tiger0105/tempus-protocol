@@ -41,10 +41,6 @@ export class LidoTestPool extends PoolTestFixture {
   async deposit(user:Signer, amount:number): Promise<void> {
     await this.lido.submit(user, amount);
   }
-  async depositBT(user:Signer, backingTokenAmount:number, recipient:Signer = user): Promise<Transaction> {
-    // sends ETH value with tx
-    return this.tempus.controller.depositBacking(user, this.tempus, backingTokenAmount, recipient, backingTokenAmount);
-  }
   async createWithAMM(params:TempusAMMParams): Promise<TempusPool> {
     return await this.initPool(params, this.YIELD_TOKEN.name, this.YIELD_TOKEN.symbol, async () => {
       if (this.integration) {
