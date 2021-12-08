@@ -13,6 +13,46 @@ import { TempusAMM } from "../utils/TempusAMM";
 import { PoolShare } from "../utils/PoolShare";
 import { strict as assert } from 'assert';
 
+export interface DepositAmounts {
+  bt:number;
+  ybt:number;
+}
+
+export interface ShareExpectation {
+  tps:number;
+  tys:number;
+}
+
+export interface YBTExpectation {
+  pegged:number;
+  unpegged:number;
+}
+
+export interface WalletExpectation {
+  shares:ShareExpectation;
+  ybt:YBTExpectation;
+}
+
+export interface YBTDepositExpectation {
+  ybtAmount:number;
+  balanceAfter:ShareExpectation;
+  ybtAfter:YBTExpectation;
+}
+
+export interface RedemptionExpectation {
+  amount:ShareExpectation;
+  balanceAfter:ShareExpectation;
+  ybtAfter:YBTExpectation;
+}
+
+export function BT(amount:number): DepositAmounts {
+  return { bt:amount, ybt:0 };
+}
+
+export function YBT(amount:number): DepositAmounts {
+  return { bt:0, ybt:amount };
+}
+
 export class UserState {
   principalShares:Number;
   yieldShares:Number;
@@ -331,6 +371,41 @@ export abstract class PoolTestFixture {
     state.yieldPeggedToAsset = this.yieldPeggedToAsset;
     state.yieldBearingEpsilon = Number(formatDecimal(BigNumber.from(1), this.ybt.decimals));
     return state;
+  }
+
+  /**
+   * TESTING UTILITY checks user state for TPS+TYS balance and YBT balance
+   * @param user User whose wallet to check
+   * @param wallet All wallet check parameters
+   * @param message Description of what we expected to happen
+   */
+  async checkWallet(user:Signer, wallet:WalletExpectation, message?:string): Promise<void> {
+    const us = await this.userState(user);
+    us.expectMulti(wallet.shares.tps, wallet.shares.tys, wallet.ybt.pegged, wallet.ybt.unpegged, message);
+  }
+
+  /**
+   * TESTING UTILITY: does a depositYBT and then validates user 
+   *                  wallet balances
+   * @param user User who is depositing and receiving shares
+   * @param expects All the deposit and checks parameters
+   * @param message Description of what we expected to happen
+   */
+  async depositAndCheck(user:Signer, expects:YBTDepositExpectation, message?:string): Promise<void> {
+    await this.depositYBT(user, expects.ybtAmount);
+    await this.checkWallet(user, {shares:expects.balanceAfter, ybt:expects.ybtAfter}, message);
+  }
+
+  /**
+   * TESTING UTILITY: does a redeemToYBT and then validates user
+   *                  wallet balances
+   * @param user User who is redeeming shares and receiving tokens
+   * @param expects All the redemption and checks parameters
+   * @param message Description of what we expected to happen
+   */
+  async redeemAndCheck(user:Signer, expects:RedemptionExpectation, message?:string): Promise<void> {
+    await this.redeemToYBT(user, expects.amount.tps, expects.amount.tys);
+    await this.checkWallet(user, {shares:expects.balanceAfter, ybt:expects.ybtAfter}, message);
   }
 
   protected async initPool(
