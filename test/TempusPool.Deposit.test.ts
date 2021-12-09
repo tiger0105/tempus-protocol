@@ -43,11 +43,18 @@ describeForEachPool("TempusPool Deposit", (pool:PoolTestFixture) =>
     );
   });
 
-  it.includeIntegration("Should revert on deposit 0", async () =>
+  it.includeIntegration("Should revert on depositing 0 BT", async () =>
   {
     await pool.createDefault();
     const [owner] = pool.signers;
-    (await pool.expectDepositBT(owner, 0)).to.not.be.equal('success');
+    (await pool.expectDepositBT(owner, 0)).to.be.equal('backingTokenAmount is 0');
+  });
+
+  it.includeIntegration("Should revert on depositing 0 YBT", async () =>
+  {
+    await pool.createDefault();
+    const [owner] = pool.signers;
+    (await pool.expectDepositYBT(owner, 0)).to.be.equal('yieldTokenAmount is 0');
   });
 
   it("Should revert on bad recipient (address 0) with BT", async () =>
