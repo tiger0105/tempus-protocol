@@ -124,6 +124,9 @@ const POOL_FIXTURES: { [signature: string]: FixtureState } = {};
 export abstract class PoolTestFixture {
   type:PoolType;
 
+  // True if the pool accepts/requires Ether on deposits
+  acceptsEther:boolean;
+
   // if true, underlying pool pegs YieldToken 1:1 to BackingToken
   // ex true: deposit(100) with rate 1.0 will yield 100 TPS and TYS
   // ex false: deposit(100) with rate 1.2 will yield 120 TPS and TYS
@@ -160,8 +163,9 @@ export abstract class PoolTestFixture {
   /** Tempus Yield Share */
   yields:PoolShare; 
 
-  constructor(type:PoolType, yieldPeggedToAsset:boolean, integration:boolean) { 
+  constructor(type:PoolType, acceptsEther:boolean, yieldPeggedToAsset:boolean, integration:boolean) {
     this.type = type;
+    this.acceptsEther = acceptsEther;
     this.yieldPeggedToAsset = yieldPeggedToAsset;
     this.integration = integration;
   }
@@ -204,7 +208,7 @@ export abstract class PoolTestFixture {
   /**
    * Deposit BackingTokens into the UNDERLYING pool and receive YBT
    */
-   abstract deposit(user:Signer, amount:number): Promise<void>;
+  abstract deposit(user:Signer, amount:number): Promise<void>;
 
   /**
    * Deposit YieldBearingTokens into TempusPool
@@ -297,7 +301,7 @@ export abstract class PoolTestFixture {
   /**
    * Finalize the pool after maturity
    */
-   async finalize(): Promise<void> {
+  async finalize(): Promise<void> {
     return this.tempus.finalize();
   }
 
@@ -475,4 +479,3 @@ export abstract class PoolTestFixture {
     return this.tempus;
   }
 }
-

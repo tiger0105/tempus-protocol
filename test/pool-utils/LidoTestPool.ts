@@ -13,7 +13,7 @@ export class LidoTestPool extends PoolTestFixture {
   ASSET_TOKEN:TokenInfo;
   YIELD_TOKEN:TokenInfo;
   constructor(ASSET_TOKEN:TokenInfo, YIELD_TOKEN:TokenInfo, integration:boolean) {
-    super(PoolType.Lido, /*yieldPeggedToAsset:*/true, integration);
+    super(PoolType.Lido, /*acceptsEther*/true, /*yieldPeggedToAsset:*/true, integration);
     this.ASSET_TOKEN = ASSET_TOKEN;
     this.YIELD_TOKEN = YIELD_TOKEN;
   }

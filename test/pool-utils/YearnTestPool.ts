@@ -10,7 +10,7 @@ export class YearnTestPool extends PoolTestFixture {
   ASSET_TOKEN:TokenInfo;
   YIELD_TOKEN:TokenInfo;
   constructor(ASSET_TOKEN:TokenInfo, YIELD_TOKEN:TokenInfo, integration:boolean) {
-    super(PoolType.Yearn, /*yieldPeggedToAsset:*/false, integration);
+    super(PoolType.Yearn, /*acceptsEther*/false, /*yieldPeggedToAsset:*/false, integration);
     this.ASSET_TOKEN = ASSET_TOKEN;
     this.YIELD_TOKEN = YIELD_TOKEN;
   }
