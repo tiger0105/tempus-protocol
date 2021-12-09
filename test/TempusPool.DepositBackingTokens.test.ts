@@ -5,6 +5,56 @@ import { expectRevert } from "./utils/Utils";
 
 describeForEachPool("TempusPool DepositBackingTokens", (pool:PoolTestFixture) =>
 {
+  it.includeIntegration("Should revert on depositing 0 BT", async () =>
+  {
+    await pool.createDefault();
+    const [owner] = pool.signers;
+    (await pool.expectDepositBT(owner, 0)).to.be.equal('backingTokenAmount is 0');
+  });
+
+  it("Should revert on bad recipient (address 0) with BT", async () =>
+  {
+    await pool.createDefault();
+    const [owner] = pool.signers;
+    await pool.asset.approve(owner, pool.tempus.controller.address, 100);
+    (await pool.expectDepositBT(owner, 100, '0x0000000000000000000000000000000000000000')).to.be.equal('recipient can not be 0x0');
+  });
+
+  it("Should revert on Eth transfer as BT when not accepted", async () =>
+  {
+    await pool.createDefault();
+    const [owner] = pool.signers;
+
+    // If the backing token is not the zero address, then Ether transfers are not allowed
+    if ((await pool.tempus.backingToken()) !== '0x0000000000000000000000000000000000000000') {
+      (await expectRevert(pool.tempus.controller.depositBacking(owner, pool.tempus, 100, owner, /* ethValue */ 1))).to.equal('given TempusPool\'s Backing Token is not ETH');
+    }
+  });
+
+  it("Should revert on mismatched Eth transfer as BT when it is accepted", async () =>
+  {
+    await pool.createDefault();
+    const [owner] = pool.signers;
+
+    // If the backing token is the zero address, then Ether transfers are allowed
+    if ((await pool.tempus.backingToken()) === '0x0000000000000000000000000000000000000000') {
+      // These two amounts are expected to be equal, but in this case they are deliberately different.
+      const depositAmount = 100;
+      const ethValue = 1;
+      (await expectRevert(pool.tempus.controller.depositBacking(owner, pool.tempus, depositAmount, owner, ethValue))).to.equal('ETH value does not match provided amount');
+    }
+  });
+
+  it("Should revert on random failure on deposit", async () =>
+  {
+    await pool.createDefault();
+    const [owner] = pool.signers;
+    await pool.forceFailNextDepositOrRedeem();
+
+    await pool.asset.approve(owner, pool.tempus.controller.address, 100);
+    (await pool.expectDepositBT(owner, 100)).to.not.equal('success');
+  });
+
   it.includeIntegration("Should issue appropriate shares after depositing Backing Tokens", async () =>
   {
     const depositAmount = 100;
@@ -12,7 +62,7 @@ describeForEachPool("TempusPool DepositBackingTokens", (pool:PoolTestFixture) =>
     let [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 500]]);
     (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/500);
-    
+
     await pool.asset.approve(user, pool.tempus.controller.address, depositAmount);
     (await pool.expectDepositBT(user, depositAmount)).to.equal('success');
 
