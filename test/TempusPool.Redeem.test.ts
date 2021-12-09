@@ -1,10 +1,22 @@
 import { expect } from "chai";
-import { PoolTestFixture, YBT } from "./pool-utils/PoolTestFixture";
+import { PoolTestFixture, YBTDepositExpectation, YBTRedeemExpectation } from "./pool-utils/PoolTestFixture";
 import { describeForEachPool, integrationExclusiveIt as it } from "./pool-utils/MultiPoolTestSuite";
 import { expectRevert } from "./utils/Utils";
 
 describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
 {
+  const deposit = (user, args:YBTDepositExpectation, message?) => pool.depositAndCheck(user, args, message);
+  const redeem = (user, args:YBTRedeemExpectation, message?) => pool.redeemAndCheck(user, args, message);
+
+  interface RateAndDaysParams { rate:number, daysAfterStart:number; }
+
+  function setRateAndDaysAfterStart(params:RateAndDaysParams): Promise<[void,void]> {
+    return Promise.all([
+      pool.setTimeDaysAfterPoolStart(params.daysAfterStart),
+      pool.setInterestRate(params.rate)
+    ]);
+  }
+
   it.includeIntegration("Should emit correct event on redemption", async () =>
   {
     await pool.createDefault();
@@ -69,12 +81,8 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.createDefault();
     let [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 100]]);
-    await pool.depositAndCheck(user,
-      { ybtAmount:100, balanceAfter:{tps:100, tys:100}, ybtAfter:{pegged:0, unpegged:0} },
-      "deposit 100 with rate 1, should receive 100 TPS+TYS"
-    );
-    await pool.redeemToYBT(user, 100, 100);
-    (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/100, "redeem amount should be equal to original deposit");
+    await deposit(user, { ybtAmount:100, pegged:{tps:100, tys:100, ybt:0}, unpegged:{tps:100, tys:100, ybt:0} }, "deposit 100 with rate 1");
+    await redeem(user, {amount:{ tps:100, tys:100 }, pegged:{ tps:0, tys:0, ybt:100 }, unpegged:{ tps:0, tys:0, ybt:100}}, "redeem amount should be equal to original deposit");
   });
 
   it.includeIntegration("Should fail with insufficient share balances", async () =>
@@ -82,10 +90,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.createDefault();
     let [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 100]]);
-    await pool.depositAndCheck(user,
-      { ybtAmount:100, balanceAfter:{tps:100, tys:100}, ybtAfter:{pegged:0, unpegged:0} },
-      "deposit 100 with rate 1, should receive 100 TPS+TYS"
-    );
+    await deposit(user, { ybtAmount:100, pegged:{tps:100, tys:100, ybt:0}, unpegged:{tps:100, tys:100, ybt:0} }, "deposit 100 with rate 1");
 
     (await pool.expectRedeemYBT(user, 150, 100)).to.equal("Insufficient principals.");
     (await pool.expectRedeemYBT(user, 100, 150)).to.equal("Insufficient yields.");
@@ -98,10 +103,7 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.createDefault();
     let [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 200]]);
-    await pool.depositAndCheck(user,
-      { ybtAmount:100, balanceAfter:{tps:100, tys:100}, ybtAfter:{pegged:100, unpegged:100} },
-      "deposit 100 with rate 1 all balances should be 100"
-    );
+    await deposit(user, { ybtAmount:100, pegged:{tps:100, tys:100, ybt:100}, unpegged:{tps:100, tys:100, ybt:100} }, "deposit 100 with rate 1");
 
     (await pool.expectRedeemYBT(user, 50, 100)).to.equal("Inequal redemption not allowed before maturity.");
   });
@@ -111,13 +113,9 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.createDefault();
     let [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 200]]);
-    await pool.depositAndCheck(user,
-      { ybtAmount:100, balanceAfter:{tps:100, tys:100}, ybtAfter:{pegged:100, unpegged:100} },
-      "deposit 100 with rate 1 all balances should be 100"
-    );
-    await pool.redeemAndCheck(user,
-      { amount:{tps:100, tys:100}, balanceAfter:{tps:0, tys:0}, ybtAfter:{pegged:200, unpegged:200} },
-      "redeem 100+100 with rate 1 should be 200/200 YBT"
+    await deposit(user, { ybtAmount:100, pegged:{tps:100, tys:100, ybt:100}, unpegged:{tps:100, tys:100, ybt:100} }, "deposit 100 with rate 1");
+    await redeem(user, { amount:{tps:100, tys:100}, pegged:{tps:0, tys:0, ybt:200}, unpegged:{tps:0, tys:0, ybt:200} },
+      "redeem 100+100 with rate 1"
     );
   });
 
@@ -126,16 +124,10 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.createDefault();
     let [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 200]]);
-    await pool.depositAndCheck(user,
-      { ybtAmount:100, balanceAfter:{tps:100, tys:100}, ybtAfter:{pegged:100, unpegged:100} },
-      "deposit 100 with rate 1 all balances should be 100"
-    );
+    await deposit(user, { ybtAmount:100, pegged:{tps:100, tys:100, ybt:100}, unpegged:{tps:100, tys:100, ybt:100} }, "deposit 100 with rate 1");
 
     await pool.setInterestRate(2.0);
-    await pool.redeemAndCheck(user,
-      { amount:{tps:100, tys:100}, balanceAfter:{tps:0, tys:0}, ybtAfter:{pegged:400, unpegged:200} },
-      "redeem 100+100 with rate 2 should be 400/200 YBT"
-    );
+    await redeem(user, { amount:{tps:100, tys:100}, pegged:{tps:0, tys:0, ybt:400}, unpegged:{tps:0, tys:0, ybt:200} }, "redeem 100+100 with rate 2");
   });
 
   it.includeIntegration("Should work before maturity with equal shares, with negative yield", async () =>
@@ -143,13 +135,10 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.createDefault();
     let [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 200]]);
-    await pool.depositAndCheck(user,
-      { ybtAmount:100, balanceAfter:{tps:100, tys:100}, ybtAfter:{pegged:100, unpegged:100} },
-      "deposit 100 with rate 1 all balances should be 100"
-    );
+    await deposit(user, { ybtAmount:100, pegged:{tps:100, tys:100, ybt:100}, unpegged:{tps:100, tys:100, ybt:100} }, "deposit 100 with rate 1");
 
     await pool.setInterestRate(0.9);
-    await pool.redeemAndCheck(user, { amount: { tps: 100, tys: 100 }, balanceAfter: { tps: 0, tys: 0 }, ybtAfter: { pegged: 180, unpegged: 200 } });
+    await redeem(user, { amount:{tps:100, tys:100}, pegged:{tps:0, tys:0, ybt:180}, unpegged:{tps:0, tys:0, ybt:200} }, "redeem 100+100 with rate 0.9");
   });
 
   it.includeIntegration("Should work before maturity with equal shares, with long period of negative yield", async () =>
@@ -157,43 +146,36 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.create({ initialRate:1.0, poolDuration:16*24*60*60, yieldEst:0.1 });
     let [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 200]]);
-    await pool.depositAndCheck(user,
-      { ybtAmount:100, balanceAfter:{tps:100, tys:100}, ybtAfter:{pegged:100, unpegged:100} },
-      "deposit 100 with rate 1 all balances should be 100"
-    );
+    await deposit(user, { ybtAmount:100, pegged:{tps:100, tys:100, ybt:100}, unpegged:{tps:100, tys:100, ybt:100} }, "deposit 100 with rate 1");
 
-    await pool.setTimeDaysAfterPoolStart(1);
-    await pool.setInterestRate(0.9);
-    await pool.redeemAndCheck(user, { amount: { tps: 10, tys: 10 }, balanceAfter: { tps: 90, tys: 90 }, ybtAfter: { pegged: 99, unpegged: 110 } });
+    await setRateAndDaysAfterStart({ rate:0.9, daysAfterStart:1 });
+    await redeem(user, { amount:{tps:10, tys:10}, pegged:{tps:90, tys:90, ybt:99}, unpegged:{tps:90, tys:90, ybt:110} }, "redeem 10+10 with rate 0.9");
 
     // This is only 6 days in negative yield, so should not trigger a halt.
-    await pool.setTimeDaysAfterPoolStart(7);
-    await pool.setInterestRate(0.6);
-    await pool.redeemAndCheck(user, { amount: { tps: 10, tys: 10 }, balanceAfter: { tps: 80, tys: 80 }, ybtAfter: { pegged: 72, unpegged: 120 } });
-    expect(await pool.tempus.matured()).to.equal(false);
+    await setRateAndDaysAfterStart({ rate:0.6, daysAfterStart:7 });
+    await redeem(user, { amount:{tps:10, tys:10}, pegged:{tps:80, tys:80, ybt:72}, unpegged:{tps:80, tys:80, ybt:120} });
+    expect(await pool.tempus.matured()).to.be.false;
 
     // This is the 7th day of negative yield.
-    await pool.setTimeDaysAfterPoolStart(8.1);
+    await setRateAndDaysAfterStart({ rate:0.6, daysAfterStart:8.1 });
     // This transaction will trigger the halting, and will work as redemption after maturity.
     // This means redeeming in unequal shares is possible.
-    await pool.redeemAndCheck(user, { amount: { tps: 20, tys: 10 }, balanceAfter: { tps: 60, tys: 70 }, ybtAfter: { pegged: 84, unpegged: 140 } });
+    await redeem(user, { amount:{tps:20, tys:10}, pegged:{tps:60, tys:70, ybt:84}, unpegged:{tps:60, tys:70, ybt:140} });
     // Try the unequal redemption with more TYS too.
-    await pool.redeemAndCheck(user, { amount: { tps: 10, tys: 20 }, balanceAfter: { tps: 50, tys: 50 }, ybtAfter: { pegged: 90, unpegged: 150 } });
+    await redeem(user, { amount:{tps:10, tys:20}, pegged:{tps:50, tys:50, ybt:90}, unpegged:{tps:50, tys:50, ybt:150} });
 
     // Check that the pool HAS matured/halted yet.
-    expect(await pool.tempus.matured()).to.equal(true);
+    expect(await pool.tempus.matured()).to.be.true;
     // TODO: extract expected timestamp from the helpers above
-    expect(await pool.tempus.exceptionalHaltTime()).to.not.equal(null);
+    expect(await pool.tempus.exceptionalHaltTime()).to.not.be.null;
 
-    await pool.setTimeDaysAfterPoolStart(14);
-    await pool.setInterestRate(0.2);
-    await pool.redeemAndCheck(user, { amount: { tps: 25, tys: 25 }, balanceAfter: { tps: 25, tys: 25 }, ybtAfter: { pegged: 35, unpegged: 175 } });
+    await setRateAndDaysAfterStart({ rate:0.2, daysAfterStart:14 });
+    await redeem(user, { amount:{tps:25, tys:25}, pegged:{tps:25, tys:25, ybt:35}, unpegged:{tps:25, tys:25, ybt:175} });
 
     // Move past the duration and ensure a lower rate is used.
-    await pool.setTimeDaysAfterPoolStart(17);
-    await pool.setInterestRate(0.1);
+    await setRateAndDaysAfterStart({ rate:0.1, daysAfterStart:17 });
     // Redemeem the remainder.
-    await pool.redeemAndCheck(user, { amount: { tps: 25, tys: 25 }, balanceAfter: { tps: 0, tys: 0 }, ybtAfter: { pegged: 20, unpegged: 200 } });
+    await redeem(user, { amount:{tps:25, tys:25}, pegged:{tps:0, tys:0, ybt:20}, unpegged:{tps:0, tys:0, ybt:200} });
   });
 
   it.includeIntegration("Should work before maturity with equal shares, with fluctuating yield", async () =>
@@ -201,34 +183,28 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.create({ initialRate:1.0, poolDuration:16*24*60*60, yieldEst:0.1 });
     let [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 200]]);
-    await pool.depositAndCheck(user,
-      { ybtAmount:100, balanceAfter:{tps:100, tys:100}, ybtAfter:{pegged:100, unpegged:100} },
-      "deposit 100 with rate 1 all balances should be 100"
+    await deposit(user, { ybtAmount:100, pegged:{tps:100, tys:100, ybt:100}, unpegged:{tps:100, tys:100, ybt:100} },
+      "deposit 100 with rate 1"
     );
 
-    await pool.setTimeDaysAfterPoolStart(1);
-    await pool.setInterestRate(0.9);
-    await pool.redeemAndCheck(user, { amount: { tps: 10, tys: 10 }, balanceAfter: { tps: 90, tys: 90 }, ybtAfter: { pegged: 99, unpegged: 110 } });
+    await setRateAndDaysAfterStart({ rate:0.9, daysAfterStart:1 });
+    await redeem(user, { amount:{tps:10, tys:10}, pegged:{tps:90, tys:90, ybt:99}, unpegged:{tps:90, tys:90, ybt:110} });
 
-    await pool.setTimeDaysAfterPoolStart(5);
-    await pool.setInterestRate(1.1);
-    await pool.redeemAndCheck(user, { amount: { tps: 10, tys: 10 }, balanceAfter: { tps: 80, tys: 80 }, ybtAfter: { pegged: 132, unpegged: 120 } });
+    await setRateAndDaysAfterStart({ rate:1.1, daysAfterStart:5 });
+    await redeem(user, { amount:{tps:10, tys:10}, pegged:{tps:80, tys:80, ybt:132}, unpegged:{tps:80, tys:80, ybt:120} });
 
-    await pool.setTimeDaysAfterPoolStart(8);
-    await pool.setInterestRate(0.6);
-    await pool.redeemAndCheck(user, { amount: { tps: 10, tys: 10 }, balanceAfter: { tps: 70, tys: 70 }, ybtAfter: { pegged: 78, unpegged: 130 } });
+    await setRateAndDaysAfterStart({ rate:0.6, daysAfterStart:8 });
+    await redeem(user, { amount:{tps:10, tys:10}, pegged:{tps:70, tys:70, ybt:78}, unpegged:{tps:70, tys:70, ybt:130} });
 
-    await pool.setTimeDaysAfterPoolStart(13);
-    await pool.setInterestRate(0.2);
-    await pool.redeemAndCheck(user, { amount: { tps: 10, tys: 10 }, balanceAfter: { tps: 60, tys: 60 }, ybtAfter: { pegged: 28, unpegged: 140 } });
+    await setRateAndDaysAfterStart({ rate:0.2, daysAfterStart:13 });
+    await redeem(user, { amount:{tps:10, tys:10}, pegged:{tps:60, tys:60, ybt:28}, unpegged:{tps:60, tys:60, ybt:140} });
 
-    await pool.setTimeDaysAfterPoolStart(14);
-    await pool.setInterestRate(1);
-    await pool.redeemAndCheck(user, { amount: { tps: 60, tys: 60 }, balanceAfter: { tps: 0, tys: 0 }, ybtAfter: { pegged: 200, unpegged: 200 } });
+    await setRateAndDaysAfterStart({ rate:1, daysAfterStart:14 });
+    await redeem(user, { amount:{tps:60, tys:60}, pegged:{tps:0, tys:0, ybt:200}, unpegged:{tps:0, tys:0, ybt:200} });
 
     // Check that the pool HAS NOT matured/halted yet.
-    expect(await pool.tempus.matured()).to.equal(false);
-    expect(await pool.tempus.exceptionalHaltTime()).to.equal(null);
+    expect(await pool.tempus.matured()).to.be.false;
+    expect(await pool.tempus.exceptionalHaltTime()).to.be.null;
   });
 
   it.includeIntegration("Should work after maturity with negative yield", async () =>
@@ -236,22 +212,13 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.createDefault();
     let [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 200]]);
-    await pool.depositAndCheck(user,
-      { ybtAmount:100, balanceAfter:{tps:100, tys:100}, ybtAfter:{pegged:100, unpegged:100} },
-      "deposit 100 with rate 1 all balances should be 100"
-    );
+    await deposit(user, { ybtAmount:100, pegged:{tps:100, tys:100, ybt:100}, unpegged:{tps:100, tys:100, ybt:100} }, "deposit 100 with rate 1");
 
     await pool.setInterestRate(0.9);
-    await pool.checkWallet(user,
-      {shares:{tps:100,tys:100}, ybt:{pegged:90,unpegged:100}},
-      "rate 0.9 should give 90/100 YBT"
-    );
+    await pool.checkWallet(user, { pegged:{tps:100, tys:100, ybt:90}, unpegged:{tps:100, tys:100, ybt:100}}, "setting rate to 0.9");
 
     await pool.fastForwardToMaturity();
-    await pool.redeemAndCheck(user,
-      { amount:{tps:100, tys:100}, balanceAfter:{tps:0, tys:0}, ybtAfter:{pegged:180, unpegged:200} },
-      "redeem 100+100 after maturity should give +90/100 YBT"
-    );
+    await redeem(user, { amount:{tps:100, tys:100}, pegged:{tps:0, tys:0, ybt:180}, unpegged:{tps:0, tys:0, ybt:200} }, "redeem 100+100 after maturity at rate 0.9");
   });
 
   it.includeIntegration("Should work after maturity with negative yield between maturity and redemption", async () =>
@@ -259,24 +226,14 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.createDefault();
     let [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 200]]);
-    await pool.depositAndCheck(user,
-      { ybtAmount:100, balanceAfter:{tps:100, tys:100}, ybtAfter:{pegged:100, unpegged:100} },
-      "deposit 100 with rate 1 all balances should be 100"
-    );
+    await deposit(user, { ybtAmount:100, pegged:{tps:100, tys:100, ybt:100}, unpegged:{tps:100, tys:100, ybt:100} }, "deposit 100 with rate 1");
 
     await pool.setInterestRate(1.2);
     await pool.fastForwardToMaturity();
     await pool.setInterestRate(1.1);
 
-    await pool.checkWallet(user,
-      {shares:{tps:100,tys:100}, ybt:{pegged:110,unpegged:100}},
-      "maturity at rate 1.1 should give 110/100 YBT"
-    );
-
-    await pool.redeemAndCheck(user,
-      { amount:{tps:100, tys:100}, balanceAfter:{tps:0, tys:0}, ybtAfter:{pegged:220, unpegged:200} },
-      "redeem 100+100 after maturity should give +110/100 YBT"
-    );
+    await pool.checkWallet(user, { pegged:{tps:100, tys:100, ybt:110}, unpegged:{tps:100, tys:100, ybt:100}}, "maturity at rate 1.1");
+    await redeem(user, { amount:{tps:100, tys:100}, pegged:{tps:0, tys:0, ybt:220}, unpegged:{tps:0, tys:0, ybt:200} }, "redeem 100+100 after maturity at rate 1.1");
   });
 
   it.includeIntegration("Should work after maturity with unequal shares, without yield", async () =>
@@ -284,16 +241,10 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.createDefault();
     let [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 200]]);
-    await pool.depositAndCheck(user,
-      { ybtAmount:100, balanceAfter:{tps:100, tys:100}, ybtAfter:{pegged:100, unpegged:100} },
-      "deposit 100 with rate 1 all balances should be 100"
-    );
+    await deposit(user, { ybtAmount:100, pegged:{tps:100, tys:100, ybt:100}, unpegged:{tps:100, tys:100, ybt:100} }, "deposit 100 with rate 1");
 
     await pool.fastForwardToMaturity();
-    await pool.redeemAndCheck(user,
-      { amount:{tps:50, tys:100}, balanceAfter:{tps:50, tys:0}, ybtAfter:{pegged:150, unpegged:150} },
-      "redeem 50+100 with rate 1 after maturity should be 150/150 YBT"
-    );
+    await redeem(user, { amount:{tps:50, tys:100}, pegged:{tps:50, tys:0, ybt:150}, unpegged:{tps:50, tys:0, ybt:150} }, "redeem 50+100 after maturity at rate 1");
   });
 
   it.includeIntegration("Should work after maturity with unequal shares, with yield", async () =>
@@ -301,21 +252,13 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.createDefault();
     let [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 200]]);
-    await pool.depositAndCheck(user,
-      { ybtAmount:100, balanceAfter:{tps:100, tys:100}, ybtAfter:{pegged:100, unpegged:100} },
-      "deposit 100 with rate 1 all balances should be 100"
-    );
+    await deposit(user, { ybtAmount:100, pegged:{tps:100, tys:100, ybt:100}, unpegged:{tps:100, tys:100, ybt:100} }, "deposit 100 with rate 1");
 
     await pool.setInterestRate(2.0);
-    await pool.checkWallet(user, {shares:{tps:100, tys:100}, ybt:{pegged:200, unpegged:100}},
-      "pegged asset should be 200 after rate 2x"
-    );
+    await pool.checkWallet(user, { pegged:{tps:100, tys:100, ybt:200}, unpegged:{tps:100, tys:100, ybt:100}}, "setting rate to 2.0");
 
     await pool.fastForwardToMaturity();
-    await pool.redeemAndCheck(user,
-      { amount:{tps:50, tys:100}, balanceAfter:{tps:50, tys:0}, ybtAfter:{pegged:350, unpegged:175} },
-      "redeem 50+100 with rate 2 after maturity should be 350/175 YBT"
-    );
+    await redeem(user, { amount:{tps:50, tys:100}, pegged:{tps:50, tys:0, ybt:350}, unpegged:{tps:50, tys:0, ybt:175} }, "redeem 50+100 after maturity at rate 2.0");
   });
 
   it.includeIntegration("Should work after maturity with additional yield after maturity", async () =>
@@ -323,34 +266,18 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.createDefault();
     let [owner, user] = pool.signers;
     await pool.setupAccounts(owner, [[user, 200]]);
-    await pool.depositAndCheck(user,
-      { ybtAmount:100, balanceAfter:{tps:100, tys:100}, ybtAfter:{pegged:100, unpegged:100} },
-      "deposit 100 with rate 1 all balances should be 100"
-    );
+    await deposit(user, { ybtAmount:100, pegged:{tps:100, tys:100, ybt:100}, unpegged:{tps:100, tys:100, ybt:100} }, "deposit 100 with rate 1");
     
     await pool.setInterestRate(2.0);
-    if (pool.yieldPeggedToAsset)
-    {
-        (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/200);
-        await pool.fastForwardToMaturity();
-        await pool.setInterestRate(4.0);
-        (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/400);
-    
-        await pool.redeemToYBT(user, 100, 100);
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/600);
-        expect(await pool.ybt.balanceOf(pool.tempus.address)).to.equal(200);
-    }
-    else
-    {
-        (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/100);
-        await pool.fastForwardToMaturity();
-        await pool.setInterestRate(4.0);
-        (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/100);
-    
-        await pool.redeemToYBT(user, 100, 100);
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/150);
-        expect(await pool.ybt.balanceOf(pool.tempus.address)).to.equal(50);
-    }
+    await pool.checkWallet(user, { pegged:{tps:100, tys:100, ybt:200}, unpegged:{tps:100, tys:100, ybt:100}}, "setting rate to 2.0");
+
+    await pool.fastForwardToMaturity();
+    await pool.setInterestRate(4.0);
+    await pool.checkWallet(user, { pegged:{tps:100, tys:100, ybt:400}, unpegged:{tps:100, tys:100, ybt:100}}, "setting rate to 4.0");
+    await redeem(user, { amount:{tps:100, tys:100}, pegged:{tps:0, tys:0, ybt:600}, unpegged:{tps:0, tys:0, ybt:150} }, "redeem 100+100 after maturity at rate 4.0");
+
+    const expectedRemainingPoolYBT = pool.yieldPeggedToAsset ? 200 : 50;
+    expect(await pool.ybt.balanceOf(pool.tempus.address)).to.equal(expectedRemainingPoolYBT);
   });
 
   it.includeIntegration("Should redeem correct amount of tokens with multiple users depositing", async () =>
@@ -358,73 +285,40 @@ describeForEachPool("TempusPool Redeem", (pool:PoolTestFixture) =>
     await pool.createDefault();
     let [owner, user, user2] = pool.signers;
     await pool.setupAccounts(owner, [[user, 500], [user2, 500]]);
-
-    await pool.depositAndCheck(user,
-      { ybtAmount:100, balanceAfter:{tps:100, tys:100}, ybtAfter:{pegged:400, unpegged:400} },
-      "deposit 100 YBT with rate 1, expect shares 100 and YBT 400"
-    );
+    await deposit(user, { ybtAmount:100, pegged:{tps:100, tys:100, ybt:400}, unpegged:{tps:100, tys:100, ybt:400} }, "deposit 100 with rate 1");
 
     await pool.setInterestRate(2.0);
+    expect(await pool.tempus.initialInterestRate()).to.equal(1.0);
+    expect(await pool.tempus.currentInterestRate()).to.equal(2.0);
 
-    if (pool.yieldPeggedToAsset)
-    {
-        (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/800);
-        await pool.depositYBT(user, 100, /*recipient:*/user);
-        (await pool.userState(user)).expect(150, 150, /*yieldBearing:*/700);
-    
-        // Now the second user joins.
-        await pool.depositYBT(user2, 200, /*recipient:*/user2);
-        (await pool.userState(user2)).expect(100, 100, /*yieldBearing:*/800);
-    
-        expect(await pool.tempus.initialInterestRate()).to.equal(1.0);
-        expect(await pool.tempus.currentInterestRate()).to.equal(2.0);
-    
-        await pool.setInterestRate(2.5);
-        await pool.fastForwardToMaturity();
-        expect(await pool.tempus.initialInterestRate()).to.equal(1.0);
-        expect(await pool.tempus.currentInterestRate()).to.equal(2.5);
-        expect(await pool.tempus.maturityInterestRate()).to.equal(2.5);
-    
-        // First user redeems
-        (await pool.userState(user)).expect(150, 150, /*yieldBearing:*/875);
-        await pool.redeemToYBT(user, 150, 150);
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/1250);
-    
-        // Second user redeems
-        (await pool.userState(user2)).expect(100, 100, /*yieldBearing:*/1000);
-        await pool.redeemToYBT(user2, 100, 100);
-        (await pool.userState(user2)).expect(0, 0, /*yieldBearing:*/1250);
-    }
-    else
-    {
-        (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/400);
-        await pool.depositYBT(user, 100, /*recipient:*/user);
-        (await pool.userState(user)).expect(200, 200, /*yieldBearing:*/300);
-    
-        // Now the second user joins.
-        await pool.depositYBT(user2, 200, /*recipient:*/user2);
-        (await pool.userState(user2)).expect(200, 200, /*yieldBearing:*/300);
-    
-        expect(await pool.tempus.initialInterestRate()).to.equal(1.0);
-        expect(await pool.tempus.currentInterestRate()).to.equal(2.0);
-    
-        await pool.setInterestRate(2.5);
-        await pool.fastForwardToMaturity();
-        expect(await pool.tempus.initialInterestRate()).to.equal(1.0);
-        expect(await pool.tempus.currentInterestRate()).to.equal(2.5);
-        expect(await pool.tempus.maturityInterestRate()).to.equal(2.5);
-    
-        // First user redeems
-        (await pool.userState(user)).expect(200, 200, /*yieldBearing:*/300);
-        await pool.redeemToYBT(user, 200, 200);
-        (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/500);
-    
-        // Second user redeems
-        (await pool.userState(user2)).expect(200, 200, /*yieldBearing:*/300);
-        await pool.redeemToYBT(user2, 200, 200);
-        (await pool.userState(user2)).expect(0, 0, /*yieldBearing:*/500);
-    }
+    await pool.checkWallet(user, { pegged:{tps:100, tys:100, ybt:800}, unpegged:{tps:100, tys:100, ybt:400}}, "setting rate to 2");
+    await deposit(user, { ybtAmount:100, pegged:{tps:150, tys:150, ybt:700}, unpegged:{tps:200, tys:200, ybt:300} },  "deposit user1 100 with rate 2");
+    // Now the second user joins.
+    await deposit(user2, { ybtAmount:200, pegged:{tps:100, tys:100, ybt:800}, unpegged:{tps:200, tys:200, ybt:300} }, "deposit user2 200 with rate 2");
+
+    await pool.setInterestRate(2.5);
+    await pool.fastForwardToMaturity();
+    expect(await pool.tempus.initialInterestRate()).to.equal(1.0);
+    expect(await pool.tempus.currentInterestRate()).to.equal(2.5);
+    expect(await pool.tempus.maturityInterestRate()).to.equal(2.5);
+
+    // First user redeems
+    await pool.checkWallet(user, { pegged:{tps:150, tys:150, ybt:875}, unpegged:{tps:200, tys:200, ybt:300}}, "user1 pre-redeem");
+    await redeem(user, { 
+      amount: { pegged:{tps:150,tys:150}, unpegged:{tps:200,tys:200} },
+      pegged: {tps:0, tys:0, ybt:1250},
+      unpegged: {tps:0, tys:0, ybt:500}
+    }, "user1 redeem all shares" );
+
+    // Second user redeems
+    await pool.checkWallet(user2, { pegged:{tps:100, tys:100, ybt:1000}, unpegged:{tps:200, tys:200, ybt:300}}, "user2 pre-redeem");
+    await redeem(user2, { 
+      amount: { pegged:{tps:100,tys:100}, unpegged:{tps:200,tys:200} },
+      pegged: {tps:0, tys:0, ybt:1250},
+      unpegged: {tps:0, tys:0, ybt:500}
+    }, "user2 redeem all shares" );
   });
+
   it.includeIntegration("Should revert when trying to call redeem directly on TempusPool (not via the TempusController)", async () => 
   {
     await pool.createDefault();

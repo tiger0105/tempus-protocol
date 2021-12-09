@@ -13,44 +13,43 @@ import { TempusAMM } from "../utils/TempusAMM";
 import { PoolShare } from "../utils/PoolShare";
 import { strict as assert } from 'assert';
 
-export interface DepositAmounts {
-  bt:number;
+export interface BalancesExpectation {
+  tps:number; // expected TPS balance
+  tys:number; // etc.
   ybt:number;
 }
 
-export interface ShareExpectation {
-  tps:number;
-  tys:number;
-}
-
-export interface YBTExpectation {
-  pegged:number;
-  unpegged:number;
-}
-
 export interface WalletExpectation {
-  shares:ShareExpectation;
-  ybt:YBTExpectation;
+  pegged:BalancesExpectation; // expectation for pegged YBT-s
+  unpegged:BalancesExpectation;
 }
 
-export interface YBTDepositExpectation {
+export interface YBTDepositExpectation extends WalletExpectation {
   ybtAmount:number;
-  balanceAfter:ShareExpectation;
-  ybtAfter:YBTExpectation;
 }
 
-export interface RedemptionExpectation {
-  amount:ShareExpectation;
-  balanceAfter:ShareExpectation;
-  ybtAfter:YBTExpectation;
+export interface RedeemAmounts {
+  tps:number; // amount of TPS to redeem
+  tys:number; 
 }
 
-export function BT(amount:number): DepositAmounts {
-  return { bt:amount, ybt:0 };
+export interface YBTRedeemAmounts {
+  pegged:RedeemAmounts;
+  unpegged:RedeemAmounts;
 }
 
-export function YBT(amount:number): DepositAmounts {
-  return { bt:0, ybt:amount };
+export interface YBTRedeemExpectation extends WalletExpectation {
+  amount:RedeemAmounts|YBTRedeemAmounts;
+}
+
+function instanceOfYBTRedeemAmounts(object: any): object is YBTRedeemAmounts {
+  return 'pegged' in object;
+}
+
+function getRedeemAmounts(pegged:boolean, expects:YBTRedeemExpectation): RedeemAmounts {
+  if (instanceOfYBTRedeemAmounts(expects.amount))
+    return pegged ? expects.amount.pegged : expects.amount.unpegged;
+  return expects.amount;
 }
 
 export class UserState {
@@ -60,32 +59,24 @@ export class UserState {
   yieldPeggedToAsset:boolean;
   yieldBearingEpsilon: number;
 
-  // non-async to give us actual test failure line #
   public expectMulti(principalShares:number, yieldShares:number, yieldBearingPegged:number, yieldBearingVariable:number, message:string = null) {
-    const msg = message ? (": expected " + message) : "";
-    expect(this.principalShares).to.equal(principalShares, "principalShares did not match expected value"+msg);
-    expect(this.yieldShares).to.equal(yieldShares, "yieldShares did not match expected value"+msg);
-    
     const yieldBearing = this.yieldPeggedToAsset ? yieldBearingPegged : yieldBearingVariable;
-    /// allow smallest rounding errors
-    expect(this.yieldBearing).to.be.within(
-      yieldBearing - this.yieldBearingEpsilon,
-      yieldBearing + this.yieldBearingEpsilon,
-      "yieldBearing did not match expected value"+msg
-    );
+    this.expect(principalShares, yieldShares, yieldBearing, message);
   }
 
-  // non-async to give us actual test failure line #
   public expect(principalShares:number, yieldShares:number, yieldBearing:number, message:string = null) {
-    const msg = message ? (": expected " + message) : "";
-    expect(this.principalShares).to.equal(principalShares, ("principalShares did not match expected value"+msg));
-    expect(this.yieldShares).to.equal(yieldShares, ("yieldShares did not match expected value"+msg));
+    const msg = (message||"") + " expected " + (this.yieldPeggedToAsset ? "pegged" : "unpegged")
+              + " balances TPS="+principalShares
+              + " TYS="+yieldShares
+              + " YBT="+yieldBearing;
+    expect(this.principalShares).to.equal(principalShares, msg+" but TPS did not match");
+    expect(this.yieldShares).to.equal(yieldShares, msg+" but TYS did not match");
     
     /// allow smallest rounding errors
     expect(this.yieldBearing).to.be.within(
       yieldBearing - this.yieldBearingEpsilon,
       yieldBearing + this.yieldBearingEpsilon,
-      ("yieldBearing did not match expected value"+msg)
+      msg+" but YBT did not match"
     );
   }
 }
@@ -380,38 +371,37 @@ export abstract class PoolTestFixture {
   }
 
   /**
-   * TESTING UTILITY checks user state for TPS+TYS balance and YBT balance
+   * TESTING UTILITY: checks user state for TPS+TYS balance and YBT balance
    * @param user User whose wallet to check
    * @param wallet All wallet check parameters
    * @param message Description of what we expected to happen
    */
   async checkWallet(user:Signer, wallet:WalletExpectation, message?:string): Promise<void> {
-    const us = await this.userState(user);
-    us.expectMulti(wallet.shares.tps, wallet.shares.tys, wallet.ybt.pegged, wallet.ybt.unpegged, message);
+    const expects:BalancesExpectation = this.yieldPeggedToAsset ? wallet.pegged : wallet.unpegged;
+    (await this.userState(user)).expect(expects.tps, expects.tys, expects.ybt, message);
   }
 
   /**
-   * TESTING UTILITY: does a depositYBT and then validates user 
-   *                  wallet balances
+   * TESTING UTILITY: does a depositYBT and then validates user wallet balances
    * @param user User who is depositing and receiving shares
    * @param expects All the deposit and checks parameters
    * @param message Description of what we expected to happen
    */
   async depositAndCheck(user:Signer, expects:YBTDepositExpectation, message?:string): Promise<void> {
     await this.depositYBT(user, expects.ybtAmount);
-    await this.checkWallet(user, {shares:expects.balanceAfter, ybt:expects.ybtAfter}, message);
+    await this.checkWallet(user, expects, message);
   }
 
   /**
-   * TESTING UTILITY: does a redeemToYBT and then validates user
-   *                  wallet balances
+   * TESTING UTILITY: does a redeemToYBT and then validates user wallet balances
    * @param user User who is redeeming shares and receiving tokens
    * @param expects All the redemption and checks parameters
    * @param message Description of what we expected to happen
    */
-  async redeemAndCheck(user:Signer, expects:RedemptionExpectation, message?:string): Promise<void> {
-    await this.redeemToYBT(user, expects.amount.tps, expects.amount.tys);
-    await this.checkWallet(user, {shares:expects.balanceAfter, ybt:expects.ybtAfter}, message);
+  async redeemAndCheck(user:Signer, expects:YBTRedeemExpectation, message?:string): Promise<void> {
+    const amount:RedeemAmounts = getRedeemAmounts(this.yieldPeggedToAsset, expects);
+    await this.redeemToYBT(user, amount.tps, amount.tys);
+    await this.checkWallet(user, expects, message);
   }
 
   protected async initPool(
