@@ -54,7 +54,7 @@ contract CompoundTempusPool is TempusPool {
         // ETH deposits are not accepted, because it is rejected in the controller
         assert(msg.value == 0);
 
-        uint preDepositBalance = IERC20(yieldBearingToken).balanceOf(address(this));
+        uint256 preDepositBalance = IERC20(yieldBearingToken).balanceOf(address(this));
 
         // Deposit to Compound
         IERC20(backingToken).safeIncreaseAllowance(yieldBearingToken, backingAmount);
@@ -94,17 +94,17 @@ contract CompoundTempusPool is TempusPool {
 
     // NOTE: yieldTokens are in YieldToken precision, return value is in BackingToken precision
     //       This conversion happens automatically due to pre-scaled rate
-    function numAssetsPerYieldToken(uint yieldTokens, uint rate) public pure override returns (uint) {
+    function numAssetsPerYieldToken(uint256 yieldTokens, uint256 rate) public pure override returns (uint256) {
         return yieldTokens.mulfV(rate, 1e18);
     }
 
     // NOTE: backingTokens are in BackingToken precision, return value is in YieldToken precision
     //       This conversion happens automatically due to pre-scaled rate
-    function numYieldTokensPerAsset(uint backingTokens, uint rate) public pure override returns (uint) {
+    function numYieldTokensPerAsset(uint256 backingTokens, uint256 rate) public pure override returns (uint256) {
         return backingTokens.divfV(rate, 1e18);
     }
 
-    function interestRateToSharePrice(uint interestRate) internal pure override returns (uint) {
+    function interestRateToSharePrice(uint256 interestRate) internal pure override returns (uint256) {
         // rate is always (10 + backing.decimals), so converting back is always 1e10
         return interestRate / 1e10;
     }
