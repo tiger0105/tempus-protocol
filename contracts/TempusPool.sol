@@ -161,7 +161,7 @@ abstract contract TempusPool is ITempusPool, ReentrancyGuard, Ownable, Versioned
         depositedYBT = depositToUnderlying(backingTokenAmount);
         assert(depositedYBT > 0);
 
-        (mintedShares, , fee, rate) = _mintShares(depositedYBT, recipient);
+        (mintedShares, , fee, rate) = mintShares(depositedYBT, recipient);
     }
 
     function onDepositYieldBearing(uint256 yieldTokenAmount, address recipient)
@@ -178,12 +178,12 @@ abstract contract TempusPool is ITempusPool, ReentrancyGuard, Ownable, Versioned
         // Enforced by the controller.
         assert(yieldTokenAmount > 0);
 
-        (mintedShares, depositedBT, fee, rate) = _mintShares(yieldTokenAmount, recipient);
+        (mintedShares, depositedBT, fee, rate) = mintShares(yieldTokenAmount, recipient);
     }
 
     /// @param yieldTokenAmount YBT amount in YBT decimal precision
     /// @param recipient address to which shares will be minted
-    function _mintShares(uint256 yieldTokenAmount, address recipient)
+    function mintShares(uint256 yieldTokenAmount, address recipient)
         private
         returns (
             uint256 mintedShares,
