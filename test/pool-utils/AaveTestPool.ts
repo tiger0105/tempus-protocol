@@ -10,7 +10,7 @@ export class AaveTestPool extends PoolTestFixture {
   ASSET_TOKEN:TokenInfo;
   YIELD_TOKEN:TokenInfo;
   constructor(ASSET_TOKEN:TokenInfo, YIELD_TOKEN:TokenInfo, integration:boolean) {
-    super(PoolType.Aave, /*yieldPeggedToAsset:*/true, integration);
+    super(PoolType.Aave, /*acceptsEther*/false, /*yieldPeggedToAsset:*/true, integration);
     this.ASSET_TOKEN = ASSET_TOKEN;
     this.YIELD_TOKEN = YIELD_TOKEN;
   }
