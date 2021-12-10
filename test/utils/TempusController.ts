@@ -189,7 +189,7 @@ export class TempusController extends ContractBase {
     return this.connect(user).provideLiquidity(pool.amm.address, pool.principals.toBigNum(sharesAmount));
   }
 
-  async exitTempusAMMAndRedeem(
+  async exitAmmGivenAmountsOutAndEarlyRedeem(
     pool: PoolTestFixture,
     user: SignerOrAddress,
     principals: NumberOrString,
@@ -202,7 +202,7 @@ export class TempusController extends ContractBase {
     await amm.contract.connect(user).approve(this.address, amm.contract.balanceOf(addressOf(user)));
     await t.principalShare.approve(user, t.address, principals);
     await t.yieldShare.approve(user, t.address, yields);
-    return this.connect(user).exitTempusAMMAndRedeem(
+    return this.connect(user).exitAmmGivenAmountsOutAndEarlyRedeem(
       amm.address,
       t.principalShare.toBigNum(principals),
       t.yieldShare.toBigNum(yields),
@@ -223,13 +223,15 @@ export class TempusController extends ContractBase {
     return this.connect(user).exitTempusAMM(amm.address, pool.amm.toBigNum(lpTokensAmount), 1, 1, false);
   }
 
-  async exitTempusAmmAndRedeem(
+  async exitAmmGivenLpAndRedeem(
     pool:PoolTestFixture, 
     user: SignerOrAddress, 
     lpTokens:NumberOrString, 
     principals:NumberOrString, 
     yields:NumberOrString, 
     toBacking: boolean,
+    yieldsRate: NumberOrString = 1,
+    maxSlippage: NumberOrString = 1,
     deadline: Date = new Date(8640000000000000) /// default is 9/12/275760 (no deadline)
   ): Promise<Transaction> {
     const amm = pool.amm, t = pool.tempus, addr = addressOf(user);
@@ -247,7 +249,7 @@ export class TempusController extends ContractBase {
       throw new Error("Cannot determine maxLeftoverShares for principal decimals="+t.principalShare.decimals);
     }
 
-    return this.connect(user).exitTempusAmmAndRedeem(
+    return this.connect(user).exitAmmGivenLpAndRedeem(
       amm.address,
       amm.toBigNum(lpTokens),
       amm.principalShare.toBigNum(principals),
@@ -255,7 +257,8 @@ export class TempusController extends ContractBase {
       0,
       0,
       maxLeftoverShares,
-      0,
+      amm.principalShare.toBigNum(yieldsRate),
+      toWei(maxSlippage),
       toBacking,
       parseInt((deadline.getTime() / 1000).toFixed(0))
     );

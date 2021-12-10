@@ -177,10 +177,9 @@ contract TempusAMM is BaseMinimalSwapInfoPool, StableMath, IRateProvider {
         uint256 principals,
         uint256 yields,
         uint256 threshold
-    ) external view returns (uint256 amountIn) {
-        (uint256 difference, bool yieldsIn) = (principals > yields)
-            ? (principals - yields, false)
-            : (yields - principals, true);
+    ) external view returns (uint256 amountIn, bool yieldsIn) {
+        uint256 difference;
+        (difference, yieldsIn) = (principals > yields) ? (principals - yields, false) : (yields - principals, true);
 
         if (difference > threshold) {
             uint256 principalsRate = tempusPool.principalShare().getPricePerFullShareStored();
@@ -199,7 +198,7 @@ contract TempusAMM is BaseMinimalSwapInfoPool, StableMath, IRateProvider {
                     ? (newPrincipals - newYields)
                     : (newYields - newPrincipals);
                 if (newDifference < threshold) {
-                    return amountIn;
+                    return (amountIn, yieldsIn);
                 } else {
                     rate = (amountOut * _TEMPUS_SHARE_PRECISION) / amountIn;
                 }

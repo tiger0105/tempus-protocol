@@ -7,6 +7,7 @@ import { TempusController } from "./utils/TempusController";
 import { describeForEachPool, integrationExclusiveIt as it } from "./pool-utils/MultiPoolTestSuite";
 import { PoolTestFixture } from "./pool-utils/PoolTestFixture";
 import { BigNumber } from "@ethersproject/bignumber";
+import Decimal from "decimal.js";
 
 const SWAP_LIMIT_ERROR_MESSAGE = "BAL#507";
 
@@ -215,7 +216,7 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
       const userY:number = +await testPool.yields.balanceOf(user2);
       const userPRedeem:number = userP < 9999 ? userP : 9999;
       const userYRedeem:number = userY < 9999 ? userY : 9999;
-      await controller.exitTempusAMMAndRedeem(
+      await controller.exitAmmGivenAmountsOutAndEarlyRedeem(
         testPool, 
         user2, 
         userPRedeem,
@@ -239,7 +240,7 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
       const userY:number = +await testPool.yields.balanceOf(user2);
       const userPRedeem:number = userP < 9999 ? userP : 9999;
       const userYRedeem:number = userY < 9999 ? userY : 9999;
-      const reedemAction = controller.exitTempusAMMAndRedeem(
+      const reedemAction = controller.exitAmmGivenAmountsOutAndEarlyRedeem(
         testPool, 
         user2, 
         userPRedeem,
@@ -265,7 +266,7 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
       await initAMM(user1, /*ybtDeposit*/1000000, /*principals*/100000, /*yields*/1000000);
       await testPool.fastForwardToMaturity();
 
-      (await expectRevert(controller.exitTempusAMMAndRedeem(
+      (await expectRevert(controller.exitAmmGivenAmountsOutAndEarlyRedeem(
         testPool, 
         user2, 
         100000, 
@@ -290,7 +291,7 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
       await testPool.controller.depositAndProvideLiquidity(testPool, user2, 10000, false);
       await testPool.controller.depositAndFix(testPool, owner, 100, false, 0);
 
-      await controller.exitTempusAmmAndRedeem(
+      await controller.exitAmmGivenLpAndRedeem(
         testPool, 
         user2, 
         await testPool.amm.balanceOf(user2), 
@@ -298,7 +299,7 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
         await testPool.yields.balanceOf(user2), 
         false
       );
-      await controller.exitTempusAmmAndRedeem(
+      await controller.exitAmmGivenLpAndRedeem(
         testPool, 
         owner, 
         await testPool.amm.balanceOf(owner), 
@@ -312,6 +313,109 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
 
       expect(postBalanceOwner).to.be.within(preBalanceOwner - 1, preBalanceOwner + 1);
       expect(postBalanceUser2).to.be.within(preBalanceUser2 - 1, preBalanceUser2 + 1);
+    });
+
+    it("Should successfully swap Yields --> Principals w/ 3% Maximum Slippage", async () => 
+    {
+      await initAMM(user1, /*ybtDeposit*/1000000, /*principals*/100000, /*yields*/1000000);
+      await testPool.controller.depositYieldBearing(owner, testPool.tempus, 100);
+
+      expect(await controller.exitAmmGivenLpAndRedeem(
+        testPool, 
+        owner, 
+        0, 
+        0,
+        await testPool.yields.balanceOf(owner),
+        false,
+        await calculateCurrentYieldsRate(),
+        0.03
+      )).to.emit(testPool.amm.vault, 'Swap');;
+    });
+    
+    it("Should successfully swap Principals --> Yields w/ 3% Maximum Slippage", async () => 
+    {
+      await initAMM(user1, /*ybtDeposit*/1000000, /*principals*/100000, /*yields*/1000000);
+      await testPool.controller.depositYieldBearing(owner, testPool.tempus, 100);
+
+      expect(await controller.exitAmmGivenLpAndRedeem(
+        testPool, 
+        owner, 
+        0, 
+        await testPool.principals.balanceOf(owner),
+        0,
+        false,
+        await calculateCurrentYieldsRate(),
+        0.03
+      )).to.emit(testPool.amm.vault, 'Swap');
+    });
+
+    it("Should fail swap due to minimum return Principals --> Yields w/ 0.1% Maximum Slippage", async () => 
+    {
+      await initAMM(user1, /*ybtDeposit*/1000000, /*principals*/100000, /*yields*/1000000);
+      await testPool.controller.depositYieldBearing(owner, testPool.tempus, 100);
+
+      await expect(controller.exitAmmGivenLpAndRedeem(
+        testPool, 
+        owner, 
+        0, 
+        await testPool.principals.balanceOf(owner),
+        0,
+        false,
+        await calculateCurrentYieldsRate(),
+        "0.001"
+      )).to.be.revertedWith("BAL#507");
+    });
+
+    it("Should fail swap due to minimum return Yields --> Principals w/ 0.1% Maximum Slippage", async () => 
+    {
+      await initAMM(user1, /*ybtDeposit*/1000000, /*principals*/100000, /*yields*/1000000);
+      await testPool.controller.depositYieldBearing(owner, testPool.tempus, 100);
+
+      await expect(controller.exitAmmGivenLpAndRedeem(
+        testPool, 
+        owner, 
+        0, 
+        0,
+        await testPool.yields.balanceOf(owner),
+        false,
+        await calculateCurrentYieldsRate(),
+        "0.001"
+      )).to.be.revertedWith("BAL#507");
+    });
+
+    it("Should fail with yieldsRate = 0", async () => 
+    {
+      await initAMM(user1, /*ybtDeposit*/1000000, /*principals*/100000, /*yields*/1000000);
+      await testPool.controller.depositYieldBearing(owner, testPool.tempus, 100);
+
+      const yieldsRate = 0;
+      await expect(controller.exitAmmGivenLpAndRedeem(
+        testPool, 
+        owner, 
+        0, 
+        0,
+        await testPool.yields.balanceOf(owner),
+        false,
+        yieldsRate,
+        "0.001"
+      )).to.be.revertedWith("yieldsRate must be greater than 0");
+    });
+
+    it("Should fail with maxSlippage > 1e18", async () => 
+    {
+      await initAMM(user1, /*ybtDeposit*/1000000, /*principals*/100000, /*yields*/1000000);
+      await testPool.controller.depositYieldBearing(owner, testPool.tempus, 100);
+
+      await expect(controller.exitAmmGivenLpAndRedeem(
+        testPool, 
+        owner, 
+        0, 
+        0,
+        await testPool.yields.balanceOf(owner),
+        false,
+        await calculateCurrentYieldsRate(),
+        "1.000000000000000001"
+      )).to.be.revertedWith("maxSlippage can not be greater than 1e18");
     });
 
     it("Complete exit to yield bearing", async () => 
@@ -329,7 +433,7 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
 
       expect(await testPool.ybt.balanceOf(user1)).to.equal(0);
 
-      await controller.exitTempusAmmAndRedeem(
+      await controller.exitAmmGivenLpAndRedeem(
         testPool, 
         user1, 
         await testPool.amm.balanceOf(user1), 
@@ -364,7 +468,7 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
 
       if (testPool.type == PoolType.Lido)
       {
-        (await expectRevert(controller.exitTempusAmmAndRedeem(
+        (await expectRevert(controller.exitAmmGivenLpAndRedeem(
           testPool, 
           user1, 
           await testPool.amm.balanceOf(user1), 
@@ -378,7 +482,7 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
       else
       {
         expect(await testPool.asset.balanceOf(user1)).to.equal(100000);
-        await controller.exitTempusAmmAndRedeem(
+        await controller.exitAmmGivenLpAndRedeem(
           testPool, 
           user1, 
           await testPool.amm.balanceOf(user1), 
@@ -394,4 +498,10 @@ describeForEachPool("TempusController", (testPool:PoolTestFixture) =>
     });
   });
 
+  async function calculateCurrentYieldsRate(): Promise<string> {
+    const pricePerYield = await testPool.yields.getPricePerFullShareStored();
+    const pricePerPrincipal = await testPool.principals.getPricePerFullShareStored();
+    
+    return new Decimal(pricePerYield.toString()).div(pricePerPrincipal.toString()).toFixed(testPool.principals.decimals); /// TODO: move Decimal.js usage to a separate math helper
+  }
 });

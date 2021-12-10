@@ -177,8 +177,11 @@ contract Stats is ITokenPairPriceFeed, ChainlinkTokenPairPriceFeed, Versioned {
 
         // before maturity we need to have equal amount of shares to redeem
         if (!tempusAMM.tempusPool().matured()) {
-            bool yieldsIn = yields > principals;
-            uint256 amountIn = tempusAMM.getSwapAmountToEndWithEqualShares(principals, yields, threshold);
+            (uint256 amountIn, bool yieldsIn) = tempusAMM.getSwapAmountToEndWithEqualShares(
+                principals,
+                yields,
+                threshold
+            );
             uint256 amountOut = (amountIn != 0) ? tempusAMM.getExpectedReturnGivenIn(amountIn, yieldsIn) : 0;
             if (amountIn > 0) {
                 if (yieldsIn) {
