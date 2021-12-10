@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.7.6;
 
 import "@balancer-labs/v2-solidity-utils/contracts/math/FixedPoint.sol";

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.7.6;
 
 // TODO: This file should be removed once we find better way to trigger compilation for Vault and Authorizer
