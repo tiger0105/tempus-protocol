@@ -22,24 +22,37 @@ describeForEachPool("TempusPool DepositBackingTokens", (pool:PoolTestFixture) =>
 
   it("Should revert on Eth transfer as BT when not accepted", async () =>
   {
-    await pool.createDefault();
-    const [owner] = pool.signers;
-
     if (!pool.acceptsEther) {
+      await pool.createDefault();
+      const [owner] = pool.signers;
+
       (await pool.expectDepositBT(owner, 100, owner, /*ethValue*/ 1)).to.equal("given TempusPool's Backing Token is not ETH");
     }
   });
 
   it("Should revert on mismatched Eth transfer as BT when it is accepted", async () =>
   {
-    await pool.createDefault();
-    const [owner] = pool.signers;
-
     if (pool.acceptsEther) {
+      await pool.createDefault();
+      const [owner] = pool.signers;
+
       // These two amounts are expected to be equal, but in this case they are deliberately different.
       const depositAmount = 100;
       const ethValue = 1;
       (await pool.expectDepositBT(owner, depositAmount, owner, ethValue)).to.equal("ETH value does not match provided amount");
+    }
+  });
+
+  it("Should revert on mismatched Eth transfer (with 0 value) as BT when it is accepted", async () =>
+  {
+    if (pool.acceptsEther) {
+      await pool.createDefault();
+      const [owner] = pool.signers;
+
+      // These two amounts are expected to be equal, but in this case they are deliberately different.
+      const depositAmount = 100;
+      const ethValue = 0;
+      (await pool.expectDepositBT(owner, depositAmount, owner, ethValue)).to.equal("Pool requires ETH deposits");
     }
   });
 
