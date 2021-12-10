@@ -211,9 +211,8 @@ export abstract class PoolTestFixture {
   /**
    * Deposit BackingTokens into TempusPool
    */
-  async depositBT(user:Signer, backingTokenAmount:NumberOrString, recipient:SignerOrAddress = user, ethValue: NumberOrString = 0): Promise<Transaction> {
-    // NOTE: this means tests can't use ethValue=0 forcefully to test special cases
-    const ethToTransfer = this.acceptsEther ? (ethValue || backingTokenAmount) : ethValue;
+  async depositBT(user:Signer, backingTokenAmount:NumberOrString, recipient:SignerOrAddress = user, ethValue: NumberOrString = undefined): Promise<Transaction> {
+    const ethToTransfer = this.acceptsEther ? ((ethValue == undefined) ? backingTokenAmount : ethValue) : (ethValue || 0);
     return this.tempus.controller.depositBacking(user, this.tempus, backingTokenAmount, recipient, ethToTransfer);
   }
 
@@ -252,7 +251,7 @@ export abstract class PoolTestFixture {
    * @example (await pool.expectDepositBT(user, 100)).to.equal('success');
    * @returns RevertMessage assertion, or 'success' assertion
    */
-  async expectDepositBT(user:Signer, backingTokenAmount:NumberOrString, recipient:SignerOrAddress = user, ethValue: NumberOrString = 0): Promise<Chai.Assertion> {
+  async expectDepositBT(user:Signer, backingTokenAmount:NumberOrString, recipient:SignerOrAddress = user, ethValue: NumberOrString = undefined): Promise<Chai.Assertion> {
     try {
       await this.depositBT(user, backingTokenAmount, recipient, ethValue);
       return expect('success');
