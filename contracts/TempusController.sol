@@ -484,7 +484,15 @@ contract TempusController is ReentrancyGuard, Ownable, Versioned {
 
         IERC20 backingToken = IERC20(targetPool.backingToken());
 
+        // In case the underlying pool expects deposits in Ether (e.g. Lido),
+        // it uses `backingToken = address(0)`.  Since we disallow 0-value deposits,
+        // and `msg.value == backingTokenAmount`, this check here can be used to
+        // distinguish between the two pool types.
         if (msg.value == 0) {
+            // NOTE: We need to have this check here to avoid calling transfer on address(0),
+            //       because that always succeeds.
+            require(address(backingToken) != address(0), "Pool requires ETH deposits");
+
             backingTokenAmount = backingToken.untrustedTransferFrom(
                 msg.sender,
                 address(targetPool),
