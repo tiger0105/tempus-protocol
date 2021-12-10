@@ -39,11 +39,13 @@ interface ITempusAMM {
     /// @param yields User's Yields balance
     /// @param threshold Maximum difference between final balances of Principals and Yields
     /// @return amountIn Amount of Principals or Yields that user needs to swap to end with almost equal amounts
+    /// @return yieldsIn Specifies the "direction" of the swap -
+    ///         whether Yields should be swapped for Principals (yieldsIn=true) or vice versa
     function getSwapAmountToEndWithEqualShares(
         uint256 principals,
         uint256 yields,
         uint256 threshold
-    ) external view returns (uint256 amountIn);
+    ) external view returns (uint256 amountIn, bool yieldsIn);
 
     /// @dev queries exiting TempusAMM with exact BPT tokens in
     /// @param bptAmountIn amount of LP tokens in

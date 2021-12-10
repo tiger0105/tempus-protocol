@@ -166,7 +166,6 @@ contract TempusController is ReentrancyGuard, Ownable, Versioned {
     }
 
     /// @dev Redeem TPS+TYS held by msg.sender into Yield Bearing Tokens
-    /// @notice `msg.sender` must approve Principals and Yields amounts to `targetPool`
     /// @notice `msg.sender` will receive yield bearing tokens
     /// @notice Before maturity, `principalAmount` must equal to `yieldAmount`
     /// @param targetPool The Tempus Pool from which to redeem Tempus Shares
@@ -185,7 +184,6 @@ contract TempusController is ReentrancyGuard, Ownable, Versioned {
     }
 
     /// @dev Redeem TPS+TYS held by msg.sender into Backing Tokens
-    /// @notice `sender` must approve Principals and Yields amounts to this TempusPool
     /// @notice `recipient` will receive the backing tokens
     /// @notice Before maturity, `principalAmount` must equal to `yieldAmount`
     /// @param targetPool The Tempus Pool from which to redeem Tempus Shares
@@ -225,8 +223,6 @@ contract TempusController is ReentrancyGuard, Ownable, Versioned {
     /// @dev Withdraws liquidity from TempusAMM and redeems Shares to Yield Bearing or Backing Tokens
     ///      Checks user's balance of principal shares and yield shares
     ///      and exits AMM with exact amounts needed for redemption.
-    /// @notice `msg.sender` needs to approve `tempusAMM.tempusPool` for both Yields and Principals
-    ///         for `sharesAmount`
     /// @notice `msg.sender` needs to approve controller for whole balance of LP token
     /// @notice Transfers users' LP tokens to controller, then exits tempusAMM with `msg.sender` as recipient.
     ///         After exit transfers remainder of LP tokens back to user
@@ -239,7 +235,7 @@ contract TempusController is ReentrancyGuard, Ownable, Versioned {
     /// @param yieldsStaked Amount of staked yields (in TempusAMM) to redeem
     /// @param maxLpTokensToRedeem Maximum amount of LP tokens to spend for staked shares redemption
     /// @param toBackingToken If true redeems to backing token, otherwise redeems to yield bearing
-    function exitTempusAMMAndRedeem(
+    function exitAmmGivenAmountsOutAndEarlyRedeem(
         ITempusAMM tempusAMM,
         uint256 principals,
         uint256 yields,
@@ -249,7 +245,7 @@ contract TempusController is ReentrancyGuard, Ownable, Versioned {
         bool toBackingToken
     ) external nonReentrant {
         requireRegistered(address(tempusAMM));
-        _exitTempusAMMAndRedeem(
+        _exitAmmGivenAmountsOutAndEarlyRedeem(
             tempusAMM,
             principals,
             yields,
@@ -261,7 +257,6 @@ contract TempusController is ReentrancyGuard, Ownable, Versioned {
     }
 
     /// @dev Withdraws ALL liquidity from TempusAMM and redeems Shares to Yield Bearing or Backing Tokens
-    /// @notice `msg.sender` needs to approve controller for whole balance for both Yields and Principals
     /// @notice `msg.sender` needs to approve controller for whole balance of LP token
     /// @notice Can fail if there is not enough user balance
     /// @param tempusAMM TempusAMM instance to withdraw liquidity from
@@ -271,11 +266,12 @@ contract TempusController is ReentrancyGuard, Ownable, Versioned {
     /// @param minPrincipalsStaked Minimum amount of staked principals to redeem for `lpTokens`
     /// @param minYieldsStaked Minimum amount of staked yields to redeem for `lpTokens`
     /// @param maxLeftoverShares Maximum amount of Principals or Yields to be left in case of early exit
-    /// @param minRate Minimum rate for possible swap if swap is needed to end with equal shgares
+    /// @param yieldsRate Base exchange rate of TYS (denominated in TPS)
+    /// @param maxSlippage Maximum allowed change in the exchange rate from the base @param yieldsRate (1e18 precision)
     /// @param toBackingToken If true redeems to backing token, otherwise redeems to yield bearing
     /// @param deadline A timestamp by which, if a swap is necessary, the transaction must be completed,
     ///    otherwise it would revert
-    function exitTempusAmmAndRedeem(
+    function exitAmmGivenLpAndRedeem(
         ITempusAMM tempusAMM,
         uint256 lpTokens,
         uint256 principals,
@@ -283,19 +279,32 @@ contract TempusController is ReentrancyGuard, Ownable, Versioned {
         uint256 minPrincipalsStaked,
         uint256 minYieldsStaked,
         uint256 maxLeftoverShares,
-        uint256 minRate,
+        uint256 yieldsRate,
+        uint256 maxSlippage,
         bool toBackingToken,
         uint256 deadline
     ) external nonReentrant {
         requireRegistered(address(tempusAMM));
-        _exitTempusAmmAndRedeem(
+        if (lpTokens > 0) {
+            // if there is LP balance, transfer to controller
+            require(tempusAMM.transferFrom(msg.sender, address(this), lpTokens), "LP token transfer failed");
+
+            // exit amm and sent shares to controller
+            uint256[] memory minAmountsOutFromLP = getAMMOrderedAmounts(
+                tempusAMM,
+                minPrincipalsStaked,
+                minYieldsStaked
+            );
+            _exitTempusAMMGivenLP(tempusAMM, address(this), address(this), lpTokens, minAmountsOutFromLP, false);
+        }
+
+        _redeemWithEqualShares(
             tempusAMM,
-            lpTokens,
             principals,
             yields,
-            getAMMOrderedAmounts(tempusAMM, minPrincipalsStaked, minYieldsStaked),
             maxLeftoverShares,
-            minRate,
+            yieldsRate,
+            maxSlippage,
             deadline,
             toBackingToken
         );
@@ -618,7 +627,7 @@ contract TempusController is ReentrancyGuard, Ownable, Versioned {
         vault.exitPool(poolId, sender, payable(recipient), request);
     }
 
-    function _exitTempusAMMAndRedeem(
+    function _exitAmmGivenAmountsOutAndEarlyRedeem(
         ITempusAMM tempusAMM,
         uint256 principals,
         uint256 yields,
@@ -650,14 +659,13 @@ contract TempusController is ReentrancyGuard, Ownable, Versioned {
         }
     }
 
-    function _exitTempusAmmAndRedeem(
+    function _redeemWithEqualShares(
         ITempusAMM tempusAMM,
-        uint256 lpTokens,
         uint256 principals,
         uint256 yields,
-        uint256[] memory minLpAmountsOut,
         uint256 maxLeftoverShares,
-        uint256 minRate,
+        uint256 yieldsRate,
+        uint256 maxSlippage,
         uint256 deadline,
         bool toBackingToken
     ) private {
@@ -667,31 +675,31 @@ contract TempusController is ReentrancyGuard, Ownable, Versioned {
         IERC20 yieldShare = IERC20(address(tempusPool.yieldShare()));
         require(principalShare.transferFrom(msg.sender, address(this), principals), "Principals transfer failed");
         require(yieldShare.transferFrom(msg.sender, address(this), yields), "Yields transfer failed");
-
-        if (lpTokens > 0) {
-            // if there is LP balance, transfer to controller
-            require(tempusAMM.transferFrom(msg.sender, address(this), lpTokens), "LP token transfer failed");
-
-            // exit amm and sent shares to controller
-            _exitTempusAMMGivenLP(tempusAMM, address(this), address(this), lpTokens, minLpAmountsOut, false);
-        }
+        require(yieldsRate > 0, "yieldsRate must be greater than 0");
+        require(maxSlippage <= 1e18, "maxSlippage can not be greater than 1e18");
 
         principals = principalShare.balanceOf(address(this));
         yields = yieldShare.balanceOf(address(this));
 
         if (!tempusPool.matured()) {
             if (((yields > principals) ? (yields - principals) : (principals - yields)) >= maxLeftoverShares) {
-                (IERC20 tokenIn, IERC20 tokenOut) = (yields > principals)
-                    ? (yieldShare, principalShare)
-                    : (principalShare, yieldShare);
+                (uint256 swapAmount, bool yieldsIn) = tempusAMM.getSwapAmountToEndWithEqualShares(
+                    principals,
+                    yields,
+                    maxLeftoverShares
+                );
+                uint256 minReturn = yieldsIn
+                    ? swapAmount.mulfV(yieldsRate, tempusPool.backingTokenONE())
+                    : swapAmount.divfV(yieldsRate, tempusPool.backingTokenONE());
 
-                uint256 swapAmount = tempusAMM.getSwapAmountToEndWithEqualShares(principals, yields, maxLeftoverShares);
+                minReturn = minReturn.mulfV(1e18 - maxSlippage, 1e18);
+
                 swap(
                     tempusAMM,
                     swapAmount,
-                    tokenIn,
-                    tokenOut,
-                    swapAmount.mulfV(minRate, tempusPool.backingTokenONE()),
+                    yieldsIn ? yieldShare : principalShare,
+                    yieldsIn ? principalShare : yieldShare,
+                    minReturn,
                     deadline
                 );
 
