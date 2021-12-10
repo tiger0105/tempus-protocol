@@ -37,7 +37,8 @@ contract LidoTempusPool is TempusPool {
     }
 
     function depositToUnderlying(uint256 amount) internal override returns (uint256) {
-        require(msg.value == amount, "ETH value does not match provided amount");
+        // Enforced by the controller
+        assert(msg.value == amount);
 
         uint256 preDepositBalance = IERC20(yieldBearingToken).balanceOf(address(this));
         lido.submit{value: msg.value}(referrer);

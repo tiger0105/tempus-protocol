@@ -492,6 +492,7 @@ contract TempusController is ReentrancyGuard, Ownable, Versioned {
             );
         } else {
             require(address(backingToken) == address(0), "given TempusPool's Backing Token is not ETH");
+            require(msg.value == backingTokenAmount, "ETH value does not match provided amount");
         }
 
         (uint256 mintedShares, uint256 depositedYBT, uint256 fee, uint256 interestRate) = targetPool.onDepositBacking{
