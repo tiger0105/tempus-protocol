@@ -87,6 +87,7 @@ abstract contract TempusPool is ITempusPool, ReentrancyGuard, Ownable, Versioned
         require(ctrl != address(0), "controller can not be zero");
         require(initInterestRate > 0, "initInterestRate can not be zero");
         require(estimatedFinalYield > 0, "estimatedFinalYield can not be zero");
+        require(_yieldBearingToken != address(0), "YBT can not be zero");
 
         yieldBearingToken = _yieldBearingToken;
         backingToken = _backingToken;
