@@ -184,7 +184,7 @@ abstract contract TempusPool is ITempusPool, ReentrancyGuard, Ownable, Versioned
     /// @param yieldTokenAmount YBT amount in YBT decimal precision
     /// @param recipient address to which shares will be minted
     function _mintShares(uint256 yieldTokenAmount, address recipient)
-        internal
+        private
         returns (
             uint256 mintedShares,
             uint256 depositedBT,
@@ -269,7 +269,7 @@ abstract contract TempusPool is ITempusPool, ReentrancyGuard, Ownable, Versioned
         uint256 principalAmount,
         uint256 yieldAmount
     )
-        internal
+        private
         returns (
             uint256 redeemedYieldTokens,
             uint256 fee,
