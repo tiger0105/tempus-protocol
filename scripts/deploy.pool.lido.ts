@@ -20,11 +20,14 @@ async function deploy() {
   const maturityYear = await utils.promptNumber("Enter pool maturity year", null, 2021, 2025);
   const maturityMonth = await utils.promptNumber("Enter pool maturity month", null, 1, 12);
   const maturityDay = await utils.promptNumber("Enter pool maturity day", null, 1, 31);
+  const maturityHour = await utils.promptNumber("Enter pool maturity hour", null, 0, 23);
+  const maturityMinute = await utils.promptNumber("Enter pool maturity minute", null, 0, 59);
   const estimatedYield = await utils.promptNumber("Enter estimated yield", null, 0.0001, 1);
   const depositMaxFee = await utils.promptNumber("Enter maximum deposit fee", null, 0, 1);
   const earlyRedemptionMaxFee = await utils.promptNumber("Enter maximum early redemption fee", null, 0, 1);
   const maturedRedemptionMaxFee = await utils.promptNumber("Enter maximum matured redemption fee", null, 0, 1);
-
+  const referrer = await utils.promptAddress("Enter the address of the Lido Referrer");
+  
   console.log(chalk.green(`* * * TempusAMM configuration * * *`));
   const balancerVault = await utils.promptAddress("Enter the address of the Balancer Vault contract", (await utils.getDeployedContractAddress(network.name, 'Vault')));
   const lpName = await utils.promptInput("Enter LP token Name", `Tempus ${YBT_SYMBOL} LP Token`);
@@ -40,7 +43,9 @@ async function deploy() {
     Date.UTC(
       maturityYear,
       maturityMonth - 1, /// month range is 0-11 for some reason (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC)
-      maturityDay
+      maturityDay,
+      maturityHour,
+      maturityMinute
     )
   ).getTime() / 1000;
   
@@ -63,7 +68,7 @@ async function deploy() {
       earlyRedeemPercent:  ethers.utils.parseUnits(earlyRedemptionMaxFee, YBT_PRECISION).toString(),
       matureRedeemPercent: ethers.utils.parseUnits(maturedRedemptionMaxFee, YBT_PRECISION).toString()
     },
-    ethers.constants.AddressZero /* hardcoded referral code */
+    referrer
   ];
 
 
