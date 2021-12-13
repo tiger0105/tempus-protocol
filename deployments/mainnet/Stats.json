@@ -1,0 +1,316 @@
+{
+  "address": "0xf7247e16d6cD0A64d0C210f150fD356AcF26E89C",
+  "abi": [
+    {
+      "type": "constructor",
+      "payable": false,
+      "inputs": []
+    },
+    {
+      "type": "function",
+      "name": "estimateExitAndRedeem",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "tempusAMM"
+        },
+        {
+          "type": "uint256",
+          "name": "lpTokens"
+        },
+        {
+          "type": "uint256",
+          "name": "principals"
+        },
+        {
+          "type": "uint256",
+          "name": "yields"
+        },
+        {
+          "type": "uint256",
+          "name": "threshold"
+        },
+        {
+          "type": "bool",
+          "name": "toBackingToken"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": "tokenAmount"
+        },
+        {
+          "type": "uint256",
+          "name": "principalsStaked"
+        },
+        {
+          "type": "uint256",
+          "name": "yieldsStaked"
+        },
+        {
+          "type": "uint256",
+          "name": "principalsRate"
+        },
+        {
+          "type": "uint256",
+          "name": "yieldsRate"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "estimateExitAndRedeemGivenStakedOut",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "tempusAMM"
+        },
+        {
+          "type": "uint256",
+          "name": "principals"
+        },
+        {
+          "type": "uint256",
+          "name": "yields"
+        },
+        {
+          "type": "uint256",
+          "name": "principalsStaked"
+        },
+        {
+          "type": "uint256",
+          "name": "yieldsStaked"
+        },
+        {
+          "type": "bool",
+          "name": "toBackingToken"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": "tokenAmount"
+        },
+        {
+          "type": "uint256",
+          "name": "lpTokensRedeemed"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "estimatedDepositAndFix",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "tempusAMM"
+        },
+        {
+          "type": "uint256",
+          "name": "amount"
+        },
+        {
+          "type": "bool",
+          "name": "isBackingToken"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": "principals"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "estimatedDepositAndProvideLiquidity",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "tempusAMM"
+        },
+        {
+          "type": "uint256",
+          "name": "amount"
+        },
+        {
+          "type": "bool",
+          "name": "isBackingToken"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": "lpTokens"
+        },
+        {
+          "type": "uint256",
+          "name": "principals"
+        },
+        {
+          "type": "uint256",
+          "name": "yields"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "estimatedMintedShares",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "pool"
+        },
+        {
+          "type": "uint256",
+          "name": "amount"
+        },
+        {
+          "type": "bool",
+          "name": "isBackingToken"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "estimatedRedeem",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "pool"
+        },
+        {
+          "type": "uint256",
+          "name": "principals"
+        },
+        {
+          "type": "uint256",
+          "name": "yields"
+        },
+        {
+          "type": "bool",
+          "name": "toBackingToken"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "getRate",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "bytes32",
+          "name": "chainlinkAggregatorNodeHash"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": "rate"
+        },
+        {
+          "type": "uint256",
+          "name": "rateDenominator"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "totalValueLockedAtGivenRate",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "pool"
+        },
+        {
+          "type": "bytes32",
+          "name": "rateConversionData"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "totalValueLockedInBackingTokens",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "pool"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "version",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "tuple",
+          "components": [
+            {
+              "type": "uint16",
+              "name": "major"
+            },
+            {
+              "type": "uint16",
+              "name": "minor"
+            },
+            {
+              "type": "uint16",
+              "name": "patch"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
