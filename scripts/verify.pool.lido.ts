@@ -34,9 +34,13 @@ async function main() {
   const principals = await ethers.getContractAt("PrincipalShare", await tempusPool.principalShare());
   const yields = await ethers.getContractAt("YieldShare", await tempusPool.yieldShare());
 
-
   console.log(chalk.yellow("Please enter the constructor required constructor arguments that were used to deploy TempusAMM"));
-  const { pauseWindowDuration, bufferPeriodDuration } = await prompt.get(['pauseWindowDuration', 'bufferPeriodDuration'])
+  const {
+    initialAmplificationFactor,
+    finalAmplificationFactor,
+    pauseWindowDuration,
+    bufferPeriodDuration
+  } = await prompt.get(['initialAmplificationFactor', 'finalAmplificationFactor', 'pauseWindowDuration', 'bufferPeriodDuration'])
 
   console.log(chalk.yellow("Please enter the constructor required constructor arguments that were used to deploy LidoTempusPool"));
   const { 
@@ -52,10 +56,14 @@ async function main() {
     tempusPool.controller(),
     tempusPool.maturityTime(),
     estYield,
-    principals.name(),
-    principals.symbol(),
-    yields.name(),
-    yields.symbol(),
+    {
+      name: ( await principals.name()),
+      symbol: ( await principals.symbol())
+    },
+    {
+      name: ( await yields.name()),
+      symbol: ( await yields.symbol())
+    },
     {
       depositPercent,
       earlyRedeemPercent,
@@ -69,10 +77,8 @@ async function main() {
     tempusAMM.name(),
     tempusAMM.symbol(),
     tempusPool.address,
-    (async () => {
-      const { value, precision } = await tempusAMM.getAmplificationParameter();
-      return value.div(precision);
-    })(),
+    initialAmplificationFactor,
+    finalAmplificationFactor,
     tempusAMM.getSwapFeePercentage(),
     pauseWindowDuration,
     bufferPeriodDuration,
