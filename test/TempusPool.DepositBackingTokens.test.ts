@@ -80,7 +80,8 @@ describeForEachPool("TempusPool DepositBackingTokens", (pool:PoolTestFixture) =>
     (await pool.userState(user)).expect(depositAmount, depositAmount, /*yieldBearing:*/500);
   });
 
-  it.includeIntegration("Should issue appropriate shares after depositing Backing Tokens after changing rate to 2.0", async () =>
+  it("Should issue appropriate shares after depositing Backing Tokens after changing rate to 2.0", async () =>
+  // it.includeIntegration("Should issue appropriate shares after depositing Backing Tokens after changing rate to 2.0", async () =>
   {
     await pool.createDefault();
     let [owner, user] = pool.signers;
@@ -91,7 +92,6 @@ describeForEachPool("TempusPool DepositBackingTokens", (pool:PoolTestFixture) =>
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/200);
 
     await pool.setInterestRate(2.0);
-
     const expectedYBTBalance = pool.yieldPeggedToAsset ? 400 : 200;
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/expectedYBTBalance);
     (await pool.expectDepositBT(user, 100)).to.equal('success');

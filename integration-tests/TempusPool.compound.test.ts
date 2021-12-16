@@ -135,8 +135,8 @@ describe('TempusPool <> Compound <> DAI', function () {
     const totalInterestSigner2 = toWei(btBalancePostSigner2).sub(toWei(btBalancePreSigner2));
     
     const error = new Decimal(1).sub(new Decimal(fromWei(totalInterestSigner2).toString())
-      .div(fromWei(totalInterestSigner1).toString())).abs()
-    
+      .div(fromWei(totalInterestSigner1).toString())).abs();
+      
     expect(error.lessThanOrEqualTo(MAX_ALLOWED_INTEREST_DELTA_ERROR)).is.true;
   });
 });

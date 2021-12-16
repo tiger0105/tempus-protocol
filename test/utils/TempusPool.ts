@@ -11,6 +11,7 @@ export enum PoolType {
   Lido = "Lido",
   Compound = "Compound",
   Yearn = "Yearn",
+  Rari = "Rari"
 }
 
 export interface TempusSharesNames {
@@ -96,6 +97,7 @@ export class TempusPool extends ContractBase {
   /**
    * Deploys AaveTempusPool
    * @param owner Owner who deploys TempusPool and also deployed Controller
+   * @param asset The underlying backing token (e.g. - USDC, DAI)
    * @param yieldToken The yield bearing token, such as aave.earn (AToken)
    * @param controller The Tempus Controller address to bind to the TempusPool
    * @param maturityTime Maturity time of the pool
@@ -119,6 +121,7 @@ export class TempusPool extends ContractBase {
   /**
    * Deploys CompoundTempusPool
    * @param owner Owner who deploys TempusPool and also deployed Controller
+   * @param asset The underlying backing token (e.g. - USDC, DAI)
    * @param yieldToken The yield bearing token, such as cDai
    * @param controller The Tempus Controller address to bind to the TempusPool
    * @param maturityTime Maturity time of the pool
@@ -142,6 +145,7 @@ export class TempusPool extends ContractBase {
   /**
    * Deploys LidoTempusPool
    * @param owner Owner who deploys TempusPool and also deployed Controller
+   * @param asset The underlying backing token (in Lido's case it is always ETH)
    * @param yieldToken The yield bearing token, such as stETH
    * @param controller The Tempus Controller address to bind to the TempusPool
    * @param maturityTime Maturity time of the pool
@@ -165,6 +169,7 @@ export class TempusPool extends ContractBase {
   /**
    * Deploys YearnTempusPool
    * @param owner Owner who deploys TempusPool and also deployed Controller
+   * @param asset The underlying backing token (e.g. - USDC, DAI)
    * @param yieldToken The yield bearing token, such as yvBoost
    * @param controller The Tempus Controller address to bind to the TempusPool
    * @param maturityTime Maturity time of the pool
@@ -185,6 +190,32 @@ export class TempusPool extends ContractBase {
     );
   }
 
+  /**
+   * Deploys RariTempusPool
+   * @param owner Owner who deploys TempusPool and also deployed Controller
+   * @param asset The underlying backing token (e.g. - USDC, DAI)
+   * @param yieldToken The yield bearing token (e.g. - RSPT, RDPT)
+   * @param rariFundManager The Rari Fund Manager contract address
+   * @param controller The Tempus Controller address to bind to the TempusPool
+   * @param maturityTime Maturity time of the pool
+   * @param estimatedYield Initial estimated APR
+   * @param tempusShareNames Symbol names for TPS+TYS
+   */
+   static async deployRari(
+    owner:Signer,
+    asset:ERC20,
+    yieldToken:ERC20,
+    rariFundManager:string,
+    controller: TempusController,
+    maturityTime:number,
+    estimatedYield:number,
+    tempusShareNames:TempusSharesNames
+ ): Promise<TempusPool> {
+   return TempusPool.deploy(
+     PoolType.Rari, owner, controller, asset, yieldToken, maturityTime, estimatedYield, tempusShareNames, rariFundManager
+   );
+ }
+
   static async deploy(
     type:PoolType,
     owner:Signer,
@@ -193,7 +224,8 @@ export class TempusPool extends ContractBase {
     yieldToken:ERC20,
     maturityTime:number,
     estimatedYield:number,
-    shareNames:TempusSharesNames
+    shareNames:TempusSharesNames,
+    underlyingProtocolContractAddress: string = null
   ): Promise<TempusPool> {
     let exchangeRatePrec:number;
     let pool:Contract = null;
@@ -275,6 +307,30 @@ export class TempusPool extends ContractBase {
         type + "TempusPool",
         owner,
         yieldToken.address,
+        controller.address,
+        maturityTime,
+        parseDecimal(estimatedYield, exchangeRatePrec),
+        /*principalsData*/{
+          name: shareNames.principalName, 
+          symbol: shareNames.principalSymbol
+        },
+        /*yieldsData*/{
+          name: shareNames.yieldName, 
+          symbol: shareNames.yieldSymbol
+        },
+        /*maxFeeSetup:*/{
+          depositPercent:      yieldToken.toBigNum(0.5), // fees are stored in YBT
+          earlyRedeemPercent:  yieldToken.toBigNum(1.0),
+          matureRedeemPercent: yieldToken.toBigNum(0.5)
+        }
+      );
+    } else if (type === PoolType.Rari) {
+      exchangeRatePrec = 18; // exchange rate precision = Always 18
+      pool = await ContractBase.deployContractBy(
+        type + "TempusPool",
+        owner,
+        underlyingProtocolContractAddress,
+        (asset as ERC20).address,
         controller.address,
         maturityTime,
         parseDecimal(estimatedYield, exchangeRatePrec),

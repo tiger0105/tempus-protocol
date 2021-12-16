@@ -1,4 +1,4 @@
-import { Contract } from "ethers";
+import { Contract, Transaction } from "ethers";
 import { NumberOrString } from "./Decimal";
 import { ERC20OwnerMintable } from "./ERC20OwnerMintable";
 
@@ -24,9 +24,17 @@ export class PoolShare extends ERC20OwnerMintable {
   }
 
   /**
-   * @returns Price per share as described in PoolShare.sol
+   * @returns Stored price per share as described in PoolShare.sol
    */
   async getPricePerFullShareStored(): Promise<NumberOrString> {
     return this.fromBigNum(await this.contract.getPricePerFullShareStored());
+  }
+
+  /**
+   * @returns Price per share as described in PoolShare.sol
+   * @notice - This is a state-changing method
+   */
+   async getPricePerFullShare(): Promise<Transaction> {
+    return this.contract.getPricePerFullShare();
   }
 }

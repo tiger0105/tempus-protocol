@@ -1,0 +1,161 @@
+// SPDX-License-Identifier: GPL-3.0
+
+pragma solidity 0.8.10;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "./RariFundPriceConsumerMock.sol";
+import "./RariFundTokenMock.sol";
+import "../../protocols/rari/IRariFundManager.sol";
+import "../../protocols/rari/IRariFundPriceConsumer.sol";
+import "../../math/Fixed256xVar.sol";
+
+contract RariFundManagerMock is IRariFundManager {
+    using Fixed256xVar for uint256;
+
+    IERC20Metadata private immutable asset;
+
+    IRariFundPriceConsumer public immutable override rariFundPriceConsumer;
+    address public immutable override rariFundToken;
+    // used for mocks, it will force-fail the next deposit or redeem
+    bool public mockFailNextDepositOrRedeem;
+    uint256 private _fundBalanceMultiplier = 1e18;
+    uint256 private _backingTokensDeposited;
+    uint256 private immutable _currencyIndex;
+    uint256 private immutable _initialFundBalance;
+    uint256 private constant _initialYbtMintAmount = 1000 * 1e18; /// 100000 initial supply
+
+    constructor(
+        IERC20Metadata _asset,
+        uint256 initialRate,
+        string memory _name,
+        string memory _symbol
+    ) {
+        uint256 backingTokenIndex = type(uint256).max;
+        string memory backingTokenSymbol = _asset.symbol();
+        string[] memory acceptedSymbols = getAcceptedCurrencies();
+        for (uint256 i = 0; i < acceptedSymbols.length; i++) {
+            if (keccak256(bytes(backingTokenSymbol)) == keccak256(bytes(acceptedSymbols[i]))) {
+                backingTokenIndex = i;
+                break;
+            }
+        }
+
+        require(backingTokenIndex != type(uint256).max, "backing token is not accepted by the rari pool mock");
+
+        _initialFundBalance = 1000 * (10**_asset.decimals()); /// 1000 BackingTokens
+        _currencyIndex = backingTokenIndex;
+        asset = _asset;
+        rariFundPriceConsumer = new RariFundPriceConsumerMock(3);
+        rariFundToken = address(new RariFundTokenMock(_name, _symbol));
+
+        RariFundTokenMock(rariFundToken).mint(address(1), _initialYbtMintAmount);
+        setInterestRate(initialRate);
+    }
+
+    /// Same order as here - https://github.com/Rari-Capital/rari-stable-pool-contracts/blob/386aa8811e7f12c2908066ae17af923758503739/contracts/RariFundManager.sol#L104
+    function getAcceptedCurrencies() public pure override returns (string[] memory) {
+        string[] memory acceptedCurrencies = new string[](3);
+        acceptedCurrencies[0] = "DAI";
+        acceptedCurrencies[1] = "USDC";
+        acceptedCurrencies[2] = "USDT";
+
+        return acceptedCurrencies;
+    }
+
+    function getFundBalance() public view override returns (uint256) {
+        uint256 backingTokenToUsdRate = rariFundPriceConsumer.getCurrencyPricesInUsd()[_currencyIndex];
+
+        /// setInterestRate works by manipulating _backingTokensDeposited & _fundBalanceMultiplier
+        uint256 scaledFundBalance = ((_initialFundBalance + _backingTokensDeposited).mulfV(
+            backingTokenToUsdRate,
+            10**asset.decimals()
+        ) * _fundBalanceMultiplier) / 1e18;
+
+        uint256 unscaledDeposits = (asset.balanceOf(address(this)) - _backingTokensDeposited).mulfV(
+            backingTokenToUsdRate,
+            10**asset.decimals()
+        );
+
+        return scaledFundBalance + unscaledDeposits;
+    }
+
+    function getWithdrawalFeeRate() external pure override returns (uint256) {
+        return 0;
+    }
+
+    /// @notice MOCK ONLY
+    /// @dev Sets the current pricePerShare
+    /// @param interestRate Asset liquidity index. Expressed in BackingToken decimals precision
+    function setInterestRate(uint256 interestRate) public {
+        uint256 rftTotalSupply = IERC20(rariFundToken).totalSupply();
+        uint256 fundBalanceUsd = getFundBalance();
+        require(rftTotalSupply > 0, "YBT supply is 0");
+        require(fundBalanceUsd > 0, "fund balance is 0");
+
+        _fundBalanceMultiplier = interestRate;
+        _backingTokensDeposited = asset.balanceOf(address(this));
+
+        RariFundPriceConsumerMock(address(rariFundPriceConsumer)).setCurrencyPriceInUsd(
+            _currencyIndex,
+            (interestRate == 0) ? 0 : 1e18
+        );
+    }
+
+    /// @notice MOCK ONLY
+    function setFailNextDepositOrRedeem(bool fail) public {
+        mockFailNextDepositOrRedeem = fail;
+    }
+
+    /// @dev Ref - https://github.com/Rari-Capital/rari-stable-pool-contracts/blob/386aa8811e7f12c2908066ae17af923758503739/contracts/RariFundManager.sol#L572
+    function deposit(string calldata, uint256 amount) external override {
+        if (mockFailNextDepositOrRedeem) {
+            setFailNextDepositOrRedeem(false);
+            revert("random mock failure from rari");
+        }
+
+        uint256 rftTotalSupply = IERC20(rariFundToken).totalSupply();
+        uint256 fundBalanceUsd = getFundBalance();
+        uint256 backingTokenToUsdRate = rariFundPriceConsumer.getCurrencyPricesInUsd()[_currencyIndex];
+        uint256 amountUsd = amount.mulfV(backingTokenToUsdRate, 10**asset.decimals());
+
+        uint256 rftAmount = amountUsd.mulfV(rftTotalSupply, fundBalanceUsd);
+
+        require(asset.transferFrom(msg.sender, address(this), amount), "transfer failed");
+        RariFundTokenMock(rariFundToken).mint(msg.sender, rftAmount);
+    }
+
+    /// @dev Ref - https://github.com/Rari-Capital/rari-stable-pool-contracts/blob/386aa8811e7f12c2908066ae17af923758503739/contracts/RariFundManager.sol#L737
+    function withdraw(string calldata, uint256 amount) external override returns (uint256) {
+        if (mockFailNextDepositOrRedeem) {
+            setFailNextDepositOrRedeem(false);
+            revert("random mock failure from rari");
+        }
+
+        uint256 backingTokenToUsdRate = rariFundPriceConsumer.getCurrencyPricesInUsd()[_currencyIndex];
+        uint256 amountUsd = amount.mulfV(backingTokenToUsdRate, 10**asset.decimals()); /// scale to 1e18
+
+        // Calculate RFT to burn
+        uint256 rftBurnAmount = getRftBurnAmount(msg.sender, amountUsd);
+
+        RariFundTokenMock(rariFundToken).burn(msg.sender, rftBurnAmount);
+        asset.transfer(msg.sender, amount);
+
+        return amount;
+    }
+
+    /// Ref - https://github.com/Rari-Capital/rari-stable-pool-contracts/blob/386aa8811e7f12c2908066ae17af923758503739/contracts/RariFundManager.sol#L630
+    function getRftBurnAmount(address from, uint256 amountUsd) internal view returns (uint256) {
+        uint256 rftTotalSupply = IERC20(rariFundToken).totalSupply();
+        uint256 fundBalanceUsd = getFundBalance();
+        require(fundBalanceUsd > 0, "Fund balance is zero.");
+        uint256 rftAmount = amountUsd.mulfV(rftTotalSupply, fundBalanceUsd);
+        require(
+            rftAmount <= IERC20(rariFundToken).balanceOf(from),
+            "Your RFT balance is too low for a withdrawal of this amount."
+        );
+        require(rftAmount > 0, "Withdrawal amount is so small that no RFT would be burned.");
+        return rftAmount;
+    }
+}
