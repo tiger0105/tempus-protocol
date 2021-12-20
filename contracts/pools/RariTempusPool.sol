@@ -100,10 +100,12 @@ contract RariTempusPool is TempusPool {
             withdrawalAmountInBackingToken -= 1;
         }
 
-        uint256 amountWithdrawn = rariFundManager.withdraw(
+        uint256 preDepositBalance = IERC20(yieldBearingToken).balanceOf(address(this));
+        rariFundManager.withdraw(
             IERC20Metadata(backingToken).symbol(),
             withdrawalAmountInBackingToken
         );
+        uint256 amountWithdrawn = IERC20(yieldBearingToken).balanceOf(address(this)) - preDepositBalance;
 
         return IERC20(backingToken).untrustedTransfer(recipient, amountWithdrawn);
     }
