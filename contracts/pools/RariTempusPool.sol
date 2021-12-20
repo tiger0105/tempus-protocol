@@ -49,9 +49,9 @@ contract RariTempusPool is TempusPool {
             maxFeeSetup
         )
     {
-        /// As for now, Rari's Yield Bearing Tokens are always 18 decimals and throughout this contract we're using some 
+        /// As for now, Rari's Yield Bearing Tokens are always 18 decimals and throughout this contract we're using some
         /// hard-coded 18 decimal logic for simplification and optimization of some of the calculations.
-        /// Therefore, non 18 decimal YBT are not with this current version. 
+        /// Therefore, non 18 decimal YBT are not with this current version.
         require(
             IERC20Metadata(yieldBearingToken).decimals() == 18,
             "only 18 decimal Rari Yield Bearing Tokens are supported"
@@ -117,7 +117,7 @@ contract RariTempusPool is TempusPool {
         );
 
         require(lastCalculatedInterestRate > 0, "Calculated rate is too small");
-        
+
         return lastCalculatedInterestRate;
     }
 

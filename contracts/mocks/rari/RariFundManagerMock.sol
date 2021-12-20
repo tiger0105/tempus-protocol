@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./RariFundPriceConsumerMock.sol";
-import "./RariFundTokenMock.sol";
+import "../../token/ERC20OwnerMintableToken.sol";
 import "../../protocols/rari/IRariFundManager.sol";
 import "../../protocols/rari/IRariFundPriceConsumer.sol";
 import "../../math/Fixed256xVar.sol";
@@ -48,9 +48,9 @@ contract RariFundManagerMock is IRariFundManager {
         _currencyIndex = backingTokenIndex;
         asset = _asset;
         rariFundPriceConsumer = new RariFundPriceConsumerMock(3);
-        rariFundToken = address(new RariFundTokenMock(_name, _symbol));
+        rariFundToken = address(new ERC20OwnerMintableToken(_name, _symbol));
 
-        RariFundTokenMock(rariFundToken).mint(address(1), _initialYbtMintAmount);
+        ERC20OwnerMintableToken(rariFundToken).mint(address(1), _initialYbtMintAmount);
         setInterestRate(initialRate);
     }
 
@@ -123,7 +123,7 @@ contract RariFundManagerMock is IRariFundManager {
         uint256 rftAmount = amountUsd.mulfV(rftTotalSupply, fundBalanceUsd);
 
         require(asset.transferFrom(msg.sender, address(this), amount), "transfer failed");
-        RariFundTokenMock(rariFundToken).mint(msg.sender, rftAmount);
+        ERC20OwnerMintableToken(rariFundToken).mint(msg.sender, rftAmount);
     }
 
     /// @dev Ref - https://github.com/Rari-Capital/rari-stable-pool-contracts/blob/386aa8811e7f12c2908066ae17af923758503739/contracts/RariFundManager.sol#L737
@@ -139,7 +139,7 @@ contract RariFundManagerMock is IRariFundManager {
         // Calculate RFT to burn
         uint256 rftBurnAmount = getRftBurnAmount(msg.sender, amountUsd);
 
-        RariFundTokenMock(rariFundToken).burn(msg.sender, rftBurnAmount);
+        ERC20OwnerMintableToken(rariFundToken).burnFrom(msg.sender, rftBurnAmount);
         asset.transfer(msg.sender, amount);
 
         return amount;
