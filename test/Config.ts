@@ -11,7 +11,7 @@ export const ALL_POOLS = [
 ];
 
 // Set this to `PoolType.XXX` if you want to only run one specific pool's tests
-const ONLY_RUN_POOL:PoolType = PoolType.Rari; /// TODO: IMPORTANT SET TO UNDEFINED
+const ONLY_RUN_POOL:PoolType = undefined;
 
 // Set this to `aDAI` or `aUSDC` if you want to only run one specific YBT tests
 const ONLY_YIELD_TOKEN:string = undefined;

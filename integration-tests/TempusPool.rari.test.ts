@@ -34,7 +34,7 @@ async function setupWithRariWithdrawalFee(rariFee: BigNumberish) {
       const rariFundPriceConsumer = await ethers.getContract("rariFundPriceConsumer");
       
       if (Number(rariFee.toString()) > 0) {
-        await owner.sendTransaction({ from: owner.address, to: rariFundManagerOwner, value: toWei(1) });
+        await owner.sendTransaction({ from: owner.address, to: rariFundManagerOwner, value: toWei(10) });
         // Set Rari's Withdrawal Fee
         await rariFundManager.connect(await ethers.getSigner(rariFundManagerOwner)).setWithdrawalFeeRate(rariFee);
       }
@@ -132,7 +132,7 @@ describe('TempusPool <> Rari', function () {
     }
     
     await rariFundManager.connect(signer2).withdraw("USDC", usdcValue); // withdraw directly from Rari 
-    await tempusPool.controller.redeemToBacking(signer1, tempusPool, yieldShareBalanceSigner1, yieldShareBalanceSigner1);
+    await tempusPool.controller.redeemToBacking(signer1, tempusPool, yieldShareBalanceSigner1, yieldShareBalanceSigner1, signer1.address);
     
     const btBalancePostSigner1 = await usdc.balanceOf(signer1);
     const btBalancePostSigner2 = await usdc.balanceOf(signer2);
@@ -161,20 +161,20 @@ describe('TempusPool <> Rari', function () {
     
     await usdc.approve(signer1, tempusPool.controller.address, depositAmount);
     await usdc.approve(signer2, tempusPool.controller.address, "1000000000.0");
-
+    
     await tempusPool.controller.depositBacking(signer2, tempusPool, "1234.56789"); // deposit some BT to the pool before 
+    
     /// send directly to the Rari Fund Controller to emulate yield accumulation (which increases the interest rate).
     /// accrue some interest so that the pool interest rate increases from the initial
     await usdc.transfer(usdcHolder, (await rariFundManager.rariFundController()), "1204200.696969");  
-  
     
     await tempusPool.controller.depositBacking(signer1, tempusPool, depositAmount); // deposit some BT to the pool before 
     
     /// send directly to the Rari Fund Controller to emulate yield accumulation (which increases the interest rate).
     /// accrue some interest so that the pool interest rate increases from the initial
     await usdc.transfer(usdcHolder, (await rariFundManager.rariFundController()), "420420.696969");  
-    await tempusPool.controller.depositBacking(signer2, tempusPool, "1234.56789"); // deposit some BT to the pool before 
     
+    await tempusPool.controller.depositBacking(signer2, tempusPool, "1234.56789"); // deposit some BT to the pool before 
     
     /// send directly to the Rari Fund Controller to emulate yield accumulation (which increases the interest rate)
     await usdc.transfer(usdcHolder, (await rariFundManager.rariFundController()), "4204200.696969"); 
@@ -183,9 +183,10 @@ describe('TempusPool <> Rari', function () {
     const yieldShareBalanceSigner1 = await tempusPool.yieldShare.balanceOf(signer1);
     const yieldShareBalanceSigner2 = await tempusPool.yieldShare.balanceOf(signer2);
     
-    await tempusPool.controller.redeemToBacking(signer1, tempusPool, yieldShareBalanceSigner1, yieldShareBalanceSigner1);
-    await tempusPool.controller.redeemToBacking(signer2, tempusPool, yieldShareBalanceSigner2, yieldShareBalanceSigner2);
-
+    await tempusPool.controller.redeemToBacking(signer1, tempusPool, yieldShareBalanceSigner1, yieldShareBalanceSigner1, signer1.address);
+    
+    await tempusPool.controller.redeemToBacking(signer2, tempusPool, yieldShareBalanceSigner2, yieldShareBalanceSigner2, signer1.address);
+    
     const totalSupply = await tempusPool.yieldShare.totalSupply();
     const tempusPoolYbtBalancePostRedeems = await rsptUsdc.balanceOf(tempusPool.address);
     const ybtDustRemainingPrecentage = new Decimal(tempusPoolYbtBalancePostRedeems.toString()).div(new Decimal(tempusPoolYbtBalancePreRedeems.toString()))
