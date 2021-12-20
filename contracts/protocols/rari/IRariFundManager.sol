@@ -30,6 +30,6 @@ interface IRariFundManager {
     /// @return An array of the symbols of the currencies supported by the pool
     function getAcceptedCurrencies() external view returns (string[] memory);
 
-    /// @return Withdrawl Fee Rate (in 18 decimal precision)
+    /// @return Withdrawal Fee Rate (in 18 decimal precision)
     function getWithdrawalFeeRate() external view returns (uint256);
 }
