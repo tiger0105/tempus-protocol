@@ -42,7 +42,7 @@ contract RariTempusPool is TempusPool {
                 fundManager.rariFundToken(),
                 getTokenRariPoolIndex(fundManager, backingToken)
             ),
-            1e18,
+            /*exchangeRateOne:*/ 1e18,
             estYield,
             principalsData,
             yieldsData,
