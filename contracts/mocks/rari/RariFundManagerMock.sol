@@ -54,7 +54,7 @@ contract RariFundManagerMock is IRariFundManager {
         setInterestRate(initialRate);
     }
 
-    /// Same order as here - https://github.com/Rari-Capital/rari-stable-pool-contracts/blob/386aa8811e7f12c2908066ae17af923758503739/contracts/RariFundManager.sol#L104
+    /// @dev Same order as here - https://github.com/Rari-Capital/rari-stable-pool-contracts/blob/386aa8811e7f12c2908066ae17af923758503739/contracts/RariFundManager.sol#L104
     function getAcceptedCurrencies() public pure override returns (string[] memory) {
         string[] memory acceptedCurrencies = new string[](3);
         acceptedCurrencies[0] = "DAI";
@@ -108,7 +108,7 @@ contract RariFundManagerMock is IRariFundManager {
         mockFailNextDepositOrRedeem = fail;
     }
 
-    /// @dev Ref - https://github.com/Rari-Capital/rari-stable-pool-contracts/blob/386aa8811e7f12c2908066ae17af923758503739/contracts/RariFundManager.sol#L572
+    /// @notice based on - https://github.com/Rari-Capital/rari-stable-pool-contracts/blob/386aa8811e7f12c2908066ae17af923758503739/contracts/RariFundManager.sol#L572
     function deposit(string calldata, uint256 amount) external override {
         if (mockFailNextDepositOrRedeem) {
             setFailNextDepositOrRedeem(false);
@@ -126,7 +126,7 @@ contract RariFundManagerMock is IRariFundManager {
         ERC20OwnerMintableToken(rariFundToken).mint(msg.sender, rftAmount);
     }
 
-    /// @dev Ref - https://github.com/Rari-Capital/rari-stable-pool-contracts/blob/386aa8811e7f12c2908066ae17af923758503739/contracts/RariFundManager.sol#L737
+    /// @notice based on - https://github.com/Rari-Capital/rari-stable-pool-contracts/blob/386aa8811e7f12c2908066ae17af923758503739/contracts/RariFundManager.sol#L737
     function withdraw(string calldata, uint256 amount) external override returns (uint256) {
         if (mockFailNextDepositOrRedeem) {
             setFailNextDepositOrRedeem(false);
@@ -145,7 +145,7 @@ contract RariFundManagerMock is IRariFundManager {
         return amount;
     }
 
-    /// Ref - https://github.com/Rari-Capital/rari-stable-pool-contracts/blob/386aa8811e7f12c2908066ae17af923758503739/contracts/RariFundManager.sol#L630
+    /// @notice based on https://github.com/Rari-Capital/rari-stable-pool-contracts/blob/386aa8811e7f12c2908066ae17af923758503739/contracts/RariFundManager.sol#L630
     function getRftBurnAmount(address from, uint256 amountUsd) internal view returns (uint256) {
         uint256 rftTotalSupply = IERC20(rariFundToken).totalSupply();
         uint256 fundBalanceUsd = getFundBalance();

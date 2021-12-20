@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.10;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -100,12 +100,12 @@ contract RariTempusPool is TempusPool {
             withdrawalAmountInBackingToken -= 1;
         }
 
-        uint256 preDepositBalance = IERC20(yieldBearingToken).balanceOf(address(this));
+        uint256 preDepositBalance = IERC20(backingToken).balanceOf(address(this));
         rariFundManager.withdraw(
             IERC20Metadata(backingToken).symbol(),
             withdrawalAmountInBackingToken
         );
-        uint256 amountWithdrawn = IERC20(yieldBearingToken).balanceOf(address(this)) - preDepositBalance;
+        uint256 amountWithdrawn = IERC20(backingToken).balanceOf(address(this)) - preDepositBalance;
 
         return IERC20(backingToken).untrustedTransfer(recipient, amountWithdrawn);
     }
@@ -141,7 +141,7 @@ contract RariTempusPool is TempusPool {
         return interestRate / exchangeRateToBackingPrecision;
     }
 
-    /// Based on https://github.com/Rari-Capital/rari-stable-pool-contracts/blob/386aa8811e7f12c2908066ae17af923758503739/contracts/RariFundManager.sol#L580
+    /// @notice - based on https://github.com/Rari-Capital/rari-stable-pool-contracts/blob/386aa8811e7f12c2908066ae17af923758503739/contracts/RariFundManager.sol#L580
     function calculateInterestRate(
         IRariFundManager fundManager,
         address ybToken,

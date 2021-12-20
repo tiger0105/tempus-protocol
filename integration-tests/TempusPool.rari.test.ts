@@ -34,7 +34,7 @@ async function setupWithRariWithdrawalFee(rariFee: BigNumberish) {
       const rariFundPriceConsumer = await ethers.getContract("rariFundPriceConsumer");
       
       if (Number(rariFee.toString()) > 0) {
-        await owner.sendTransaction({ from: owner.address, to: rariFundManagerOwner, value: toWei(10) });
+        await owner.sendTransaction({ from: owner.address, to: rariFundManagerOwner, value: toWei(3) });
         // Set Rari's Withdrawal Fee
         await rariFundManager.connect(await ethers.getSigner(rariFundManagerOwner)).setWithdrawalFeeRate(rariFee);
       }

@@ -3,18 +3,16 @@ pragma solidity 0.8.10;
 
 import "./IRariFundPriceConsumer.sol";
 
-/***
-    @notice based on https://github.com/Rari-Capital/rari-stable-pool-contracts/blob/386aa8811e7f12c2908066ae17af923758503739/contracts/RariFundManager.sol
- */
+/// @notice based on https://github.com/Rari-Capital/rari-stable-pool-contracts/blob/386aa8811e7f12c2908066ae17af923758503739/contracts/RariFundManager.sol
 interface IRariFundManager {
     /// @dev Deposits an `amount` of Backing Tokens into pool
-    /// @param amount The amount of Backing Tokens to be deposited
     /// @param currencyCode The symbol of the token to be deposited
+    /// @param amount The amount of Backing Tokens to be deposited
     function deposit(string calldata currencyCode, uint256 amount) external;
 
     /// @dev Withdraws an `amount` of Backing Tokens from the pool
-    /// @param amount The amount of Backing Tokens to withdraw
     /// @param currencyCode The symbol of the token to withdraw
+    /// @param amount The amount of Backing Tokens to withdraw
     /// @return The amount of Backing Tokens that were withdrawn afeter fee deductions (if fees are enabled)
     function withdraw(string calldata currencyCode, uint256 amount) external returns (uint256);
 
