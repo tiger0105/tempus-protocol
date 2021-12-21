@@ -23,9 +23,7 @@ contract RariFundManagerMock is IRariFundManager {
     uint256 private _fundBalanceMultiplier = 1e18;
     uint256 private _backingTokensDeposited;
     uint256 private immutable _currencyIndex;
-    uint256 private immutable _initialFundBalance;
-    uint256 private constant _initialYbtMintAmount = 1000 * 1e18; /// 100000 initial supply
-
+    
     constructor(
         IERC20Metadata _asset,
         uint256 initialRate,
@@ -44,13 +42,11 @@ contract RariFundManagerMock is IRariFundManager {
 
         require(backingTokenIndex != type(uint256).max, "backing token is not accepted by the rari pool mock");
 
-        _initialFundBalance = 1000 * (10**_asset.decimals()); /// 1000 BackingTokens
         _currencyIndex = backingTokenIndex;
         asset = _asset;
         rariFundPriceConsumer = new RariFundPriceConsumerMock(3);
         rariFundToken = address(new ERC20OwnerMintableToken(_name, _symbol));
 
-        ERC20OwnerMintableToken(rariFundToken).mint(address(1), _initialYbtMintAmount);
         setInterestRate(initialRate);
     }
 
@@ -68,7 +64,7 @@ contract RariFundManagerMock is IRariFundManager {
         uint256 backingTokenToUsdRate = rariFundPriceConsumer.getCurrencyPricesInUsd()[_currencyIndex];
 
         /// setInterestRate works by manipulating _backingTokensDeposited & _fundBalanceMultiplier
-        uint256 scaledFundBalance = ((_initialFundBalance + _backingTokensDeposited).mulfV(
+        uint256 scaledFundBalance = (_backingTokensDeposited.mulfV(
             backingTokenToUsdRate,
             10**asset.decimals()
         ) * _fundBalanceMultiplier) / 1e18;
@@ -90,16 +86,13 @@ contract RariFundManagerMock is IRariFundManager {
     /// @param interestRate Asset liquidity index. Expressed in BackingToken decimals precision
     function setInterestRate(uint256 interestRate) public {
         uint256 rftTotalSupply = IERC20(rariFundToken).totalSupply();
-        uint256 fundBalanceUsd = getFundBalance();
-        require(rftTotalSupply > 0, "YBT supply is 0");
-        require(fundBalanceUsd > 0, "fund balance is 0");
-
+        
         _fundBalanceMultiplier = interestRate;
         _backingTokensDeposited = asset.balanceOf(address(this));
 
         RariFundPriceConsumerMock(address(rariFundPriceConsumer)).setCurrencyPriceInUsd(
             _currencyIndex,
-            (interestRate == 0) ? 0 : 1e18
+            (interestRate == 0 || rftTotalSupply == 0) ? interestRate : 1e18
         );
     }
 
@@ -120,7 +113,7 @@ contract RariFundManagerMock is IRariFundManager {
         uint256 backingTokenToUsdRate = rariFundPriceConsumer.getCurrencyPricesInUsd()[_currencyIndex];
         uint256 amountUsd = amount.mulfV(backingTokenToUsdRate, 10**asset.decimals());
 
-        uint256 rftAmount = amountUsd.mulfV(rftTotalSupply, fundBalanceUsd);
+        uint256 rftAmount = (rftTotalSupply > 0 && fundBalanceUsd > 0) ? amountUsd.mulfV(rftTotalSupply, fundBalanceUsd) : amountUsd;
 
         require(asset.transferFrom(msg.sender, address(this), amount), "transfer failed");
         ERC20OwnerMintableToken(rariFundToken).mint(msg.sender, rftAmount);
