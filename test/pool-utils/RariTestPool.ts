@@ -18,7 +18,7 @@ export class RariTestPool extends PoolTestFixture {
     await this.rari.setInterestRate(rate);
     /// TODO: temporary hack that updates the cached interest rate. Should be removed once
     ///   Stats.sol exposes non-view methods that use the latest rate (then tests could be updated to use these).
-    await this.yields.getPricePerFullShare(); 
+    await this.yields.contract.getPricePerFullShare(); 
   }
   async forceFailNextDepositOrRedeem(): Promise<void> {
     await this.rari.contract.setFailNextDepositOrRedeem(true);
