@@ -1,4 +1,4 @@
-import { Contract, Transaction } from "ethers";
+import { Contract } from "ethers";
 import { NumberOrString } from "./Decimal";
 import { ERC20OwnerMintable } from "./ERC20OwnerMintable";
 
