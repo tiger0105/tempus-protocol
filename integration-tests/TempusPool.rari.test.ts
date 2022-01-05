@@ -23,15 +23,20 @@ async function setupWithRariWithdrawalFee(rariFee: BigNumberish) {
       });
       
       const owner = (await ethers.getSigners())[0];
-      const { usdcHolder, rariFundManagerOwner } = await getNamedAccounts();
+      // const { usdcHolder, rariFundManagerOwner } = await getNamedAccounts();
+      const { daiHolder: usdcHolder, rariFundManagerOwner } = await getNamedAccounts();
       const [ account1, account2 ] = await getUnnamedAccounts();
       const usdcHolderSigner = await ethers.getSigner(usdcHolder);
       
-      const usdcBackingToken = new ERC20("ERC20FixedSupply", 6, (await ethers.getContract('Usdc')));
-      const rsptUsdcYieldToken = new ERC20("ERC20FixedSupply", 18, (await ethers.getContract('rsptUSDC')));
+      // const usdcBackingToken = new ERC20("ERC20FixedSupply", 6, (await ethers.getContract('Usdc')));
+      const usdcBackingToken = new ERC20("ERC20FixedSupply", 18, (await ethers.getContract('Dai'))); /// TODO: IMPORTANT
+      // const rsptUsdcYieldToken = new ERC20("ERC20FixedSupply", 18, (await ethers.getContract('rsptUSDC')));
+      const rsptUsdcYieldToken = new ERC20("ERC20FixedSupply", 18, (await ethers.getContract('rsptDAI')));
       
-      const rariFundManager = await ethers.getContract("rariUsdcFundManager");
-      const rariFundPriceConsumer = await ethers.getContract("rariFundPriceConsumer");
+      // const rariFundManager = await ethers.getContract("rariUsdcFundManager");
+      const rariFundManager = await ethers.getContract("rariDaiFundManager");
+      /// const rariFundPriceConsumer = await ethers.getContract("rariUsdcFundPriceConsumer");
+      const rariFundPriceConsumer = await ethers.getContract("rariDaiFundPriceConsumer");
       
       if (Number(rariFee.toString()) > 0) {
         await owner.sendTransaction({ from: owner.address, to: rariFundManagerOwner, value: toWei(3) });
@@ -70,7 +75,7 @@ async function setupWithRariWithdrawalFee(rariFee: BigNumberish) {
   return fixtures[rariFee.toString()]()
 }
 
-describe('TempusPool <> Rari', function () {
+describe.only('TempusPool <> Rari', function () {
   describe('Verifies that depositing directly to Rari accrues equal interest compared to depositing via TempusPool', async () => {
     it("0% Rari Withdrawal Fee", async () => {
       await testInterestDirectlyToProtocolMatchesViaTempus(0);
@@ -91,6 +96,8 @@ describe('TempusPool <> Rari', function () {
 
 
   async function testInterestDirectlyToProtocolMatchesViaTempus(rariFee) {
+    /// TODO: IMPORTANT query token (.decimals())
+    const BACKING_TOKEN_DECIMALS = 18;
     // The maximum discrepancy to allow between accrued interest from depositing directly to Rari
     //   vs depositing to Rari via TempusPool
     const MAX_ALLOWED_INTEREST_DELTA_ERROR = 1e-6; // 0.0001% error
@@ -115,7 +122,8 @@ describe('TempusPool <> Rari', function () {
     const btBalancePreSigner2 = await usdc.balanceOf(signer2.address);
     
     await tempusPool.controller.depositBacking(signer1, tempusPool, depositAmount); // deposit some BT to the pool before 
-    await rariFundManager.connect(signer2).deposit("USDC", parseDecimal(depositAmount, 6)); // deposit directly to Rari
+    await rariFundManager.connect(signer2).deposit("DAI", parseDecimal(depositAmount, BACKING_TOKEN_DECIMALS)); // deposit directly to Rari
+    // await rariFundManager.connect(signer2).deposit("USDC", parseDecimal(depositAmount, BACKING_TOKEN_DECIMALS)); // deposit directly to Rari /// TODO: IMPORTANT
     
     /// send directly to the Rari Fund Controller to emulate yield accumulation (which increases the interest rate)
     await usdc.transfer(usdcHolder, (await rariFundManager.rariFundController()), "4204200.696969");
@@ -126,18 +134,19 @@ describe('TempusPool <> Rari', function () {
     
     /// max withdrawal amount calculation is based the RariSDK implementation - https://github.com/Rari-Capital/RariSDK/blob/d6293e09c36a4ac6914725f5a5528a9c1e7cb178/src/Vaults/pools/stable.ts#L1775
     const usdcPriceInUsd = (await rariFundPriceConsumer.getCurrencyPricesInUsd())[1] /// USDC is index 1
-    let usdcValue = usdValue.mul(parseDecimal(1, 6)).div(usdcPriceInUsd); /// apply USDC-USD rate
-    if (usdcValue.mul(usdcPriceInUsd).div(parseDecimal(1, 6)).gt(usdValue)) {
+    let usdcValue = usdValue.mul(parseDecimal(1, BACKING_TOKEN_DECIMALS)).div(usdcPriceInUsd); /// apply USDC-USD rate
+    if (usdcValue.mul(usdcPriceInUsd).div(parseDecimal(1, BACKING_TOKEN_DECIMALS)).gt(usdValue)) {
       usdcValue = usdcValue.sub(1);
     }
     
-    await rariFundManager.connect(signer2).withdraw("USDC", usdcValue); // withdraw directly from Rari 
+    // await rariFundManager.connect(signer2).withdraw("USDC", usdcValue); // withdraw directly from Rari 
+    await rariFundManager.connect(signer2).withdraw("DAI", usdcValue); // withdraw directly from Rari /// TODO: IMPORTANT 
     await tempusPool.controller.redeemToBacking(signer1, tempusPool, yieldShareBalanceSigner1, yieldShareBalanceSigner1, signer1.address);
     
     const btBalancePostSigner1 = await usdc.balanceOf(signer1);
     const btBalancePostSigner2 = await usdc.balanceOf(signer2);
-    const totalInterestSigner1 = parseDecimal(btBalancePostSigner1, 6).sub(parseDecimal(btBalancePreSigner1, 6));
-    const totalInterestSigner2 = parseDecimal(btBalancePostSigner2, 6).sub(parseDecimal(btBalancePreSigner2, 6));
+    const totalInterestSigner1 = parseDecimal(btBalancePostSigner1, BACKING_TOKEN_DECIMALS).sub(parseDecimal(btBalancePreSigner1, BACKING_TOKEN_DECIMALS));
+    const totalInterestSigner2 = parseDecimal(btBalancePostSigner2, BACKING_TOKEN_DECIMALS).sub(parseDecimal(btBalancePreSigner2, BACKING_TOKEN_DECIMALS));
     
     const error = new Decimal(1).sub(new Decimal(fromWei(totalInterestSigner2).toString())
       .div(fromWei(totalInterestSigner1).toString())).abs();
