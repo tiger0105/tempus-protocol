@@ -91,7 +91,6 @@ describeForEachPool("TempusPool DepositBackingTokens", (pool:PoolTestFixture) =>
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/200);
 
     await pool.setInterestRate(2.0);
-
     const expectedYBTBalance = pool.yieldPeggedToAsset ? 400 : 200;
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/expectedYBTBalance);
     (await pool.expectDepositBT(user, 100)).to.equal('success');

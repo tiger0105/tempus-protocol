@@ -13,6 +13,7 @@ import { TempusAMM } from "../utils/TempusAMM";
 import { PoolShare } from "../utils/PoolShare";
 import { strict as assert } from 'assert';
 
+const ROUNDING_ERROR_TOLERANCE_THRESHOLD = 0.00000001; /// allow for 0.000001% error in YBT amounts 
 export interface BalancesExpectation {
   tps:number; // expected TPS balance
   tys:number; // etc.
@@ -57,7 +58,6 @@ export class UserState {
   yieldShares:Number;
   yieldBearing:Number;
   yieldPeggedToAsset:boolean;
-  yieldBearingEpsilon: number;
 
   public expectMulti(principalShares:number, yieldShares:number, yieldBearingPegged:number, yieldBearingVariable:number, message:string = null) {
     const yieldBearing = this.yieldPeggedToAsset ? yieldBearingPegged : yieldBearingVariable;
@@ -72,11 +72,11 @@ export class UserState {
     expect(this.principalShares).to.equal(principalShares, msg+" but TPS did not match");
     expect(this.yieldShares).to.equal(yieldShares, msg+" but TYS did not match");
     
-    /// allow smallest rounding errors
+    /// tolerate small rounding errors
     expect(this.yieldBearing).to.be.within(
-      yieldBearing - this.yieldBearingEpsilon,
-      yieldBearing + this.yieldBearingEpsilon,
-      msg+" but YBT did not match"
+      yieldBearing * (1 - ROUNDING_ERROR_TOLERANCE_THRESHOLD),
+      yieldBearing * (1 + ROUNDING_ERROR_TOLERANCE_THRESHOLD),
+      "yieldBearing did not match expected value"+msg
     );
   }
 }
@@ -365,7 +365,6 @@ export abstract class PoolTestFixture {
     state.yieldShares = Number(await this.yields.balanceOf(user));
     state.yieldBearing = Number(await this.ybt.balanceOf(user));
     state.yieldPeggedToAsset = this.yieldPeggedToAsset;
-    state.yieldBearingEpsilon = Number(formatDecimal(BigNumber.from(1), this.ybt.decimals));
     return state;
   }
 
@@ -436,7 +435,7 @@ export abstract class PoolTestFixture {
 
         // initialize new tempus pool with the controller, TempusPool is auto-registered
         const tempus = await TempusPool.deploy(
-          this.type, owner, controller, asset, ybt, maturityTime, p.yieldEst, names
+          this.type, owner, controller, asset, ybt, maturityTime, p.yieldEst, names, pool.address
         );
 
         // new AMM instance and register the AMM with the controller
