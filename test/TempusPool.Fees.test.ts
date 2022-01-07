@@ -116,18 +116,19 @@ describeForEachPool("TempusPool Fees", (pool:PoolTestFixture) =>
   it("Should collect tokens as fees after maturity with additional yield with fee percentage != 0", async () =>
   {
     await pool.setupAccounts(owner, [[user, 500]]);
-
     await pool.tempus.setFeesConfig(owner, { depositPercent: 0.0, earlyRedeemPercent: 0.0, matureRedeemPercent: 0.01 });
+    
     await pool.depositYBT(user, 100);
+    
     expect(await pool.tempus.contractBalance()).to.equal(100); // all 100 in the pool
     (await pool.userState(user)).expect(100, 100, /*yieldBearing:*/400);
 
     await pool.fastForwardToMaturity();
     await pool.setInterestRate(1.02);
     (await pool.userState(user)).expectMulti(100, 100, /*peggedYBT*/408, /*variableYBT*/400);
-
+    
     await pool.redeemToYBT(user, 100, 100);
-
+    
     const ybtFeeAmount = +await pool.tempus.numYieldTokensPerAsset(3.01, 1.02);
     expect(+await pool.tempus.totalFees()).to.be.within(ybtFeeAmount * 0.99, ybtFeeAmount * 1.01);
     (await pool.userState(user)).expect(0, 0, /*yieldBearing:*/pool.yieldPeggedToAsset ? 507 : 497.05882352941177);

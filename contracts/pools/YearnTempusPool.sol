@@ -16,7 +16,7 @@ contract YearnTempusPool is TempusPool {
     using Fixed256xVar for uint256;
 
     IYearnVaultV2 internal immutable yearnVault;
-    bytes32 public immutable override protocolName = "Yearn";
+    bytes32 public constant override protocolName = "Yearn";
 
     constructor(
         IYearnVaultV2 vault,
