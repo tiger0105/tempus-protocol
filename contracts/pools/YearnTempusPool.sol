@@ -15,7 +15,7 @@ contract YearnTempusPool is TempusPool {
     using UntrustedERC20 for IERC20;
     using Fixed256xVar for uint256;
 
-    IYearnVaultV2 internal immutable yearnVault;
+    IYearnVaultV2 private immutable yearnVault;
     bytes32 public constant override protocolName = "Yearn";
 
     constructor(
@@ -40,6 +40,8 @@ contract YearnTempusPool is TempusPool {
             maxFeeSetup
         )
     {
+        require(vault.decimals() == IERC20Metadata(vault.token()).decimals(), "Decimals precision mismatch");
+
         yearnVault = vault;
     }
 
