@@ -16,7 +16,7 @@ contract RariTempusPool is TempusPool {
     using Fixed256xVar for uint256;
 
     bytes32 public constant override protocolName = "Rari";
-    IRariFundManager internal immutable rariFundManager;
+    IRariFundManager private immutable rariFundManager;
 
     uint256 private immutable exchangeRateToBackingPrecision;
     uint256 private immutable backingTokenRariPoolIndex;
