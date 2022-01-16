@@ -116,7 +116,8 @@ class DeployLocalForked {
     DAI: '0xE78388b4CE79068e89Bf8aA7f218eF6b9AB0e9d0',
     aDAI: '0x3ddfa8ec3052539b6c9549f12cea2c295cff5296',
     cDAI: '0x9b4772e59385ec732bccb06018e318b7b3477459',
-    stETH: '0xDC24316b9AE028F1497c275EB9192a3Ea0f67022'
+    stETH: '0xDC24316b9AE028F1497c275EB9192a3Ea0f67022',
+    USDC: '0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503'
   }
 
   private controller: TempusController;

@@ -18,26 +18,34 @@ class DepositLocalForked {
     this.owner = (await ethers.getSigners())[0];
 
     const tokenMap = new Map<string, ERC20>();
-    tokenMap.set('aDai', new ERC20("ERC20", 18, (await ethers.getContract('aToken_Dai'))));
+    /*tokenMap.set('aDai', new ERC20("ERC20", 18, (await ethers.getContract('aToken_Dai'))));
     tokenMap.set('cDai', new ERC20("ERC20", 8, (await ethers.getContract('cToken_Dai'))));
     tokenMap.set('stETH', new ERC20("ERC20", 18, (await ethers.getContract('Lido'))));
-    tokenMap.set('DAI', new ERC20("ERC20", 18, (await ethers.getContract('Dai'))));
+    tokenMap.set('DAI', new ERC20("ERC20", 18, (await ethers.getContract('Dai'))));*/
+    tokenMap.set('USDC', new ERC20('ERC20FixedSupply', 6, (await ethers.getContract('Usdc'))));
+    tokenMap.set('rsptUSDC', new ERC20('ERC20FixedSupply', 18, (await ethers.getContract('rsptUSDC'))));
 
-    this.vault = await ethers.getContractAt('Vault', depositConfig.addresses.vault);
+    // this.vault = await ethers.getContractAt('Vault', depositConfig.addresses.vault);
     
-    const tempusControllerContract = await ethers.getContractAt('TempusController', depositConfig.addresses.tempusController);
-    this.controller = new TempusController('TempusController', tempusControllerContract);
+    /*const tempusControllerContract = await ethers.getContractAt('TempusController', depositConfig.addresses.tempusController);
+    this.controller = new TempusController('TempusController', tempusControllerContract);*/
 
-    await this.sendTransaction(100000000, depositConfig.holders.DAI, this.owner.address, tokenMap.get('DAI'));
+    /*await this.sendTransaction(100000000, depositConfig.holders.DAI, this.owner.address, tokenMap.get('DAI'));
     console.log('Sent 100000000 DAI to owner address');
     await this.sendTransaction(10000, depositConfig.holders.aDAI, this.owner.address, tokenMap.get('aDai'));
     console.log('Sent 10000 aDAI to owner address');
     await this.sendTransaction(10000, depositConfig.holders.cDAI, this.owner.address, tokenMap.get('cDai'));
     console.log('Sent 10000 cDAI to owner address');
     await this.sendTransaction(250000, depositConfig.holders.stETH, this.owner.address, tokenMap.get('stETH'));
-    console.log('Sent 250000 stETH to owner address');
+    console.log('Sent 250000 stETH to owner address');*/
 
-    for (let i = 0; i < depositConfig.addresses.tempusPools.length; i++) {
+    //await this.sendTransaction(100000000, depositConfig.holders.USDC, this.owner.address, tokenMap.get('USDC'));
+    //console.log('Sent 100000000 USDC to owner address');
+
+    await this.sendTransaction(100000, depositConfig.holders.rsptUSDC, this.owner.address, tokenMap.get('rsptUSDC'));
+    console.log('Sent 100000 RSPT USDC to owner address');
+
+    /*for (let i = 0; i < depositConfig.addresses.tempusPools.length; i++) {
       const poolDepositInfo = depositConfig.addresses.tempusPools[i] as DeployedPoolInfo;
 
       console.log(`Depositing into ${poolDepositInfo.protocol} ${poolDepositInfo.backingToken}/${poolDepositInfo.yieldBearingToken} Pool...`);
@@ -49,7 +57,7 @@ class DepositLocalForked {
         poolDepositInfo.protocol === PoolType.Lido ? false : true,
         poolDepositInfo
       );
-    }
+    }*/
   }
 
   private async depositIntoPool(poolType: PoolType, ybt: ERC20, bt: ERC20, depositBacking: boolean, poolDepositConfig: DeployedPoolInfo) {
