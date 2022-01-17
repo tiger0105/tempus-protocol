@@ -41,6 +41,9 @@ class DepositLocalForked {
 
     //await this.sendTransaction(100000000, depositConfig.holders.USDC, this.owner.address, tokenMap.get('USDC'));
     //console.log('Sent 100000000 USDC to owner address');
+    
+    // await this.sendTransaction(100000, depositConfig.holders.USDC, this.owner.address, tokenMap.get('USDC'));
+    // console.log('Sent 100000 USDC to owner address');
 
     await this.sendTransaction(100000, depositConfig.holders.rsptUSDC, this.owner.address, tokenMap.get('rsptUSDC'));
     console.log('Sent 100000 RSPT USDC to owner address');

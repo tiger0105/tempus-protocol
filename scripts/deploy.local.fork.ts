@@ -117,7 +117,8 @@ class DeployLocalForked {
     aDAI: '0x3ddfa8ec3052539b6c9549f12cea2c295cff5296',
     cDAI: '0x9b4772e59385ec732bccb06018e318b7b3477459',
     stETH: '0xDC24316b9AE028F1497c275EB9192a3Ea0f67022',
-    USDC: '0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503'
+    USDC: '0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503',
+    rsptUSDC: '0x741AA7CFB2c7bF2A1E7D4dA2e3Df6a56cA4131F3'
   }
 
   private controller: TempusController;
@@ -195,7 +196,7 @@ class DeployLocalForked {
         yieldBearingToken: 18,
         principals: 6,
         yields: 6,
-        lpTokens: 6,
+        lpTokens: 18,
       },
       deployRari: TempusPool.deployRari
     });
